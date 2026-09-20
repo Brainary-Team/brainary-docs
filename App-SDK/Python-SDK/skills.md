@@ -63,15 +63,15 @@ with Codex(config=config) as codex:
 
 当前运行时会从多个作用域发现 Skills：
 
-| 位置 | 作用域 | 适用场景 |
+| 位置 | 作用范围 | 修改方式 |
 | --- | --- | --- |
-| 从项目根到当前 `cwd` 路径上的 `.agents/skills` | 项目或子目录 | 为 Agent 提供项目级 Skill 池，推荐作为应用的主要配置方式 |
-| 项目配置层的 `.codex/skills` | 项目 | 与项目配置一起维护的 Skills |
-| `$HOME/.agents/skills` | 当前用户 | 跨项目复用的个人 Skills |
-| `$CODEX_HOME/skills` | 当前 Codex 实例 | 兼容目录和实例级 Skills |
-| `$CODEX_HOME/skills/.system` | 运行时内置 | Brainary Codex 将内置 Skills 写入此缓存目录并自动管理；应通过配置启用或禁用，不应通过删除缓存管理 |
-| 管理员配置目录（Unix 通常为 `/etc/codex/skills`） | 机器或组织 | 由管理员在二进制之外统一部署，不属于 Brainary Codex 内置内容 |
-| 已启用插件中的 `skills/` | 插件 | 随插件安装和卸载；只有插件启用时，其附带 Skills 才会进入可发现集合 |
+| 从项目根到当前 `cwd` 路径上的 `.agents/skills` | 项目根的 Skills 对整个项目生效；中间目录的 Skills 只对该目录及其子目录中的 `cwd` 生效 | 通过 `thread_start(cwd=...)` 改变扫描范围；通过 `project_root_markers` 改变项目根识别规则；`.agents/skills` 目录名固定 |
+| 项目配置层的 `.codex/skills` | 只对该配置层所属项目内的 Agent 生效，项目外的 Agent 不可见 | 随项目 `.codex` 配置层的位置变化；`skills` 子目录名固定，可增删其中的 Skill 目录 |
+| `$HOME/.agents/skills` | 对当前操作系统用户启动的所有项目和 Agent 生效，其他用户不可见 | 可修改 app-server 进程的 `$HOME`，但会影响整个进程环境；通常只增删该目录中的 Skills |
+| `$CODEX_HOME/skills` | 对共用该 `$CODEX_HOME` 的所有 Agent 生效，使用其他 `$CODEX_HOME` 的 Agent 不可见 | 可修改 `CODEX_HOME`，但会同时迁移 `config.toml` 等实例数据；不能只迁移这个 Skill 目录 |
+| `$CODEX_HOME/skills/.system` | 对共用该 `$CODEX_HOME` 且启用了内置 Skills 的所有 Agent 生效，禁用内置 Skills 的 Agent 不可见 | 跟随 `CODEX_HOME`，不能单独改址；使用 `[skills.bundled] enabled = false` 禁用整个内置作用范围 |
+| 管理员配置目录（Unix 通常为 `/etc/codex/skills`） | 对本机或容器内读取该系统配置层的所有用户和 Agent 生效，其他机器或容器不可见 | 由系统管理员部署或修改；普通 Python 应用不能通过 thread 配置改址 |
+| 已启用插件中的 `skills/` | 只对该插件的启用范围生效：用户级启用覆盖该用户的所有项目，项目级启用只覆盖对应项目 | 跟随插件安装目录；通过插件配置启用或禁用整个插件，也可用 `[[skills.config]]` 禁用其中的单个 Skill |
 
 例如，为一个工程 Agent 配置包含代码审查、故障诊断和发布说明三项能力的 Skill 池：
 
@@ -157,7 +157,7 @@ name = "diagnose-failure"
 enabled = false
 ```
 
-本地 Skill 推荐按路径配置，以免同名 Skill 来自用户目录、项目目录或插件时产生歧义。重新启用时删除对应的禁用项，或者把 `enabled` 改为 `true`。持久配置作用于使用同一 `$CODEX_HOME` 的 Agent；直接修改配置文件后，应新建 Codex 客户端或 thread 以确保新配置生效。单个项目希望共享固定的 Skill 集合时，应把 Skill 目录本身纳入版本控制。
+本地 Skill 推荐按路径配置，以免同名 Skill 来自用户目录、项目目录或插件时产生歧义。重新启用时删除对应的禁用项，或者把 `enabled` 改为 `true`。持久配置作用于使用同一 `$CODEX_HOME` 的 Agent；直接修改配置文件后，应新建 Codex 客户端或 thread 以确保新配置生效。
 
 只想为某个 Agent 临时改变启用状态时，可以在 `thread_start(config=...)` 中提供 session 级覆盖，不修改全局文件：
 
@@ -183,19 +183,6 @@ release_agent = codex.thread_start(
 
 这适合从当前 Agent 已发现的 Skill 池中临时排除少量 Skill。禁用项较多时，应直接调整项目级 Skill 池，避免维护大量配置项。
 
-常见管理操作如下：
-
-| 操作 | 做法 |
-| --- | --- |
-| 新增 | 在发现目录中新建 `<skill-name>/SKILL.md`，需要时附带 `references/`、`scripts/`、`templates/` 或 `assets/` |
-| 更新 | 修改 `SKILL.md` 或配套资源；新 turn 会读取新内容 |
-| 暂停 | 在 `$CODEX_HOME/config.toml` 中添加 `enabled = false` 的 `[[skills.config]]` 项，或对单个 thread 使用 session config |
-| 恢复 | 删除禁用项或设置 `enabled = true` |
-| 删除 | 删除整个 Skill 目录，并同步清理指向它的配置项 |
-| 共享 | 将项目级 `.agents/skills` 或 `.codex/skills` 纳入版本控制 |
-
-不要用改名制造多个近似版本，例如 `review-v2`、`review-final`。更稳妥的做法是保持一个稳定的 Skill 名称，通过 Git 管理版本，并让每次修改同时更新触发描述和配套资源。
-
 ## 同时传入文本、图片和 Skill
 
 turn 输入可以是多项列表：
@@ -213,9 +200,3 @@ result = agent.run(
 ```
 
 支持的公开输入类型包括 `TextInput`、`ImageInput`、`LocalImageInput`、`SkillInput` 和 `MentionInput`。单个字符串等价于 `TextInput(...)`。
-
-## 更新 Skill
-
-`SkillInput` 在每次 turn 开始时引用具体路径。修改 `SKILL.md` 后，新 turn 会读取更新后的内容；正在执行的 turn 不会因此改变。
-
-如果依赖自动发现，运行时内部存在 Skill 列表缓存和变更通知。Python 高层 API 当前没有 `skills_list()` 或强制刷新方法，因此需要确定性时仍应传入明确的 `SkillInput` 路径。

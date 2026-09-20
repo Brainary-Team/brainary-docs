@@ -1,6 +1,6 @@
 # 创建与运行 Agent
 
-Brainary Python SDK 使用 `Thread` 表达一个 Agent 会话，使用 turn 表达一次完整的 Agent 运行。一个 turn 内部可能包含多轮 ReAct 推理、工具调用和模型请求；`run()` 是启动 turn 并等待其完成的便捷方法。
+Brainary Python SDK 使用 `Thread` 表达一个 Agent 会话，使用 turn 表达一次完整的 Agent 运行，即一次完整的ReAct循环。
 
 ## 创建 Agent
 
@@ -30,7 +30,7 @@ with Codex(config=config) as codex:
 | `model` / `model_provider` | 覆盖运行时默认模型与 provider |
 | `sandbox` | 文件系统访问级别 |
 | `approval_mode` | 权限升级请求的处理方式 |
-| `config` | 本 thread 的运行时配置覆盖，使用 Python `dict` 和 snake_case 键 |
+| `config` | 本 thread 的运行时配置覆盖，使用 Python `dict` 和 snake_case 键；详见[配置运行时](configuration.md) |
 | `ephemeral` | 是否创建临时、不持久化的 thread |
 
 SDK 当前提供两个审批模式：
