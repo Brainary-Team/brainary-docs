@@ -2,6 +2,9 @@
 
 Python SDK 通过 Codex 的线程接口运行 PoA（Program of Agent）程序。SDK 会启动本地 `codex app-server`，把 `.poa` 包提交到开启了 code mode 的线程，并等待程序执行完成。
 
+本文介绍由 Python 应用直接、无条件运行 PoA。需要让模型把 PoA 当作工具并自主决定何时
+调用时，请阅读[让 Agent 使用 PoA](agent-poa.md)。
+
 ## 前置条件
 
 - Python 3.10 或更高版本。
