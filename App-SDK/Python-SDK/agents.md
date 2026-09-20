@@ -30,7 +30,7 @@ with Codex(config=config) as codex:
 | `model` / `model_provider` | 覆盖运行时默认模型与 provider |
 | `sandbox` | 文件系统访问级别 |
 | `approval_mode` | 权限升级请求的处理方式 |
-| `config` | 本 thread 的运行时配置覆盖，使用 Python `dict` 和 snake_case 键；详见[配置运行时](configuration.md) |
+| `config` | 本 thread 的运行时配置覆盖，使用 Python `dict` 和 snake_case 键 |
 | `ephemeral` | 是否创建临时、不持久化的 thread |
 
 ## 配置并选择模型
@@ -222,7 +222,6 @@ with Codex(config=config) as codex:
 
 `codex.models()` 返回运行时加载的模型目录，不保证列出自定义 provider 接受的所有模型；
 最终可用的模型 ID 仍由 provider 契约决定。不要在框架代码里假设固定模型 ID。
-更完整的 provider 字段、配置层级和覆盖优先级见[配置运行时](configuration.md#8-模型与自定义-provider)。
 
 SDK 当前提供两个审批模式：
 

@@ -14,7 +14,7 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
 - 一个已打包的 `.poa` 文件。SDK 不接受未打包目录；打包方式见
-  [打包与分发](../../08-packaging.md)。
+  [打包与分发](../../PoA-Guide/08-packaging.md)。
 
 ## 注册并使用 PoA
 
@@ -55,7 +55,7 @@ namespace 和 version 的限定名；为保持工具名稳定，建议让同一 
 - `PoaPackage.load()` 会检查文件是否为 zip、根目录是否包含 `manifest.toml`，以及包是否
   超过 64 MiB；其余 manifest 和入口规则由运行时校验。
 - 包内声明的 stdio MCP server 会在 PoA 被调用时启动；能力声明方式见
-  [打包与分发](../../08-packaging.md)。
+  [打包与分发](../../PoA-Guide/08-packaging.md)。
 - 是否调用 PoA 由模型决定。必须执行的步骤应改用 `thread.run_poa(...)`。
 - `dev_poas` 只存在于 `thread_start()`；`thread_resume()` 和 `thread_fork()` 不接受该参数。
 - `.poa` 是可执行程序，只加载可信来源的包，并使用合适的 `sandbox` 和
