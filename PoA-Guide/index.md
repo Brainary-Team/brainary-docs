@@ -12,6 +12,8 @@ PoA 把这个关系倒过来：调度、分发、汇总、判定全部写在程�
 > [07 API 参考 §2.4](07-api-reference.md#24-prelude-全文)（抄走）→
 > [05 编写指南 §12](05-writing.md#12-完整范例)。其余按需查。
 
+> **从 Python 调用 Brainary**：从[创建与运行 Agent](App%20SDK/Python%20SDK/agents.md)开始，按需阅读[使用 MCP](App%20SDK/Python%20SDK/mcp.md)、[使用 Skills](App%20SDK/Python%20SDK/skills.md)和[运行 PoA](App%20SDK/Python%20SDK/run-poa.md)。
+
 下面只画程序的结构，**是伪代码，不能直接运行**：其中三个 helper 来自 prelude。
 
 ```js
@@ -50,6 +52,15 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
 | 07 | API 参考 | [07-api-reference.md](07-api-reference.md) | 12 个全局 primitive、16 个 prelude primitive（含可直接抄的全文）、30 个内置工具声明与 2 个 MCP 探针示例 |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
+
+### App SDK
+
+| 文档 | 文件 | 内容 |
+| --- | --- | --- |
+| 创建与运行 Agent | [App SDK/Python SDK/agents.md](App%20SDK/Python%20SDK/agents.md) | 阻塞、流式、异步、续接、分叉和运行控制 |
+| 使用 MCP | [App SDK/Python SDK/mcp.md](App%20SDK/Python%20SDK/mcp.md) | MCP 配置、调用和事件观察 |
+| 使用 Skills | [App SDK/Python SDK/skills.md](App%20SDK/Python%20SDK/skills.md) | 创建、发现和显式使用 Skill |
+| 运行 PoA | [App SDK/Python SDK/run-poa.md](App%20SDK/Python%20SDK/run-poa.md) | 从 Python 运行 `.poa` 包 |
 
 ---
 
