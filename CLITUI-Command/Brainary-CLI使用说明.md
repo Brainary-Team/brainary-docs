@@ -4,10 +4,6 @@
 
 适用版本：`feat/brainary-rebrand`，核对提交 `644e1aab6`（2026-09-28）。交互界面用法见 [Brainary TUI 使用说明](Brainary-TUI使用说明.md)。
 
-![Brainary CLI 帮助界面](Brainary-使用说明图片/CLI帮助.png)
-
-图 1：`brainary help` 的公开命令列表，包含 `poa` 入口。
-
 ## 快速开始
 
 ```bash
