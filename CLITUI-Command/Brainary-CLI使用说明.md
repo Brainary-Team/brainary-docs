@@ -2,8 +2,6 @@
 
 本文说明当前 Brainary 项目的公开 CLI 用法，包括全局参数、子命令、自动化调用和会话管理。实际可用参数以本机 `brainary --help` 和子命令的 `--help` 为准。
 
-适用版本：`feat/brainary-rebrand`，核对提交 `644e1aab6`（2026-09-28）。交互界面用法见 [Brainary TUI 使用说明](Brainary-TUI使用说明.md)。
-
 ## 快速开始
 
 ```bash
