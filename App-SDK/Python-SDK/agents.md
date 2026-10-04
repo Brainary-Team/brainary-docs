@@ -8,12 +8,18 @@ SDK 分发包名为 `brainary-sdk`，导入模块为 `brainary`。同步客户�
 
 ## 创建 Agent
 
+下面的示例同时注册 model provider、选择模型，并配置 Agent 的工作目录、指令和权限：
+
 ```python
+import os
 from pathlib import Path
 
 from brainary import ApprovalMode, Brainary, BrainaryConfig, Sandbox
 
-config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(
+    brainary_bin="/absolute/path/to/brainary-codex",
+    env={"ANTHROPIC_API_KEY": os.environ["ANTHROPIC_API_KEY"]},
+)
 
 with Brainary(config=config) as brainary:
     agent = brainary.thread_start(
@@ -21,7 +27,24 @@ with Brainary(config=config) as brainary:
         developer_instructions="你负责审查代码，只报告有证据的问题。",
         sandbox=Sandbox.read_only,
         approval_mode=ApprovalMode.deny_all,
+        model="<anthropic-model-id>",
+        model_provider="anthropic-runtime",
+        config={
+            "model_providers": {
+                "anthropic-runtime": {
+                    "name": "Runtime Anthropic provider",
+                    "base_url": "https://api.anthropic.com/v1",
+                    "env_key": "ANTHROPIC_API_KEY",
+                    "wire_api": "anthropic",
+                    "request_max_retries": 4,
+                    "stream_max_retries": 5,
+                    "stream_idle_timeout_ms": 300_000,
+                }
+            }
+        },
     )
+    result = agent.run("检查当前改动。")
+    print(result.final_response)
 ```
 
 常用参数：
@@ -70,40 +93,8 @@ Namespace tools 没有 Anthropic 等价声明，会被省略。应用依赖这�
 
 ### 在 Python 中注册并应用 provider
 
-把 provider 定义放入 `thread_start(config=...)`，再用 `model_provider` 选择其 ID。
-配置键使用 snake_case，嵌套配置使用 Python `dict`：
-
-```python
-import os
-
-from brainary import Brainary, BrainaryConfig
-
-config = BrainaryConfig(
-    brainary_bin="/opt/brainary/codex",
-    env={"ANTHROPIC_API_KEY": os.environ["ANTHROPIC_API_KEY"]},
-)
-
-with Brainary(config=config) as brainary:
-    agent = brainary.thread_start(
-        model="<anthropic-model-id>",
-        model_provider="anthropic-runtime",
-        config={
-            "model_providers": {
-                "anthropic-runtime": {
-                    "name": "Runtime Anthropic provider",
-                    "base_url": "https://api.anthropic.com/v1",
-                    "env_key": "ANTHROPIC_API_KEY",
-                    "wire_api": "anthropic",
-                    "request_max_retries": 4,
-                    "stream_max_retries": 5,
-                    "stream_idle_timeout_ms": 300_000,
-                }
-            }
-        },
-    )
-    result = agent.run("分析这个仓库。")
-    print(result.final_response)
-```
+开头的[创建 Agent 示例](#创建-agent)将 provider 定义放入 `thread_start(config=...)`，
+再用 `model_provider` 选择其 ID。配置键使用 snake_case，嵌套配置使用 Python `dict`。
 
 `base_url` 是 API 根地址，运行时会按协议追加 `responses` 或 `messages`。
 `env_key` 的值是环境变量名，不是 API key 本身。`BrainaryConfig.env` 会在父进程环境
@@ -124,10 +115,10 @@ with Brainary(config=config) as brainary:
 
 `thread_start()`、`thread_resume()` 和 `thread_fork()` 都同时接受 `model=` 与
 `model_provider=`，因此可以选择完整的“模型 + provider + 协议”组合。`run()` 和 `turn()`
-只有 `model=`，适合在同一个 provider 内切换模型。在上面示例的 `with` 块内调用：
+只有 `model=`，适合在同一个 provider 内切换模型。在创建 Agent 示例的 `with` 块内调用：
 
 ```python
-# 接上面的 agent，仍使用 anthropic-runtime 及其 anthropic 协议。
+# 接创建 Agent 示例中的 agent，仍使用 anthropic-runtime 及其 anthropic 协议。
 # 这里只覆盖模型 ID。
 result = agent.run(
     "进行更深入的分析。",
