@@ -68,89 +68,10 @@ function tools 和 freeform tools；Responses 中的 provider-side Web Search、
 Namespace tools 没有 Anthropic 等价声明，会被省略。应用依赖这些能力时，应选用
 `responses` provider 或在部署前做能力验证。
 
-### 方式一：在 `config.toml` 中注册 provider，在代码中选择
+### 在 Python 中注册并应用 provider
 
-稳定的 endpoint、协议和认证变量名建议写入 `$CODEX_HOME/config.toml`：
-
-```toml
-# 默认模型和 provider；thread_start() 未显式传参时使用它们。
-model = "<default-responses-model-id>"
-model_provider = "corp-responses"
-
-[model_providers.corp-responses]
-name = "Corporate Responses gateway"
-base_url = "https://llm.example.com/v1"
-env_key = "CORP_LLM_API_KEY"
-wire_api = "responses"
-request_max_retries = 4
-stream_max_retries = 5
-stream_idle_timeout_ms = 300000
-
-[model_providers.anthropic-direct]
-name = "Anthropic Messages"
-base_url = "https://api.anthropic.com/v1"
-env_key = "ANTHROPIC_API_KEY"
-wire_api = "anthropic"
-```
-
-`base_url` 是 API 根地址，运行时会按协议追加 `responses` 或 `messages`。`env_key` 的值是
-环境变量名，不是 API key 本身。不要把 secret 写进 TOML。
-
-`env_key` 适合标准 API key。网关要求自定义认证 header 时，使用
-`env_http_headers` 将 header 名映射到环境变量名，例如：
-
-```toml
-[model_providers.corp-responses.env_http_headers]
-X-Gateway-Key = "CORP_GATEWAY_KEY"
-```
-
-固定且不敏感的 header 使用 `http_headers`；不要用它保存 token。
-
-在 Python 中通过 `CODEX_HOME` 加载配置，并为不同 Agent 选择不同 provider：
-
-```python
-import os
-from pathlib import Path
-
-from brainary import Brainary, BrainaryConfig
-
-codex_home = Path("/srv/my-app/codex-home").resolve()
-
-config = BrainaryConfig(
-    brainary_bin="/opt/brainary/codex",
-    env={
-        "CODEX_HOME": str(codex_home),
-        "CORP_LLM_API_KEY": os.environ["CORP_LLM_API_KEY"],
-        "ANTHROPIC_API_KEY": os.environ["ANTHROPIC_API_KEY"],
-    },
-)
-
-with Brainary(config=config) as brainary:
-    responses_agent = brainary.thread_start(
-        model="<responses-model-id>",
-        model_provider="corp-responses",
-        cwd="/srv/workspaces/repo-a",
-    )
-    responses_result = responses_agent.run("检查当前改动。")
-
-    anthropic_agent = brainary.thread_start(
-        model="<anthropic-model-id>",
-        model_provider="anthropic-direct",
-        cwd="/srv/workspaces/repo-a",
-    )
-    anthropic_result = anthropic_agent.run("从另一个角度复核风险。")
-
-    print(responses_result.final_response)
-    print(anthropic_result.final_response)
-```
-
-`BrainaryConfig.env` 会在父进程环境基础上更新这些变量。若部署环境已经导出 key，只传
-`CODEX_HOME` 即可，不必在应用代码中再次读取和传递 secret。
-
-### 方式二：完全在 Python 中注册并应用 provider
-
-不希望维护 TOML 时，可以把 provider 定义放入 thread 的 `config`。配置键使用
-snake_case，TOML table 对应嵌套 `dict`：
+把 provider 定义放入 `thread_start(config=...)`，再用 `model_provider` 选择其 ID。
+配置键使用 snake_case，嵌套配置使用 Python `dict`：
 
 ```python
 import os
@@ -184,11 +105,17 @@ with Brainary(config=config) as brainary:
     print(result.final_response)
 ```
 
-这种定义只作用于该 thread。多个 Agent 共用同一 provider 时，优先放进
-`$CODEX_HOME/config.toml` 或 `BrainaryConfig.config_overrides`，避免在每次创建 thread 时重复。
-如果 provider 只存在于 Python `config` 中，跨进程调用 `thread_resume()` 或
-`thread_fork()` 时也要再次传入同一 provider 定义；保存 thread 不会把它写入
-`$CODEX_HOME/config.toml`。
+`base_url` 是 API 根地址，运行时会按协议追加 `responses` 或 `messages`。
+`env_key` 的值是环境变量名，不是 API key 本身。`BrainaryConfig.env` 会在父进程环境
+基础上更新变量；部署环境已导出 key 时，可以省略示例中的 `env`。
+
+网关要求自定义认证 header 时，在 provider 定义中添加
+`"env_http_headers": {"X-Gateway-Key": "CORP_GATEWAY_KEY"}`，并在进程环境中提供
+`CORP_GATEWAY_KEY`。固定且不敏感的 header 使用 `http_headers`。
+
+多个 Agent 可以复用同一个 Python 配置字典，并分别传入 `thread_start(config=...)`。
+这些覆盖不会写入配置文件；跨进程调用 `thread_resume()` 或 `thread_fork()` 时，
+仍需传入同一 provider 定义。配置文件的注册和加载方式见[配置文件使用说明](configuration.md)。
 
 自定义 provider ID 不得覆盖内置 ID；当前内置项包括 `openai`、`amazon-bedrock`、
 `ollama` 和 `lmstudio`，其中 `amazon-bedrock` 只开放源码限定的少量覆盖字段。
@@ -197,15 +124,11 @@ with Brainary(config=config) as brainary:
 
 `thread_start()`、`thread_resume()` 和 `thread_fork()` 都同时接受 `model=` 与
 `model_provider=`，因此可以选择完整的“模型 + provider + 协议”组合。`run()` 和 `turn()`
-只有 `model=`，适合在同一个 provider 内切换模型：
+只有 `model=`，适合在同一个 provider 内切换模型。在上面示例的 `with` 块内调用：
 
 ```python
-agent = brainary.thread_start(
-    model="<fast-model-id>",
-    model_provider="corp-responses",
-)
-
-# 仍然使用 corp-responses 及其 responses 协议，只覆盖模型 ID。
+# 接上面的 agent，仍使用 anthropic-runtime 及其 anthropic 协议。
+# 这里只覆盖模型 ID。
 result = agent.run(
     "进行更深入的分析。",
     model="<strong-model-id>",
