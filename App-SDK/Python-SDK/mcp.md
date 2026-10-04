@@ -133,19 +133,26 @@ for item in result.items:
         print(root.error)
 ```
 
-流式模式还会收到 `item/mcpToolCall/progress`：
+流式模式可以在 `item/completed` 中读取已完成的 MCP 调用：
 
 ```python
 handle = agent.turn("调用 search 工具完成查询。")
 
 for event in handle.stream():
-    if event.method == "item/mcpToolCall/progress":
-        print(event.payload.message)
+    if event.method == "item/completed":
+        item = event.payload.item
+        root = item.root if hasattr(item, "root") else item
+        if root.type == "mcpToolCall":
+            print(root.server, root.tool, root.status.value)
+            print(root.result)
+            print(root.error)
     elif event.method == "turn/completed":
         print(event.payload.turn.status.value)
 ```
 
-不要只等待某个 MCP progress 事件来判断 turn 完成；终止条件始终是匹配当前 turn ID 的 `turn/completed`。
+当前运行时不会将 MCP server 的 progress 转发为 SDK 的
+`item/mcpToolCall/progress` 通知，因此不要依赖该通知展示进度或判断执行是否完成。
+turn 的终止条件始终是匹配当前 turn ID 的 `turn/completed`。
 
 ## MCP 与 PoA 的区别
 
