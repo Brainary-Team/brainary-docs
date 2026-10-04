@@ -50,6 +50,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
 | 07 | API 参考 | [07-api-reference.md](07-api-reference.md) | 12 个全局 primitive、16 个 prelude primitive（含可直接抄的全文）、30 个内置工具声明与 2 个 MCP 探针示例 |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
+| 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 
 ---
 

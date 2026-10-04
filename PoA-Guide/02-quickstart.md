@@ -6,7 +6,7 @@
 
 | 事项 | 当前状态 |
 | --- | --- |
-| 从哪个前端提交 PoA | `codex exec --poa` 与 `codex app-server` 的 `thread/codeMode/exec` 两条，均已可用。TUI、SDK 与 `codex mcp-server` 暂不支持 |
+| 从哪个前端提交 PoA | `codex exec --poa` 与 `codex app-server` 的 `thread/codeMode/exec` 两条，均已可用；[Python SDK](../App-SDK/Python-SDK/run-poa.md) 封装了后者。TUI 与 `codex mcp-server` 暂不支持 |
 | 二进制从哪来 | 本项目发布的 release 制品。 |
 | 程序以什么形态提交 | 一个包目录（`manifest.toml` + `main.js`）。`codex exec --poa <目录>`  |
 | 用哪代多 agent 后端 | 由模型元数据决定，另有一个 feature 可以强制到 v2。跑探针查，见 §2 |
@@ -113,6 +113,7 @@ wire_api = "anthropic"
 
 ```toml
 [poa]
+namespace = "examples"
 name = "probe"
 version = "0.1.0"
 runtime = "codex-v8"

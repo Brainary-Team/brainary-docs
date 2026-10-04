@@ -11,7 +11,7 @@
 ```mermaid
 graph LR
     YOU["开发者"] --> EXEC["codex exec --poa<br/>目录现打包 + 本地校验 manifest"]
-    EXEC --> RPC["{ threadId, package }"]
+    EXEC --> RPC["{ threadId, package, input? }"]
     RPC --> CODEX["app-server<br/>解包 → 起包内 MCP → 等就位"]
     CODEX --> CELL["V8 里的一个 cell"]
     CELL --> SUB["子 agent × N"]
@@ -23,7 +23,7 @@ graph LR
 
 **①** `codex exec --poa <目录>` 每次现打包，`entry` 是运行时被读成字符串送进去的。
 
-**②** 协议层只有一种形状：`{ threadId, package }`。自研客户端走 `codex app-server` 的 `thread/codeMode/exec`，发的是同一个东西，只是包由它自己造、base64 之后过 JSON-RPC。只持有一段 JS 时也要现场封装成一个申报零能力的包，接口没有另一个只收源码的入口。
+**②** 协议层形状为 `{ threadId, package, input? }`，其中 `input` 是可选业务 JSON 对象，见[PoA input 编写说明](09-input.md)。自研客户端走 `codex app-server` 的 `thread/codeMode/exec`，发的是同一个东西，只是包由它自己造、base64 之后过 JSON-RPC。只持有一段 JS 时也要现场封装成一个申报零能力的包，接口没有另一个只收源码的入口。
 
 **③** `entry` 原样提交，前面不会拼入任何内容，所以首行 pragma 在第 1 行。
 
@@ -49,6 +49,7 @@ graph LR
 my-poa/
 ├── manifest.toml       [poa] 元数据 + [[capabilities.mcp]] 能力申报
 ├── main.js             程序本体，原样提交
+├── input_schema.ts     可选，目录打包时编译为 input_schema.json
 └── mcp/echo.mjs        随包分发的 stdio MCP server，零依赖
 ```
 
@@ -58,12 +59,14 @@ my-poa/
 
 ```toml
 [poa]
+namespace = "examples"           # 必填，包的命名空间
 name = "echo_expert"              # 必填
 version = "0.1.0"                 # 必填，格式不校验
 runtime = "codex-v8"              # 必填，只认这一个值，其余值直接反序列化失败
 poa_api_version = 1               # 必填，只认 1
 entry = "main.js"                 # 必填，必须 .js/.mjs，必须在包内
 description = "..."               # 可选
+# input_schema = "input_schema.json" # 可选，包内 JSON Schema 相对路径；没有 schema 时只接受空对象
 
 # 整段可以没有（不自带能力时），也可以重复多次（带多个 server）
 [[capabilities.mcp]]
@@ -90,7 +93,7 @@ graph TD
     end
 
     subgraph P2["② 自研客户端"]
-      B1["自己造包<br/>现成 JS 就包成零能力包"] --> B2["base64 → JSON-RPC<br/>{ threadId, package }"]
+      B1["自己造包<br/>现成 JS 就包成零能力包"] --> B2["base64 → JSON-RPC<br/>{ threadId, package, input? }"]
       B2 --> B3["codex app-server<br/>解 base64、校验、解包"]
     end
 
@@ -209,6 +212,9 @@ cd my-poa && zip -r ../my-poa.poa . && cd ..
 codex exec --poa ./my-poa.poa          # 打好的包也照跑
 ```
 
-`.poa` 就是一个普通 zip，唯一的要求是 `manifest.toml` 在根上。
+`.poa` 是普通 zip，根目录必须包含合法的 `manifest.toml`，并包含它声明的入口、schema
+和能力文件。`zip` 不会编译 `input_schema.ts`；如果程序有输入，手工打包前先准备 JSON
+Schema 并在 manifest 中声明它。TypeScript 编译规则和可供 SDK 使用的打包示例见
+[PoA input 编写说明](09-input.md)。
 
 解包时文件权限被无条件覆盖成 `0644`。

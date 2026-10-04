@@ -66,7 +66,7 @@ text(JSON.stringify(dirs.map((d, i) => ({ dir: d, rs: counts[i].output.trim() })
 PoA 用的是同一条路上的另一个提交入口，让模型以外的调用方也能提交 JS。
 
 ```
-thread/codeMode/exec   { threadId, package }  →  { output }
+thread/codeMode/exec   { threadId, package, input? }  →  { output }
 ```
 
 `package` 是 base64 编码的 `.poa` 包（zip，根上 `manifest.toml`）。服务端解包 → 读 manifest → 起它申报的 MCP server → 等这些 server 就位 → 把 `entry` 那个文件的内容当源码送进沙箱。送进去的就是那段 JS 源码字符串，和模型走的是同一条路：同一个沙箱、同一批工具、同一条分发路径与记录。

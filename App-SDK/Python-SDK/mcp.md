@@ -4,8 +4,8 @@ MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它�
 
 ## 工作流程
 
-1. 在 `CODEX_HOME/config.toml` 中声明 MCP server，或用 `CodexConfig.config_overrides` 传入临时覆盖。
-2. 用 `CodexConfig(codex_bin=...)` 启动 Brainary 运行时。
+1. 在 `CODEX_HOME/config.toml` 中声明 MCP server，或用 `BrainaryConfig.config_overrides` 传入临时覆盖。
+2. 用 `BrainaryConfig(brainary_bin=...)` 启动 Brainary 运行时。
 3. 创建 Agent，并在 prompt 中要求它完成需要该工具的任务。
 4. 使用 `run()` 等待结果，或用 `stream()` 观察 MCP 调用事件。
 
@@ -77,12 +77,12 @@ approval_mode = "approve"
 使用默认 `CODEX_HOME`：
 
 ```python
-from openai_codex import Codex, CodexConfig, Sandbox
+from brainary import Brainary, BrainaryConfig, Sandbox
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
 
-with Codex(config=config) as codex:
-    agent = codex.thread_start(sandbox=Sandbox.read_only)
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(sandbox=Sandbox.read_only)
     result = agent.run("使用 search MCP 工具查找项目的发布记录并总结。")
     print(result.final_response)
 ```
@@ -90,8 +90,8 @@ with Codex(config=config) as codex:
 为应用使用独立配置目录：
 
 ```python
-config = CodexConfig(
-    codex_bin="/absolute/path/to/brainary-codex",
+config = BrainaryConfig(
+    brainary_bin="/absolute/path/to/brainary-codex",
     env={
         "CODEX_HOME": "/absolute/path/to/app-codex-home",
         "SEARCH_MCP_TOKEN": "...",
@@ -104,8 +104,8 @@ config = CodexConfig(
 只做一次临时配置时，可以通过启动参数覆盖：
 
 ```python
-config = CodexConfig(
-    codex_bin="/absolute/path/to/brainary-codex",
+config = BrainaryConfig(
+    brainary_bin="/absolute/path/to/brainary-codex",
     config_overrides=(
         'mcp_servers.echo={command="python",args=["/absolute/path/to/echo_server.py"],required=true}',
     ),

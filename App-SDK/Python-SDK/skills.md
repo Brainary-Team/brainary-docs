@@ -41,15 +41,15 @@ description: Review a Git diff and report correctness risks with file and line e
 ```python
 from pathlib import Path
 
-from openai_codex import Codex, CodexConfig, SkillInput, TextInput
+from brainary import Brainary, BrainaryConfig, SkillInput, TextInput
 
 workspace = Path("/absolute/path/to/workspace")
 skill_path = workspace / ".agents/skills/review-changes/SKILL.md"
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
 
-with Codex(config=config) as codex:
-    agent = codex.thread_start(cwd=str(workspace))
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(cwd=str(workspace))
     result = agent.run(
         [
             TextInput("审查当前未提交改动。"),
@@ -108,13 +108,13 @@ Python 侧不需要逐项注册这个池。只要把 Agent 的 `cwd` 指向上�
 ```python
 from pathlib import Path
 
-from openai_codex import Codex, CodexConfig
+from brainary import Brainary, BrainaryConfig
 
 workspace = Path("/absolute/path/to/workspace").resolve()
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
 
-with Codex(config=config) as codex:
-    agent = codex.thread_start(
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(
         cwd=str(workspace),
         developer_instructions=(
             "根据任务和可用 Skill 的 description 自主选择合适的 Skill；"
@@ -157,7 +157,7 @@ name = "diagnose-failure"
 enabled = false
 ```
 
-本地 Skill 推荐按路径配置，以免同名 Skill 来自用户目录、项目目录或插件时产生歧义。重新启用时删除对应的禁用项，或者把 `enabled` 改为 `true`。持久配置作用于使用同一 `$CODEX_HOME` 的 Agent；直接修改配置文件后，应新建 Codex 客户端或 thread 以确保新配置生效。
+本地 Skill 推荐按路径配置，以免同名 Skill 来自用户目录、项目目录或插件时产生歧义。重新启用时删除对应的禁用项，或者把 `enabled` 改为 `true`。持久配置作用于使用同一 `$CODEX_HOME` 的 Agent；直接修改配置文件后，应新建 Brainary 客户端或 thread 以确保新配置生效。
 
 只想为某个 Agent 临时改变启用状态时，可以在 `thread_start(config=...)` 中提供 session 级覆盖，不修改全局文件：
 
@@ -166,7 +166,7 @@ disabled_skill = (
     workspace / ".agents/skills/diagnose-failure/SKILL.md"
 ).resolve()
 
-release_agent = codex.thread_start(
+release_agent = brainary.thread_start(
     cwd=str(workspace),
     config={
         "skills": {
@@ -188,7 +188,7 @@ release_agent = codex.thread_start(
 turn 输入可以是多项列表：
 
 ```python
-from openai_codex import LocalImageInput, SkillInput, TextInput
+from brainary import LocalImageInput, SkillInput, TextInput
 
 result = agent.run(
     [
