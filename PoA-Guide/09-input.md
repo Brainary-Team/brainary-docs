@@ -32,6 +32,16 @@ export interface InputParams {
 }
 ```
 
+准备好包内文件后，在 `city-plan` 目录的上一级打包：
+
+```bash
+codex-poa-pack ./city-plan ./city_plan.poa
+```
+
+第一个参数是源目录，第二个是输出文件。包根目录的 `input_schema.ts` 必须定义
+`InputParams`；打包时自动生成 `input_schema.json` 并设置包内 manifest 的
+`input_schema`，不修改源目录文件。
+
 `manifest.toml` 声明程序和输入 schema：
 
 ```toml
@@ -43,7 +53,7 @@ runtime = "codex-v8"
 poa_api_version = 1
 entry = "main.js"
 description = "根据城市和天数生成计划标题"
-input_schema = "input_schema.json" //如果poa目录中包含了规范的input_schema.ts文件可以不指定, 使用codex-poa-pack poa目录地址 poa包保存地址，打包poa时会自动解析并赋值
+input_schema = "input_schema.json" #如果poa目录中包含了规范的input_schema.ts文件可以不指定, 使用codex-poa-pack poa目录地址 poa包保存地址，打包poa时会自动解析并赋值
 ```
 
 `main.js` 通过全局变量 `POA_INPUT` 读取业务输入：
