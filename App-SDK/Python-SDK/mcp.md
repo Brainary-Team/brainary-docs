@@ -150,10 +150,6 @@ for event in handle.stream():
         print(event.payload.turn.status.value)
 ```
 
-当前运行时不会将 MCP server 的 progress 转发为 SDK 的
-`item/mcpToolCall/progress` 通知，因此不要依赖该通知展示进度或判断执行是否完成。
-turn 的终止条件始终是匹配当前 turn ID 的 `turn/completed`。
-
 ## MCP 与 PoA 的区别
 
 普通 Agent 使用的 MCP server 来自运行时配置。PoA 还可以在 `.poa` 的 `manifest.toml` 中声明随包启动的 MCP server；这类 server 属于该 PoA 包的能力，具体打包方式见[打包与分发](../../PoA-Guide/08-packaging.md)。

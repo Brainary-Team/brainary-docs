@@ -4,7 +4,6 @@ Brainary Python SDK 使用 `Thread` 表达一个 Agent 会话，使用 turn 表�
 
 SDK 分发包名为 `brainary-sdk`，导入模块为 `brainary`。同步客户端是 `Brainary`，
 异步客户端是 `AsyncBrainary`；通过 `BrainaryConfig(brainary_bin=...)` 指定运行时。
-运行时的可执行文件仍叫 `codex`，配置目录与环境变量仍使用 `.codex` 和 `CODEX_HOME`。
 
 ## 创建 Agent
 
@@ -25,7 +24,7 @@ with Brainary(config=config) as brainary:
     agent = brainary.thread_start(
         cwd=str(Path("/absolute/path/to/workspace")),
         developer_instructions="你负责审查代码，只报告有证据的问题。",
-        sandbox=Sandbox.read_only,
+        sandbox=Sandbox.read_only,	
         approval_mode=ApprovalMode.deny_all,
         model="<anthropic-model-id>",
         model_provider="anthropic-runtime",
@@ -81,15 +80,6 @@ with Brainary(config=config) as brainary:
 | --- | --- | --- |
 | `responses` | `POST <base_url>/responses` | OpenAI Responses API 或兼容网关；未填写 `wire_api` 时也是此默认值 |
 | `anthropic` | `POST <base_url>/messages` | Anthropic Messages API 或兼容网关 |
-
-`chat`（Chat Completions）已经移除，配置后会直接报错，不会自动降级为其他协议。对于
-`anthropic`，运行时负责在内部 Prompt/ResponseItem 与 Messages 协议之间转换，并自动发送
-`anthropic-version: 2023-06-01`；`env_key` 提供的 key 还会以 `x-api-key` 发送。
-
-协议兼容不代表 provider 能力完全相同。当前 Anthropic 适配器支持消息、流式输出、普通
-function tools 和 freeform tools；Responses 中的 provider-side Web Search、Tool Search 和
-Namespace tools 没有 Anthropic 等价声明，会被省略。应用依赖这些能力时，应选用
-`responses` provider 或在部署前做能力验证。
 
 ### 在 Python 中注册并应用 provider
 

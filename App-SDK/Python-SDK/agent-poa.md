@@ -48,7 +48,7 @@ agent = brainary.thread_start(
 字段列表见 [PoA input 编写说明](../../PoA-Guide/09-input.md)。
 
 可以在 `dev_poas` 中注册多个包。不同包使用相同 `name` 时，运行时会自动生成包含
-namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的包名称互不
+namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的PoA name互不
 重复。
 
 ## 注意事项
