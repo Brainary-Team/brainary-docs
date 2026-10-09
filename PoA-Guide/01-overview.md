@@ -119,11 +119,11 @@ thread/codeMode/exec   { threadId, package }  →  { output }
 
 | 入口 | 状态 |
 | --- | --- |
-| `codex exec --poa <目录或 .poa 文件>` | 可用。日常开发与分发都走这条 |
-| `codex app-server` 的 `thread/codeMode/exec` | 可用，自研客户端走这条。|
+| `brainary exec --poa <目录或 .poa 文件>` | 可用。日常开发与分发都走这条 |
+| `brainary app-server` 的 `thread/codeMode/exec` | 可用，自研客户端走这条。|
 | TUI 交互界面 | 暂不支持 |
 | SDK（TypeScript / Python） | 暂不支持 |
-| `codex mcp-server` | 暂不支持。 |
+| `brainary mcp-server` | 暂不支持。 |
 
 ---
 

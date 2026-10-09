@@ -94,7 +94,7 @@ PoA 没有启动参数。提交接口收的是线程 id 和一个包（`{ thread
 | 用哪个模型 | `-m` / `--model` |
 
 ```bash
-codex exec --poa ./my-poa -C /path/to/target
+brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 不给 `-C`，工作目录就是执行命令时所在的目录。
@@ -490,7 +490,7 @@ try {
 这里显式把 `timeoutMs` 设为 240000。v1 会串行等待 3 个目标，最坏是 `3 × 240000 = 720000` ms，给首行的 `yield_time_ms: 900000` 留出 180000 ms 余量。
 
 ```bash
-~/codex-poa/codex exec --poa ./my-poa -C /path/to/target
+~/brainary-poa/brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 ### 12.2 只用内置 primitive
@@ -707,7 +707,7 @@ try {
 ```
 
 ```bash
-codex exec --poa ./my-poa -C /path/to/target
+brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 ### 12.3 两版的差异一览
@@ -732,6 +732,6 @@ codex exec --poa ./my-poa -C /path/to/target
 
 **②** 包自带的能力与宿主提供的能力，可靠性不是一回事。包里 `[[capabilities.mcp]]` 申报的 server 起不来会直接拒跑，所以这些工具不用探测；宿主侧的工具（`memories__*`、`clock__curr_time` 之类）仍然要照 [§8](#8-容错四个必须写的地方) 那样探测 + 写降级。两者在 `ALL_TOOLS` 里混在一起，但可靠性完全不同。
 
-改常量要重新打包。`codex exec --poa <目录>` 每次现打包，所以本地改完直接重跑即可；但一份已经发出去的 `.poa` 是定稿，改不了。[§3](#3-把外部输入送进程序) 那三条路里，只有"写死在源码顶部"对包成立。
+改常量要重新打包。`brainary exec --poa <目录>` 每次现打包，所以本地改完直接重跑即可；但一份已经发出去的 `.poa` 是定稿，改不了。[§3](#3-把外部输入送进程序) 那三条路里，只有"写死在源码顶部"对包成立。
 
 包的完整格式、边界与打包发布，见《08-packaging.md》文档。
