@@ -10,7 +10,7 @@ Brainary Python SDK 把 `.poa` 包和业务输入提交到开启了 code mode �
 ## 前置条件
 
 - Python 3.10 或更高版本。
-- 支持 PoA input 和 `thread/codeMode/exec` 的 Brainary Codex 二进制；`codex` 与
+- 支持 PoA input 和 `thread/codeMode/exec` 的 Brainary 二进制；`brainary` 与
   `codex-code-mode-host` 必须放在同一目录。
 - 已按[快速开始](../../PoA-Guide/02-quickstart.md)配置模型、认证信息与
   `CODEX_HOME/config.toml`。
@@ -40,8 +40,8 @@ from pathlib import Path
 
 from brainary import Brainary, BrainaryConfig, Poa, PoaPackage
 
-# codex 和 codex-code-mode-host 必须保存在同一目录。
-BRAINARY_BIN = Path("/path/to/codex-poa/codex")
+# brainary 和 codex-code-mode-host 必须保存在同一目录。
+BRAINARY_BIN = Path("/path/to/brainary-poa/brainary")
 POA_FILE = Path("/path/to/city_plan.poa")
 WORKSPACE = Path("/path/to/workspace")
 
@@ -94,7 +94,7 @@ result = thread.run_poa(
 - `.poa` 必须是 zip 格式，且根目录包含 `manifest.toml`；大小不能超过 64 MiB。
 - 必须在创建线程时启用 code mode。
 - 默认绑定的运行时版本可能尚未支持这些接口；通过
-  `BrainaryConfig(brainary_bin=...)` 明确指定兼容的 Brainary Codex 二进制。
+  `BrainaryConfig(brainary_bin=...)` 明确指定 Brainary 二进制。
 - 启动 PoA 本身不会触发模型采样，程序调用子 agent 等工具时可能会调用模型。
 - `Poa(thread, package).run(input=poa_input)` 与
   `thread.run_poa(package, input=poa_input)` 等价。

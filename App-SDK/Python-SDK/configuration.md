@@ -16,7 +16,7 @@ MCP 和 Skills。代码配置示例分别见[创建与运行 Agent](agents.md)�
 from brainary import Brainary, BrainaryConfig
 
 config = BrainaryConfig(
-    brainary_bin="/opt/brainary/codex",
+    brainary_bin="/opt/brainary/brainary",
     env={"CODEX_HOME": "/srv/my-app/codex-home"},
 )
 
@@ -30,7 +30,7 @@ with Brainary(config=config) as brainary:
 会被运行时继承。项目级 `.codex/config.toml` 是否加载受项目可信状态影响；本文的
 持久配置示例统一放在用户级配置文件中。
 
-`BrainaryConfig.config_overrides` 会转换为 `codex --config <value>` 启动参数，
+`BrainaryConfig.config_overrides` 会转换为 `brainary --config <value>` 启动参数，
 `thread_start(config=...)` 则提供 thread 级配置覆盖。两者都不修改配置文件；在同一
 配置键上，thread 覆盖优先于启动覆盖，启动覆盖优先于普通文件配置。管理员要求仍可
 约束最终配置。修改文件后，重新启动客户端并创建新 thread，避免沿用旧会话的设置。

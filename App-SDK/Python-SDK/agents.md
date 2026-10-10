@@ -16,7 +16,7 @@ from pathlib import Path
 from brainary import ApprovalMode, Brainary, BrainaryConfig, Sandbox
 
 config = BrainaryConfig(
-    brainary_bin="/absolute/path/to/brainary-codex",
+    brainary_bin="/absolute/path/to/brainary",
     env={"ANTHROPIC_API_KEY": os.environ["ANTHROPIC_API_KEY"]},
 )
 
@@ -195,7 +195,7 @@ from brainary import AsyncBrainary, BrainaryConfig
 
 
 async def main() -> None:
-    config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+    config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
     async with AsyncBrainary(config=config) as brainary:
         agent = await brainary.thread_start()
         result = await agent.run("生成一份模块说明。")
@@ -282,6 +282,6 @@ turn 上的 `sandbox=` 会应用于该 turn，并成为这个 thread 后续 turn
 
 ## 主 Agent 与子 Agent
 
-Python SDK 没有 `spawn_agent()` 之类的直接公共方法。`thread_start()` 创建的是 Python 调用方直接控制的主 Agent。运行时是否向模型暴露多 Agent 工具，由 Brainary Codex 的配置和能力决定。
+Python SDK 没有 `spawn_agent()` 之类的直接公共方法。`thread_start()` 创建的是 Python 调用方直接控制的主 Agent。运行时是否向模型暴露多 Agent 工具，由 Brainary 运行时的配置和能力决定。
 
 需要由 Python 同时控制多个独立 Agent 时，创建多个 thread；需要确定性的子 Agent 扇出、等待和汇总时，使用 [PoA](run-poa.md) 更合适。

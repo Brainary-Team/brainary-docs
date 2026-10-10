@@ -25,7 +25,6 @@
   prefix_rule?: string[];
 }
 ```
-
 返回：`{ output: string, exit_code?: number, session_id?: number, chunk_id?: string, wall_time_seconds: number, original_token_count?: number }`。
 
 ```js
@@ -80,4 +79,3 @@ await tools.apply_patch("*** Begin Patch\\n*** Update File: note.txt\\n@@\\n-old
 const picture = await tools.view_image({ path: "./out/chart.png", detail: "original" });
 image(picture.image_url);
 ```
-

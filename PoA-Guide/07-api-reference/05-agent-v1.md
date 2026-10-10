@@ -63,4 +63,3 @@ const closed = await tools.multi_agent_v1__close_agent({ target: a.agent_id });
 `UserInput` 条目可使用 `text`、`image`、`local_image`、`audio`、`local_audio`、`skill` 或
 `mention` 类型；具体字段由条目的 `type` 决定。发送前应处理 Promise reject，并为 `status`
 中缺失的 agent id 保留兜底逻辑。
-

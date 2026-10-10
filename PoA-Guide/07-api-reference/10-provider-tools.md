@@ -17,7 +17,6 @@ const result = await tools.web__run({
 });
 text(result);
 ```
-
 - 输入：provider 定义的操作数组（常见字段有 `search_query`、`open`、`find`）和
   `response_length?: "short" | "medium" | "long"`。
 - 返回：provider 定义的搜索结果或页面内容，通常是对象或字符串。
@@ -106,4 +105,3 @@ provider 工具的 schema 可能随模型和连接器变化。使用 `hasTool` �
 const result = await callTool("web__run", { search_query: [{ q: "PoA" }] });
 if (result.status === "ok") text(JSON.stringify(result.value));
 ```
-

@@ -1,6 +1,6 @@
 # 使用 MCP
 
-MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它启动 Brainary Codex app-server，运行时读取 MCP 配置、启动或连接 server，并把可用工具暴露给 Agent。
+MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它启动 Brainary app-server，运行时读取 MCP 配置、启动或连接 server，并把可用工具暴露给 Agent。
 
 ## 配置 stdio server
 
@@ -10,7 +10,7 @@ MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它�
 ```python
 from brainary import Brainary, BrainaryConfig, Sandbox
 
-config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
 with Brainary(config=config) as brainary:
     agent = brainary.thread_start(
@@ -54,7 +54,7 @@ import os
 from brainary import Brainary, BrainaryConfig
 
 config = BrainaryConfig(
-    brainary_bin="/absolute/path/to/brainary-codex",
+    brainary_bin="/absolute/path/to/brainary",
     env={
         "SEARCH_MCP_TOKEN": os.environ["SEARCH_MCP_TOKEN"],
         "TENANT_TOKEN": os.environ["TENANT_TOKEN"],

@@ -145,4 +145,3 @@ text(await timed(() => tools.exec_command({ cmd: "pwd" })));
 Prelude 的 agent 函数只依赖：`multi_agent_v1__spawn_agent`、`multi_agent_v1__wait_agent`、
 `multi_agent_v1__send_input`、`multi_agent_v1__resume_agent` 和 `multi_agent_v1__close_agent`。
 参数和返回结构见 [v1 子代理 API](05-agent-v1.md)。
-

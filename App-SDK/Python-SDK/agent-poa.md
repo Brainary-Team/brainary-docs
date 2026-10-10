@@ -9,7 +9,7 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 ## 前置条件
 
 - Python 3.10 或更高版本。
-- 支持 PoA 和 code mode 的 Brainary Codex 二进制；`codex` 与
+- 支持 PoA 和 code mode 的 Brainary 二进制；`brainary` 与
   `codex-code-mode-host` 必须位于同一目录。
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
@@ -23,7 +23,7 @@ from brainary import Brainary, BrainaryConfig, PoaPackage
 
 package = PoaPackage.load("/srv/poas/review.poa")
 
-with Brainary(config=BrainaryConfig(brainary_bin="/opt/brainary/codex")) as brainary:
+with Brainary(config=BrainaryConfig(brainary_bin="/opt/brainary/brainary")) as brainary:
     agent = brainary.thread_start(
         cwd="/srv/workspaces/project",
         dev_poas=[package],
@@ -48,7 +48,7 @@ agent = brainary.thread_start(
 字段列表见 [PoA input 编写说明](../../PoA-Guide/09-input.md)。
 
 可以在 `dev_poas` 中注册多个包。不同包使用相同 `name` 时，运行时会自动生成包含
-namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的PoA name互不
+namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的 PoA name 互不
 重复。
 
 ## 注意事项

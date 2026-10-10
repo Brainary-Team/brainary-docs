@@ -12,7 +12,6 @@
 ```js
 await tools.update_plan({ plan: [{ step: "读取输入", status: "in_progress" }, { step: "输出结果", status: "pending" }] });
 ```
-
 ### `create_goal`、`get_goal`、`update_goal`
 
 目标工具用于需要持久化工作目标的会话。
@@ -106,4 +105,3 @@ text(hits.matches);
 ```js
 await tools.memories__add_ad_hoc_note({ filename: "2026-10-09T12-00-00-api.md", note: "PoA API 已拆分。" });
 ```
-

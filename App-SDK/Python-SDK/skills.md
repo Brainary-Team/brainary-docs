@@ -46,7 +46,7 @@ from brainary import Brainary, BrainaryConfig, SkillInput, TextInput
 workspace = Path("/absolute/path/to/workspace")
 skill_path = workspace / ".agents/skills/review-changes/SKILL.md"
 
-config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
 with Brainary(config=config) as brainary:
     agent = brainary.thread_start(cwd=str(workspace))
@@ -103,7 +103,7 @@ from pathlib import Path
 from brainary import Brainary, BrainaryConfig
 
 workspace = Path("/absolute/path/to/workspace").resolve()
-config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
 with Brainary(config=config) as brainary:
     agent = brainary.thread_start(
@@ -130,7 +130,7 @@ from brainary import Brainary, BrainaryConfig
 
 workspace = Path("/absolute/path/to/workspace").resolve()
 disabled_skill = workspace / ".agents/skills/diagnose-failure/SKILL.md"
-config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary-codex")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
 with Brainary(config=config) as brainary:
     agent = brainary.thread_start(
