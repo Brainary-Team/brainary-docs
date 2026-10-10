@@ -55,4 +55,4 @@ type CallToolResult<TStructured = Record<string, unknown>> = {
 };
 ```
 
-包自带 MCP server 的 SDK 式声明见 [PoA MCP Tool 扩展 SDK](08-poa-mcp-extension-sdk.md)。
+包自带 MCP server 的 SDK 式声明见 [PoA MCP Tool 扩展 SDK](09-poa-mcp-extension-sdk.md)。

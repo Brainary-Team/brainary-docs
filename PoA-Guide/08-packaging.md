@@ -10,7 +10,7 @@
 
 ```mermaid
 graph LR
-    YOU["开发者"] --> EXEC["codex exec --poa<br/>目录现打包 + 本地校验 manifest"]
+    YOU["开发者"] --> EXEC["brainary exec --poa<br/>目录现打包 + 本地校验 manifest"]
     EXEC --> RPC["{ threadId, package, input? }"]
     RPC --> CODEX["app-server<br/>解包 → 起包内 MCP → 等就位"]
     CODEX --> CELL["V8 里的一个 cell"]
@@ -21,13 +21,13 @@ graph LR
     style SUB fill:#fff2cc,stroke:#d6b656
 ```
 
-**①** `codex exec --poa <目录>` 每次现打包，`entry` 是运行时被读成字符串送进去的。
+**①** `brainary exec --poa <目录>` 每次现打包，`entry` 是运行时被读成字符串送进去的。
 
-**②** 协议层形状为 `{ threadId, package, input? }`，其中 `input` 是可选业务 JSON 对象，见[PoA input 编写说明](09-input.md)。自研客户端走 `codex app-server` 的 `thread/codeMode/exec`，发的是同一个东西，只是包由它自己造、base64 之后过 JSON-RPC。只持有一段 JS 时也要现场封装成一个申报零能力的包，接口没有另一个只收源码的入口。
+**②** 协议层形状为 `{ threadId, package, input? }`，其中 `input` 是可选业务 JSON 对象，见[PoA input 编写说明](09-input.md)。自研客户端走 `brainary app-server` 的 `thread/codeMode/exec`，发的是同一个东西，只是包由它自己造、base64 之后过 JSON-RPC。只持有一段 JS 时也要现场封装成一个申报零能力的包，接口没有另一个只收源码的入口。
 
 **③** `entry` 原样提交，前面不会拼入任何内容，所以首行 pragma 在第 1 行。
 
-**④** 报错落在哪一侧决定去哪查。坏包在本地就被拒，`codex` 自己报错并 `exit(2)`；V8 侧的失败在返回的内容里。
+**④** 报错落在哪一侧决定去哪查。坏包在本地就被拒，`brainary` 自己报错并 `exit(2)`；V8 侧的失败在返回的内容里。
 
 ---
 
@@ -87,14 +87,14 @@ shell = "node mcp/lookup.mjs"
 
 ```mermaid
 graph TD
-    subgraph P1["① codex exec --poa（目录或 .poa）"]
+    subgraph P1["① brainary exec --poa（目录或 .poa）"]
       A1["目录现打包 / .poa 直接读"] --> A2["校验 manifest + 解包到临时目录"]
       A2 --> A3["进程内把 PoaPackage 交给 app-server<br/>同进程，不过 JSON"]
     end
 
     subgraph P2["② 自研客户端"]
       B1["自己造包<br/>现成 JS 就包成零能力包"] --> B2["base64 → JSON-RPC<br/>{ threadId, package, input? }"]
-      B2 --> B3["codex app-server<br/>解 base64、校验、解包"]
+      B2 --> B3["brainary app-server<br/>解 base64、校验、解包"]
     end
 
     A2 -.->|"坏包在这里就是 exit(2)"| BAD(["一个会话都不会起"])
@@ -116,7 +116,7 @@ graph TD
     style REFUSE fill:#f8cecc,stroke:#b85450
 ```
 
-**①** "组装在服务端"指的是起 server，不是解包。`codex exec --poa` 走的是进程内调用，包在客户端就打好、校验完、解压好了，`PoaPackage` 作为一个 Rust 值直接传进去，全程没有 base64、没有 JSON 序列化。base64 只发生在真正跨进程的 stdio JSON-RPC 上。
+**①** "组装在服务端"指的是起 server，不是解包。`brainary exec --poa` 走的是进程内调用，包在客户端就打好、校验完、解压好了，`PoaPackage` 作为一个 Rust 值直接传进去，全程没有 base64、没有 JSON 序列化。base64 只发生在真正跨进程的 stdio JSON-RPC 上。
 
 真正在服务端的是起 MCP server 这一段，它挂在 thread 级的扩展点上，所以任何前端只要能把包递进去就能复用。
 
@@ -132,7 +132,7 @@ graph TD
 
 ### 4.1 从 `ALL_TOOLS` 里找工具名，不要硬编码
 
-`mcp__echo__echo` 是当前配置下的产物，前缀由宿主的命名规则决定，命名空间会被清洗，长名或冲突还会触发哈希后缀与 64 字符截断。短名字可以从 `ALL_TOOLS` 里按后缀找并断言唯一来扛前缀变化，但这不是稳定契约，也扛不住上述哈希与截断；完整边界见《07-api-reference.md》§3.1。
+`mcp__echo__echo` 是当前配置下的产物，前缀由宿主的命名规则决定，命名空间会被清洗，长名或冲突还会触发哈希后缀与 64 字符截断。短名字可以从 `ALL_TOOLS` 里按后缀找并断言唯一来扛前缀变化，但这不是稳定契约，也扛不住上述哈希与截断；完整边界见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md)。
 
 ### 4.2 给每个 MCP 工具写三条 annotations
 
@@ -209,7 +209,7 @@ process.stdin.on("data", (chunk) => {
 
 ```bash
 cd my-poa && zip -r ../my-poa.poa . && cd ..
-codex exec --poa ./my-poa.poa          # 打好的包也照跑
+brainary exec --poa ./my-poa.poa          # 打好的包也照跑
 ```
 
 `.poa` 是普通 zip，根目录必须包含合法的 `manifest.toml`，并包含它声明的入口、schema

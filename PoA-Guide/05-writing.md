@@ -97,11 +97,11 @@ PoA 支持以 JSON 对象传入业务输入。先在包中声明 input schema，
 | 程序的工作目录 | CLI 使用 `-C` / `--cd`，SDK 使用 `thread_start(cwd=...)` |
 | 用哪个模型 | CLI 使用 `-m` / `--model`，SDK 使用 `thread_start(model=...)` |
 
-CLI 示例适用于无必填输入的包；当前 `codex exec --poa` 不提供业务 input 参数，传入的是
+CLI 示例适用于无必填输入的包；当前 `brainary exec --poa` 不提供业务 input 参数，传入的是
 空对象 `{}`：
 
 ```bash
-codex exec --poa ./my-poa -C /path/to/target
+brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 不给 `-C`，工作目录就是执行命令时所在的目录。
@@ -423,7 +423,7 @@ entry = "main.js"
 
 ### 12.1 使用 prelude
 
-`main.js` 的顺序是：首行 pragma → [《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文)全文 → 下面这段。
+`main.js` 的顺序是：首行 pragma → [Prelude API](07-api-reference/02-prelude.md) 全文 → 下面这段。
 
 ```js
 // @exec: {"yield_time_ms": 900000, "max_output_tokens": 30000}
@@ -498,7 +498,7 @@ try {
 这里显式把 `timeoutMs` 设为 240000。v1 会串行等待 3 个目标，最坏是 `3 × 240000 = 720000` ms，给首行的 `yield_time_ms: 900000` 留出 180000 ms 余量。
 
 ```bash
-~/codex-poa/codex exec --poa ./my-poa -C /path/to/target
+~/brainary-poa/brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 ### 12.2 只用内置 primitive
@@ -715,7 +715,7 @@ try {
 ```
 
 ```bash
-codex exec --poa ./my-poa -C /path/to/target
+brainary exec --poa ./my-poa -C /path/to/target
 ```
 
 ### 12.3 两版的差异一览
@@ -736,10 +736,10 @@ codex exec --poa ./my-poa -C /path/to/target
 
 ## 13. 包这条路上另外两件事
 
-**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见《07-api-reference.md》§3.1。
+**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md)。
 
 **②** 包自带的能力与宿主提供的能力，可靠性不是一回事。包里 `[[capabilities.mcp]]` 申报的 server 起不来会直接拒跑，所以这些工具不用探测；宿主侧的工具（`memories__*`、`clock__curr_time` 之类）仍然要照 [§8](#8-容错四个必须写的地方) 那样探测 + 写降级。两者在 `ALL_TOOLS` 里混在一起，但可靠性完全不同。
 
-改常量要重新打包。`codex exec --poa <目录>` 每次现打包，所以本地改完直接重跑即可；但一份已经发出去的 `.poa` 是定稿，改不了。[§3](#3-把外部输入送进程序) 那三条路里，只有"写死在源码顶部"对包成立。
+改常量要重新打包。`brainary exec --poa <目录>` 每次现打包，所以本地改完直接重跑即可；但一份已经发出去的 `.poa` 是定稿，改不了。[§3](#3-把外部输入送进程序) 那三条路里，只有"写死在源码顶部"对包成立。
 
 包的完整格式、边界与打包发布，见《08-packaging.md》文档。

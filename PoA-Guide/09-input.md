@@ -94,7 +94,7 @@ text(JSON.stringify({ city, days, title: `${city}：${days} 天计划` }));
 - 普通属性是必填字段，带 `?` 的属性是可选字段；对象默认拒绝未声明字段
   （`additionalProperties: false`）。
 
-例如，`codex exec --poa ./city-plan` 的目录打包路径会执行上述编译。不过当前 CLI
+例如，`brainary exec --poa ./city-plan` 的目录打包路径会执行上述编译。不过当前 CLI
 不提供业务 input 参数，它以空对象 `{}` 运行；本例含必填字段，应通过 Python SDK
 或 app-server 传入输入。
 

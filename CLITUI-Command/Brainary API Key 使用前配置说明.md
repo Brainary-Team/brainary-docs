@@ -1,278 +1,151 @@
 # Brainary API Key 使用前配置说明
 
-Brainary 当前不提供账号登录入口，也没有可以直接使用的默认云模型服务。第一次使用前，需要在 `config.toml` 中填写模型名称、服务地址和接口类型，再通过环境变量提供 API Key。不需要创建或配置 `auth.json`。
+API Key 是模型服务给你的访问凭证。把它和模型信息配置好，Brainary 才能连接对应服务。
 
-> *API Key 属于敏感凭据。请从你的管理员或模型服务厂商获取；不要把真实 Key 发给他人，也不要放进截图、Issue、聊天记录或 Git 仓库。*
-> 
-> 
+本文默认你已经可以运行 `brainary` 命令。第一次配置，按下面 4 步操作即可；厂商直连和中转服务都使用同一套步骤。目前不需要执行登录命令，也不需要手动创建 `auth.json`。
 
-## 一、先判断厂商接口是否兼容
+> API Key 不要发给他人、放进截图或提交到 Git 仓库。下面的 Key 和地址都是占位示例，需要替换。
 
-先查看模型服务商的文档，确认它支持下面至少一种接口：
+## 第 1 步：准备 4 项信息
 
-- `wire_api = "responses"`：接口地址通常以 `/v1/responses` 结尾。
+向管理员或模型服务商获取：
 
-- `wire_api = "anthropic"`：接口地址通常以 `/v1/messages` 结尾。
+| 需要什么 | 怎么确认 |
+| --- | --- |
+| 模型 ID | 服务商提供的准确名称，不是模型的宣传名称 |
+| 服务地址 | 用于程序连接的 API 根地址，不是服务商的网站首页 |
+| 接口类型 | 确认是 `responses` 还是 `anthropic` |
+| API Key | 你自己的访问凭证 |
 
-只提供 Chat Completions（例如 `/v1/chat/completions`）的服务，目前不能直接接入 Brainary。
+不知道接口类型时，可以先判断API_key：“这个服务支持 Responses 接口，还是 Anthropic Messages 接口？API 根地址和模型 ID 是什么？”只支持 Chat Completions 的服务，当前不能直接接入。
 
-## 二、配置模型服务的 API Key
+## 第 2 步：填写配置文件
 
-API Key 不能单独使用，还需要告诉 Brainary 使用哪个模型、连接哪个地址，以及使用哪种接口。
+在终端中运行与你的系统对应的命令，打开配置文件：
 
-### 1\. 创建配置目录
+如果文件已经有内容，不要清空或直接追加整段模板，先看[已有配置怎么修改](#已有配置怎么修改)。设置过 `CODEX_HOME` 的用户，使用[该变量指定的目录](#我设置过-codex_home)。
 
-macOS / Linux：
+**macOS / Linux：**
 
-```Bash
+```bash
 mkdir -p ~/.codex
-```
-
-Windows PowerShell：
-
-```PowerShell
-New-Item -ItemType Directory -Force "$HOME\.codex"
-```
-
-### 2\. 编辑 `config.toml`
-
-macOS / Linux：
-
-```Bash
 nano ~/.codex/config.toml
 ```
 
-Windows PowerShell：
+**Windows PowerShell：**
 
-```PowerShell
+```powershell
+New-Item -ItemType Directory -Force "$HOME\.codex"
 notepad "$HOME\.codex\config.toml"
 ```
 
-在文件中添加厂商配置。如果文件中已有其他设置，请保留原内容。
+文件为空时，复制下面这一份模板。只需要修改 `model`、`base_url`、`wire_api` 三项，其余先保持原样：
 
-#### Anthropic Messages 兼容厂商模板
-
-```Python
-model = "厂商提供的模型ID"
+```toml
+model = "替换为模型ID"
 model_provider = "vendor"
 
 [model_providers.vendor]
-name = "厂商名称"
-base_url = "https://厂商提供的接口地址/v1"
-env_key = "VENDOR_API_KEY"
-wire_api = "anthropic"
-requires_openai_auth = false
-```
-
-#### Responses 兼容厂商模板
-
-```Python
-model = "厂商提供的模型ID"
-model_provider = "vendor"
-
-[model_providers.vendor]
-name = "厂商名称"
-base_url = "https://厂商提供的接口地址/v1"
-env_key = "VENDOR_API_KEY"
-wire_api = "responses"
-requires_openai_auth = false
-```
-
-需要替换的内容：
-
-- `model`：厂商提供的准确模型 ID。
-
-- `name`：用于识别该厂商的显示名称。
-
-- `base_url`：厂商提供的兼容接口根地址；末尾是否包含 `/v1` 以厂商文档为准。
-
-- `env_key`：保存 API Key 的环境变量名称，可以使用厂商建议的名称。
-
-- `wire_api`：根据厂商支持的协议填写 `anthropic` 或 `responses`。
-
-`model_provider = "vendor"` 必须与 `[model_providers.vendor]` 中的 `vendor` 完全一致。你也可以把 `vendor` 换成便于识别的英文标识，例如 `company` 或其他喜欢的字符。
-
-使用上面的自定义 Provider 配置时，`requires_openai_auth = false` 会让 Brainary 直接读取 `env_key` 指定的环境变量，因此不需要 `auth.json`。
-
-### 3\. 配置厂商 API Key 环境变量
-
-环境变量名称必须与 `config.toml` 的 `env_key` 完全一致。以上面使用的 `VENDOR_API_KEY` 为例：
-
-macOS / Linux 当前终端：
-
-```Bash
-export VENDOR_API_KEY="替换为厂商APIKey"
-```
-
-Windows PowerShell 当前窗口：
-
-```PowerShell
-$env:VENDOR_API_KEY = "替换为厂商APIKey"
-```
-
-然后从同一个终端窗口启动 Brainary。如果改用了其他环境变量名称，例如 `COMPANY_API_KEY`，上面的命令和 `env_key` 都要同步改成该名称。
-
-如果希望每次打开终端后都可用，可以通过操作系统、公司密钥管理工具或 Shell 启动配置持久设置该环境变量。直接写入 Shell 配置文件虽然方便，但会以明文保存 Key，请根据所在组织的安全要求选择。
-
-### 4\. 一个完整示例
-
-下面只是展示配置结构，示例地址不能直接使用。请把模型 ID、服务地址和环境变量名称替换成服务商提供的真实信息。
-
-`~/.codex/config.toml`：
-
-```Python
-model = "your-model-id"
-model_provider = "company"
-
-[model_providers.company]
-name = "Company Model Service"
+name = "我的模型服务"
 base_url = "https://api.example.com/v1"
-env_key = "COMPANY_API_KEY"
+env_key = "VENDOR_API_KEY"
 wire_api = "responses"
 requires_openai_auth = false
 ```
 
-macOS / Linux 当前终端：
+| 修改哪一项 | 填什么 |
+| --- | --- |
+| `model` | 第 1 步拿到的模型 ID |
+| `base_url` | 第 1 步拿到的 API 根地址 |
+| `wire_api` | Responses 接口填 `"responses"`；Anthropic Messages 接口填 `"anthropic"` |
 
-```Bash
-export COMPANY_API_KEY="替换为你的APIKey"
+服务地址不要包含最后的 `/responses` 或 `/messages`，程序会自动追加。例如，服务商给的是 `https://api.example.com/v1/messages`，这里就填 `https://api.example.com/v1`。
+
+保存文件：使用 `nano` 时，按 `Ctrl+O`、`Enter` 保存，再按 `Ctrl+X` 退出；使用记事本时，按 `Ctrl+S` 保存后关闭。
+
+## 第 3 步：在当前终端设置 Key
+
+回到刚才的终端，将下面的占位文字替换成你的真实 Key，再执行命令。保留外面的引号。
+
+**macOS / Linux：**
+
+```bash
+export VENDOR_API_KEY="替换为你的真实APIKey"
+```
+
+**Windows PowerShell：**
+
+```powershell
+$env:VENDOR_API_KEY = "替换为你的真实APIKey"
+```
+
+`VENDOR_API_KEY` 是给这个 Key 起的变量名，要与配置里的 `env_key` 完全一致。按本文操作时，不需要改这个名称。
+
+这一步只对当前终端及其启动的程序有效。不要关闭或更换窗口，直接继续第 4 步。命令可能留在终端历史中，不要分享含真实 Key 的历史记录。
+
+## 第 4 步：启动并验证
+
+如果 Brainary 已经在运行，先退出，再从设置了 Key 的同一个终端启动：
+
+```bash
 brainary
 ```
 
-Windows PowerShell 当前窗口：
+进入界面后，输入 `/status` 核对模型，再发送：“请只回复：配置成功”。能收到正常回复，说明基本连接已经通了。
 
-```PowerShell
-$env:COMPANY_API_KEY = "替换为你的APIKey"
-brainary
+也可以在终端里直接验证一次：
+
+```bash
+brainary exec --skip-git-repo-check "请只回复：配置成功"
 ```
 
-## 三、配置第三方中转服务
+这里的 `--skip-git-repo-check` 允许在普通目录验证，不要求当前目录是 Git 仓库。工具调用、图片等功能是否可用，还取决于所选模型和服务。
 
-第三方中转服务的配置方式与模型厂商相同。下面以 Responses 兼容中转服务为例：
+## 没成功时，看这里
 
-```Python
-model = "中转服务提供的模型ID"
-model_provider = "relay"
+| 遇到的情况 | 先检查什么 |
+| --- | --- |
+| 找不到 `brainary` 命令 | 先确认已安装程序，并且终端能找到它；这一步与 Key 无关 |
+| 提示环境变量不存在 | 是否执行过第 3 步？是否换了终端？变量名是否为 `VENDOR_API_KEY`？ |
+| 返回 `401` 或“未授权” | Key 是否填错、过期，是否有当前模型的使用权限？特殊认证方式见下文 |
+| 返回 `404` 或“接口不存在” | 地址和接口类型是否对应？地址末尾是否多写了 `/responses` 或 `/messages`？ |
+| 提示“模型不存在” | `model` 是否使用了服务商提供的准确模型 ID？ |
+| 提示 `Brainary credentials are not configured` | 配置是否保存到了正确目录？`model_provider = "vendor"` 是否写在顶层，且厂商配置中有 `requires_openai_auth = false`？ |
 
-[model_providers.relay]
-name = "第三方中转"
-base_url = "https://中转服务地址/v1"
-env_key = "RELAY_API_KEY"
-wire_api = "responses"
-requires_openai_auth = false
+### 已有配置怎么修改
+
+- 找到原有的 `model`、`model_provider`，修改它们的值；没有时，加到文件第一个 `[分组名]` 之前。
+- 找到 `[model_providers.vendor]`，修改里面的设置；没有这个分组时，才把模板中的这个分组及其内容加到末尾。
+- 保留其他配置，不要重复添加同名设置或同名分组。`model_provider` 的值必须与分组名最后一段一致，例如都使用 `vendor`。
+
+### 换个终端后又不能用了
+
+第 3 步设置的是临时变量。新开终端后，重新执行第 3 步，再启动 Brainary。
+
+如果想长期保存，可以请管理员通过系统或密钥管理工具设置环境变量。直接写进 Shell 启动文件会明文保存 Key，需按所在组织的要求处理。
+
+### 服务商要求使用 `x-api-key`
+
+仅当服务商明确要求这个认证方式时，才需要看这一项。
+
+本文模板默认把 Key 放在 `Authorization: Bearer` 请求头中；选择 `anthropic` 也不会自动改成 `x-api-key`。如果服务商要求额外发送 `x-api-key`，在配置文件末尾添加：
+
+```toml
+[model_providers.vendor.env_http_headers]
+"x-api-key" = "VENDOR_API_KEY"
 ```
 
-然后在启动 Brainary 的终端中设置：
+右侧填的是变量名，不是真实 Key；变量仍按第 3 步设置。已有这个分组时，直接修改原分组。
 
-```Bash
-export RELAY_API_KEY="替换为你的APIKey"
-brainary
-```
+这会同时发送 Bearer 和 `x-api-key`。如果服务商要求只发其中一种，或使用其他签名方式，请让管理员按服务要求配置，不能只靠切换 `wire_api` 解决。
 
-如果中转服务提供 Anthropic Messages 接口，把 `wire_api` 改为 `"anthropic"`，并按服务商要求填写 `base_url`。只提供 `/v1/chat/completions` 的中转服务当前不能直接接入。
+### 我设置过 `CODEX_HOME`
 
-## 四、验证配置
+`CODEX_HOME` 用来指定配置和数据放在哪里。没有设置时，默认使用 `~/.codex`；设置过时，请编辑指定目录里的 `config.toml`，不要继续修改默认目录中的文件。
 
-关闭已经运行的 Brainary，然后重新打开终端。使用其他厂商时，先确认 API Key 环境变量在当前终端中有效。
+查看当前设置：macOS / Linux 执行 `echo "$CODEX_HOME"`；Windows PowerShell 执行 `$env:CODEX_HOME`。没有输出表示使用默认目录。
 
-在需要处理的项目目录中运行：
+自定义目录必须先创建，再将它的 absolute path 设为 `CODEX_HOME`。目录可以叫 `.brainary`，但当前版本不会自动查找它，也不识别 `BRAINARY_HOME`。切换目录不会自动搬走旧配置和历史记录。
 
-```Bash
-brainary
-```
-
-进入 TUI 后发送一条简单消息。如果能够正常返回模型回复，说明模型、服务地址、协议和 API Key 均已配置成功。
-
-也可以在项目目录中执行一次非交互请求：
-
-```Bash
-brainary exec "请只回复：配置成功"
-```
-
-## 五、常见问题
-
-### 提示环境变量不存在
-
-检查 `config.toml` 中的 `env_key` 是否与实际设置的环境变量名称完全一致。设置环境变量后，必须从能够读取该变量的同一个终端启动 Brainary。
-
-macOS / Linux 可检查变量是否存在，但不要展示或分享完整值：
-
-```Bash
-test -n "$VENDOR_API_KEY" && echo "已设置" || echo "未设置"
-```
-
-Windows PowerShell：
-
-```PowerShell
-if ($env:VENDOR_API_KEY) { "已设置" } else { "未设置" }
-```
-
-### 请求返回 404 或接口不存在
-
-通常是 `base_url` 或 `wire_api` 选择错误。确认厂商实际提供的是 `/v1/responses` 还是 `/v1/messages`，并检查 `base_url` 是否多写或漏写了路径。
-
-### 请求返回 401 或未授权
-
-确认 API Key 没有多余空格、没有被撤销或过期，并且属于当前配置的厂商。当前接入路径使用 Bearer 认证；如果厂商只接受其他认证头，即使接口协议兼容也可能无法直接使用。
-
-### 模型不存在
-
-`model` 必须填写厂商接口接受的准确模型 ID，不能只填写宣传名称。
-
-### 提示 Brainary credentials are not configured
-
-这通常表示仍在使用需要内置认证的 Provider。检查 `model_provider` 是否指向你在 `[model_providers.<名称>]` 中定义的配置，并确认该配置包含：
-
-```Python
-env_key = "你的APIKey环境变量名称"
-requires_openai_auth = false
-```
-
-同时确认对应环境变量已设置，然后退出并重新启动 Brainary。
-
-### 使用了自定义配置目录
-
-如果环境中设置了 `CODEX_HOME`，Brainary 会从该目录读取 `config.toml`，而不是从默认的 `~/.codex` 目录读取。例如：
-
-```Bash
-export CODEX_HOME="/absolute/path/to/brainary-config"
-```
-
-这时配置文件应位于：
-
-```Python
-/absolute/path/to/brainary-config/config.toml
-```
-
-不确定是否设置过时，macOS / Linux 可执行：
-
-```Bash
-echo "$CODEX_HOME"
-```
-
-Windows PowerShell 可执行：
-
-```PowerShell
-$env:CODEX_HOME
-```
-
-如果输出为空，继续使用默认的 `.codex` 目录即可。
-
-## 六、兼容名称说明
-
-`CODEX_HOME` 和 `.codex` 是 Brainary 当前保留的底层兼容标识，不是界面上的产品名称。不要自行改成 `BRAINARY_HOME` 或 `.brainary`，否则程序无法读取配置。
-
-API Key 环境变量名称由 `model_providers.<名称>.env_key` 决定，可以根据模型厂商、中转服务或组织规范命名。
-
-## 七、安全注意事项
-
-- 不要把包含真实 API Key 的配置提交到 Git 仓库。
-
-- 不要在截图、Issue、文档或聊天中展示真实 API Key。
-
-- 不要把真实 API Key 写进可共享的脚本。
-
-- 使用环境变量命令时，注意终端历史可能保存输入内容。
-
-- 如果怀疑 Key 已泄露，请立即到对应厂商后台撤销并重新生成。
+如果启动时还使用了 `--profile <name>`，也要检查该目录里的 `<name>.config.toml`，它可能覆盖刚修改的配置。
 

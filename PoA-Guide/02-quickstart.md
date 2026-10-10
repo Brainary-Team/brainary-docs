@@ -6,9 +6,9 @@
 
 | 事项 | 当前状态 |
 | --- | --- |
-| 从哪个前端提交 PoA | `codex exec --poa` 与 `codex app-server` 的 `thread/codeMode/exec` 两条，均已可用；[Python SDK](../App-SDK/Python-SDK/run-poa.md) 封装了后者。TUI 与 `codex mcp-server` 暂不支持 |
+| 从哪个前端提交 PoA | `brainary exec --poa` 与 `brainary app-server` 的 `thread/codeMode/exec` 两条，均已可用；[Python SDK](../App-SDK/Python-SDK/run-poa.md) 封装了后者。TUI 与 `brainary mcp-server` 暂不支持 |
 | 二进制从哪来 | 本项目发布的 release 制品。 |
-| 程序以什么形态提交 | 一个包目录（`manifest.toml` + `main.js`）。`codex exec --poa <目录>`  |
+| 程序以什么形态提交 | 一个包目录（`manifest.toml` + `main.js`）。`brainary exec --poa <目录>`  |
 | 用哪代多 agent 后端 | 由模型元数据决定，另有一个 feature 可以强制到 v2。跑探针查，见 §2 |
 
 ---
@@ -19,10 +19,10 @@
 
 | 二进制 | 作用 |
 | --- | --- |
-| `codex` | 本项目的 CLI 与 app-server，提供 `--poa` 与 `thread/codeMode/exec` |
-| `codex-code-mode-host` | 承载 V8 的独立沙箱进程，由 `codex` 拉起。`codex` 按自己所在目录去找它 |
+| `brainary` | 本项目的 CLI 与 app-server，提供 `--poa` 与 `thread/codeMode/exec` |
+| `codex-code-mode-host` | 承载 V8 的独立沙箱进程，由 `brainary` 拉起。`brainary` 按自己所在目录去找它 |
 
-两者一起打在 `codex-poa-<平台>.tar.gz` 里，发布在本项目的 GitHub release 页：
+两者一起打在 `brainary-poa-<平台>.tar.gz` 里，发布在本项目的 GitHub release 页：
 
 <https://github.com/Brainary-Team/brainary-codex/releases>
 
@@ -150,7 +150,7 @@ text(JSON.stringify({
 跑：
 
 ```bash
-~/codex-poa/codex exec --poa ~/poa-probe --skip-git-repo-check
+~/brainary-poa/brainary exec --poa ~/poa-probe --skip-git-repo-check
 ```
 
 输出是 JSON。数量和工具全集取决于当前配置；一次 v1 环境的关键字段摘录如下：
@@ -172,7 +172,7 @@ text(JSON.stringify({
 
 ### `--skip-git-repo-check`
 
-`codex exec` 默认拒绝在 git 仓库之外运行，直接 `exit(1)` 并打印 `Not inside a trusted directory`。使用这个参数可以绕过检查。
+`brainary exec` 默认拒绝在 git 仓库之外运行，直接 `exit(1)` 并打印 `Not inside a trusted directory`。使用这个参数可以绕过检查。
 
 ### `backend` 是 `null` 怎么办
 
@@ -202,7 +202,7 @@ max_concurrent_threads_per_session = 8   # 默认 4，而 root 线程占一个�
 ## 3. 第二步：接第一个 agent
 
 先按《03-concepts.md》§2 组装 `main.js`：第 1 行写 pragma，其后放
-[《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文)，最后追加下面这段。
+[Prelude API](07-api-reference/02-prelude.md)，最后追加下面这段。
 
 ```js
 const message = '用一句话说明当前目录是做什么的。只回一行 JSON：{"purpose":"..."}';
@@ -216,7 +216,7 @@ text(JSON.stringify({ backend: AGENT_BACKEND, succeeded: value ? 1 : 0, total: 1
 ```
 
 ```bash
-~/codex-poa/codex exec --poa ~/poa-probe -C /path/to/some/repo
+~/brainary-poa/brainary exec --poa ~/poa-probe -C /path/to/some/repo
 ```
 
 成功时输出应包含 `succeeded: 1`、`total: 1` 和非空 `value.purpose`。
@@ -259,8 +259,8 @@ dedicated_tools = true
 
 ## 5. 看原始返回值：`--json`
 
-`text()` 写进去的内容最终落在 RPC 返回值里，`codex exec` 把里面的文本取出来打印。如果要查看未经处理的返回值加 `--json`：
+`text()` 写进去的内容最终落在 RPC 返回值里，`brainary exec` 把里面的文本取出来打印。如果要查看未经处理的返回值加 `--json`：
 
 ```bash
-~/codex-poa/codex exec --poa ~/poa-probe --json
+~/brainary-poa/brainary exec --poa ~/poa-probe --json
 ```
