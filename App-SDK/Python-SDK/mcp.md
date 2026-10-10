@@ -1,6 +1,6 @@
 # 使用 MCP
 
-MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它启动 Brainary Codex app-server，运行时读取 MCP 配置、启动或连接 server，并把可用工具暴露给 Agent。
+MCP 为 Agent 提供外部工具。Python SDK 不直接连接 MCP server；它启动 Brainary app-server，运行时读取 MCP 配置、启动或连接 server，并把可用工具暴露给 Agent。
 
 ## 工作流程
 
@@ -79,7 +79,7 @@ approval_mode = "approve"
 ```python
 from openai_codex import Codex, CodexConfig, Sandbox
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = CodexConfig(codex_bin="/absolute/path/to/brainary")
 
 with Codex(config=config) as codex:
     agent = codex.thread_start(sandbox=Sandbox.read_only)
@@ -91,7 +91,7 @@ with Codex(config=config) as codex:
 
 ```python
 config = CodexConfig(
-    codex_bin="/absolute/path/to/brainary-codex",
+    codex_bin="/absolute/path/to/brainary",
     env={
         "CODEX_HOME": "/absolute/path/to/app-codex-home",
         "SEARCH_MCP_TOKEN": "...",
@@ -105,14 +105,14 @@ config = CodexConfig(
 
 ```python
 config = CodexConfig(
-    codex_bin="/absolute/path/to/brainary-codex",
+    codex_bin="/absolute/path/to/brainary",
     config_overrides=(
         'mcp_servers.echo={command="python",args=["/absolute/path/to/echo_server.py"],required=true}',
     ),
 )
 ```
 
-复杂配置更适合写入 TOML；`config_overrides` 会逐项转换成 `codex --config <value>` 启动参数。
+复杂配置更适合写入 TOML；`config_overrides` 会逐项转换成 `brainary --config <value>` 启动参数。
 
 ## 观察 MCP 调用
 

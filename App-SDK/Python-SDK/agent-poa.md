@@ -9,7 +9,7 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 ## 前置条件
 
 - Python 3.10 或更高版本。
-- 支持 PoA 和 code mode 的 Brainary Codex 二进制；`codex` 与
+- 支持 PoA 和 code mode 的 Brainary 二进制；`brainary` 与
   `codex-code-mode-host` 必须位于同一目录。
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
@@ -23,7 +23,7 @@ from openai_codex import Codex, CodexConfig, PoaPackage
 
 package = PoaPackage.load("/srv/poas/review.poa")
 
-with Codex(config=CodexConfig(codex_bin="/opt/brainary/codex")) as codex:
+with Codex(config=CodexConfig(codex_bin="/opt/brainary/brainary")) as codex:
     agent = codex.thread_start(
         cwd="/srv/workspaces/project",
         dev_poas=[package],

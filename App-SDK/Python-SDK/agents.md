@@ -9,7 +9,7 @@ from pathlib import Path
 
 from openai_codex import ApprovalMode, Codex, CodexConfig, Sandbox
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = CodexConfig(codex_bin="/absolute/path/to/brainary")
 
 with Codex(config=config) as codex:
     agent = codex.thread_start(
@@ -113,7 +113,7 @@ from openai_codex import Codex, CodexConfig
 codex_home = Path("/srv/my-app/codex-home").resolve()
 
 config = CodexConfig(
-    codex_bin="/opt/brainary/codex",
+    codex_bin="/opt/brainary/brainary",
     env={
         "CODEX_HOME": str(codex_home),
         "CORP_LLM_API_KEY": os.environ["CORP_LLM_API_KEY"],
@@ -154,7 +154,7 @@ import os
 from openai_codex import Codex, CodexConfig
 
 config = CodexConfig(
-    codex_bin="/opt/brainary/codex",
+    codex_bin="/opt/brainary/brainary",
     env={"ANTHROPIC_API_KEY": os.environ["ANTHROPIC_API_KEY"]},
 )
 
@@ -287,7 +287,7 @@ from openai_codex import AsyncCodex, CodexConfig
 
 
 async def main() -> None:
-    config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+    config = CodexConfig(codex_bin="/absolute/path/to/brainary")
     async with AsyncCodex(config=config) as codex:
         agent = await codex.thread_start()
         result = await agent.run("生成一份模块说明。")
@@ -374,6 +374,6 @@ turn 上的 `sandbox=` 会应用于该 turn，并成为这个 thread 后续 turn
 
 ## 主 Agent 与子 Agent
 
-Python SDK 没有 `spawn_agent()` 之类的直接公共方法。`thread_start()` 创建的是 Python 调用方直接控制的主 Agent。运行时是否向模型暴露多 Agent 工具，由 Brainary Codex 的配置和能力决定。
+Python SDK 没有 `spawn_agent()` 之类的直接公共方法。`thread_start()` 创建的是 Python 调用方直接控制的主 Agent。运行时是否向模型暴露多 Agent 工具，由 Brainary 运行时的配置和能力决定。
 
 需要由 Python 同时控制多个独立 Agent 时，创建多个 thread；需要确定性的子 Agent 扇出、等待和汇总时，使用 [PoA](run-poa.md) 更合适。

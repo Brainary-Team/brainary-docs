@@ -46,7 +46,7 @@ from openai_codex import Codex, CodexConfig, SkillInput, TextInput
 workspace = Path("/absolute/path/to/workspace")
 skill_path = workspace / ".agents/skills/review-changes/SKILL.md"
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = CodexConfig(codex_bin="/absolute/path/to/brainary")
 
 with Codex(config=config) as codex:
     agent = codex.thread_start(cwd=str(workspace))
@@ -111,7 +111,7 @@ from pathlib import Path
 from openai_codex import Codex, CodexConfig
 
 workspace = Path("/absolute/path/to/workspace").resolve()
-config = CodexConfig(codex_bin="/absolute/path/to/brainary-codex")
+config = CodexConfig(codex_bin="/absolute/path/to/brainary")
 
 with Codex(config=config) as codex:
     agent = codex.thread_start(
