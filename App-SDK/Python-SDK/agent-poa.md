@@ -19,12 +19,12 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 ## 注册并使用 PoA
 
 ```python
-from openai_codex import Codex, CodexConfig, PoaPackage
+from brainary import Brainary, BrainaryConfig, PoaPackage
 
 package = PoaPackage.load("/srv/poas/review.poa")
 
-with Codex(config=CodexConfig(codex_bin="/opt/brainary/codex")) as codex:
-    agent = codex.thread_start(
+with Brainary(config=BrainaryConfig(brainary_bin="/opt/brainary/codex")) as brainary:
+    agent = brainary.thread_start(
         cwd="/srv/workspaces/project",
         dev_poas=[package],
         config={"features": {"code_mode": {"enabled": True}}},
@@ -36,18 +36,19 @@ with Codex(config=CodexConfig(codex_bin="/opt/brainary/codex")) as codex:
 也可以直接传入 `.poa` 路径：
 
 ```python
-agent = codex.thread_start(
+agent = brainary.thread_start(
     dev_poas=["/srv/poas/review.poa"],
     config={"features": {"code_mode": {"enabled": True}}},
 )
 ```
 
 如果包中的 `[poa].name` 是 `review`，模型看到的工具名就是 `poa.review`；
-`[poa].description` 会成为工具说明。PoA 工具当前不接收业务参数，模型调用时传入空对象
-`{}`。
+`[poa].description` 会成为工具说明。包内的 `[poa].input_schema` 会成为工具的业务参数 schema，模型按它填写输入，程序通过
+`POA_INPUT` 读取。没有声明 input schema 时，模型调用传入空对象 `{}`。定义方式与完整
+字段列表见 [PoA input 编写说明](../../PoA-Guide/09-input.md)。
 
 可以在 `dev_poas` 中注册多个包。不同包使用相同 `name` 时，运行时会自动生成包含
-namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的包名称互不
+namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的PoA name互不
 重复。
 
 ## 注意事项

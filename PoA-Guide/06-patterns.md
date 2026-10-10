@@ -209,7 +209,7 @@ const builtOnOwnAnswer = Boolean(
 
 `builtOnOwnAnswer` 检查的是：它挑的那个名字是否确实出自它自己上一轮列的名单。如果它重读文件重新生成，列出的名字未必与上一轮一致，这条断言即不成立。
 
-`sendAndWait` 负责两代后端的状态衔接；恢复条件与两段超时预算见《07-api-reference.md》§2.1。
+`sendAndWait` 负责两代后端的状态衔接；恢复条件与两段超时预算见 [Prelude API](07-api-reference/02-prelude.md)。
 
 **实际价值**：文件读一遍进上下文，之后每次追问不再花 token 重读。
 
@@ -221,7 +221,7 @@ const builtOnOwnAnswer = Boolean(
 ```
 
 **只用内置时**：需要自行实现追问与状态轮询；参考实现见
-[《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文)。
+[Prelude API](07-api-reference/02-prelude.md)。
 
 ---
 
@@ -236,7 +236,7 @@ const builtOnOwnAnswer = Boolean(
 | 反模式 | 后果 | 正解 |
 | --- | --- | --- |
 | 按工具调用是否 `ok` 判断 agent 干成了 | 一个不通的 provider 看起来像行为符合文档的后端 | 先判终态种类（`{completed}` / `{errored}`），再看内容 |
-| 硬编码 `mcp__x__y` 这类工具名 | 命名规则一变就调不到或调错工具 | 短名字可从 `ALL_TOOLS` 按后缀匹配并断言唯一；它只能扛前缀变化，扛不住哈希后缀与 64 字符截断，详见《07-api-reference.md》§3.1 |
+| 硬编码 `mcp__x__y` 这类工具名 | 命名规则一变就调不到或调错工具 | 短名字可从 `ALL_TOOLS` 按后缀匹配并断言唯一；它只能扛前缀变化，扛不住哈希后缀与 64 字符截断，详见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md) |
 | 用 `notify()` 输出进度 | 看不见 | 攒 `log` 数组，最后 `text()` |
 | 用 `yield_control()` 分段交付 | 后半段回不来 | 调大 `yield_time_ms` |
 | 派 agent 去 `ls` | 耗时、耗 token、结果不确定 | `tools.exec_command` 自己执行 |

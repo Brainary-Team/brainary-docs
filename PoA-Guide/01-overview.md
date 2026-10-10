@@ -104,7 +104,7 @@ const r = await tools.exec_command({ cmd: "ls -d */" });
 PoA 用的是同一条路上的另一个入口：模型以外的调用方也能提交这段 JS。
 
 ```
-thread/codeMode/exec   { threadId, package }  →  { output }
+thread/codeMode/exec   { threadId, package, input? }  →  { output }
 ```
 
 `package` 是一个 base64 编码的 `.poa` 包，即一个 zip，根目录放 `manifest.toml`，内含程序本体与随包分发的文件。
@@ -122,7 +122,8 @@ thread/codeMode/exec   { threadId, package }  →  { output }
 | `brainary exec --poa <目录或 .poa 文件>` | 可用。日常开发与分发都走这条 |
 | `brainary app-server` 的 `thread/codeMode/exec` | 可用，自研客户端走这条。|
 | TUI 交互界面 | 暂不支持 |
-| SDK（TypeScript / Python） | 暂不支持 |
+| Python SDK | 可用，通过 `Poa.run(input=...)` 或 `thread.run_poa(package, input=...)` 运行，见[SDK 文档](../App-SDK/Python-SDK/run-poa.md) |
+| TypeScript SDK | 暂不支持 |
 | `brainary mcp-server` | 暂不支持。 |
 
 ---

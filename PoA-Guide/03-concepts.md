@@ -47,10 +47,10 @@ cell 单列成一个词，是因为它决定了以下几件事：
 | 类别 | 有哪些 | 来源 |
 | --- | --- | --- |
 | codex 内置的 | 全局对象 `tools`，外加 `ALL_TOOLS`、`text`、`notify`、`exit`、`store`、`load`、`setTimeout` 等 12 个全局 primitive | codex 本体，沙箱起来时就在 |
-| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 一层普通 JS 封装，全文在 [《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文) |
+| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 一层普通 JS 封装，全文在 [Prelude API](07-api-reference/02-prelude.md) |
 
 包的 `entry` 是**原样提交**的，前面不会被拼入任何内容。要用第二类那 16 个名字，就把
-[《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文) 整段抄进 `main.js`，抄在首行 pragma 之后——`// @exec:` 只在第 1 行生效，且不在第 1 行时不报错。另一种做法是只用内置那一档，《05-writing.md》§12.2 的范例即如此。
+[Prelude API](07-api-reference/02-prelude.md) 整段抄进 `main.js`，抄在首行 pragma 之后——`// @exec:` 只在第 1 行生效，且不在第 1 行时不报错。另一种做法是只用内置那一档，《05-writing.md》§12.2 的范例即如此。
 
 后续各篇的示例默认已经抄了这一层。看到 `runBatch` / `shellLines` / `parseJsonReply` 就是它，看到 `tools.` 开头的就是内置。
 

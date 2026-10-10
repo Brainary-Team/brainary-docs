@@ -83,15 +83,22 @@ text(JSON.stringify({ result, log, elapsed_ms: Date.now() - t0 }, null, 2));
 
 ## 3. 把外部输入送进程序
 
-PoA 没有启动参数。提交接口收的是线程 id 和一个包（`{ threadId, package }`），仍然没有一个放参数的地方。
+PoA 支持以 JSON 对象传入业务输入。先在包中声明 input schema，再由 Python SDK 的
+`Poa.run(input=...)` / `thread.run_poa(package, input=...)` 或 app-server 的
+`thread/codeMode/exec` 提交 `input`，程序通过 `POA_INPUT` 读取它。
 
-于是实际可用的只有三条路：
+小型 TypeScript 示例、输入校验规则和完整字段列表见
+[PoA input 编写说明](09-input.md)。SDK 的完整调用示例见
+[使用 Python SDK 运行 PoA](../App-SDK/Python-SDK/run-poa.md)。
 
 | 想传什么 | 怎么传 |
 | --- | --- |
-| 少量常量（规模、并发度、目标名） | 直接写死在 `entry` 顶部，或由自研客户端每次现拼一个包再提交 |
-| 程序的工作目录 | `-C` / `--cd`，它决定线程的工作目录，也就决定了 `exec_command` 里相对路径的基准 |
-| 用哪个模型 | `-m` / `--model` |
+| 业务参数（目标名、规模、天数等） | 包中声明 input schema，调用时传入 JSON 对象，程序读取 `POA_INPUT` |
+| 程序的工作目录 | CLI 使用 `-C` / `--cd`，SDK 使用 `thread_start(cwd=...)` |
+| 用哪个模型 | CLI 使用 `-m` / `--model`，SDK 使用 `thread_start(model=...)` |
+
+CLI 示例适用于无必填输入的包；当前 `brainary exec --poa` 不提供业务 input 参数，传入的是
+空对象 `{}`：
 
 ```bash
 brainary exec --poa ./my-poa -C /path/to/target
@@ -404,6 +411,7 @@ my-poa/
 
 ```toml
 [poa]
+namespace = "examples"
 name = "scan_folders"
 version = "0.1.0"
 runtime = "codex-v8"
@@ -415,7 +423,7 @@ entry = "main.js"
 
 ### 12.1 使用 prelude
 
-`main.js` 的顺序是：首行 pragma → [《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文)全文 → 下面这段。
+`main.js` 的顺序是：首行 pragma → [Prelude API](07-api-reference/02-prelude.md) 全文 → 下面这段。
 
 ```js
 // @exec: {"yield_time_ms": 900000, "max_output_tokens": 30000}
@@ -728,7 +736,7 @@ brainary exec --poa ./my-poa -C /path/to/target
 
 ## 13. 包这条路上另外两件事
 
-**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见《07-api-reference.md》§3.1。
+**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md)。
 
 **②** 包自带的能力与宿主提供的能力，可靠性不是一回事。包里 `[[capabilities.mcp]]` 申报的 server 起不来会直接拒跑，所以这些工具不用探测；宿主侧的工具（`memories__*`、`clock__curr_time` 之类）仍然要照 [§8](#8-容错四个必须写的地方) 那样探测 + 写降级。两者在 `ALL_TOOLS` 里混在一起，但可靠性完全不同。
 
