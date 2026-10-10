@@ -2,7 +2,7 @@
 
 Skill 是一个以 `SKILL.md` 为入口的可复用说明包。它告诉 Agent 在某类任务中应遵循什么流程，以及需要读取哪些配套资源。
 
-Python SDK 有两种使用方式：通过发现目录为 Agent 配置可自主选择的 Skill 池，或者使用 `SkillInput(name, path)` 强制某个 turn 使用指定 Skill。
+Python SDK 有两种使用方式：通过发现目录为 Agent 配置可自主选择的 Skill 池，或者使用 `SkillInput(name, path)` 为某个 turn 显式选择已发现且启用的 Skill。
 
 ## 创建 Skill
 
@@ -36,20 +36,20 @@ description: Review a Git diff and report correctness risks with file and line e
 
 `name` 和 `description` 会用于 Skill 元数据；目录名也会在缺少显式名称时参与默认命名。
 
-## 单次强制指定 Skill
+## 单次显式指定 Skill
 
 ```python
 from pathlib import Path
 
-from openai_codex import Codex, CodexConfig, SkillInput, TextInput
+from brainary import Brainary, BrainaryConfig, SkillInput, TextInput
 
 workspace = Path("/absolute/path/to/workspace")
 skill_path = workspace / ".agents/skills/review-changes/SKILL.md"
 
-config = CodexConfig(codex_bin="/absolute/path/to/brainary")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
-with Codex(config=config) as codex:
-    agent = codex.thread_start(cwd=str(workspace))
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(cwd=str(workspace))
     result = agent.run(
         [
             TextInput("审查当前未提交改动。"),
@@ -61,17 +61,9 @@ with Codex(config=config) as codex:
 
 ## 配置可自主选择的 Skill 池
 
-当前运行时会从多个作用域发现 Skills：
-
-| 位置 | 作用范围 | 修改方式 |
-| --- | --- | --- |
-| 从项目根到当前 `cwd` 路径上的 `.agents/skills` | 项目根的 Skills 对整个项目生效；中间目录的 Skills 只对该目录及其子目录中的 `cwd` 生效 | 通过 `thread_start(cwd=...)` 改变扫描范围；通过 `project_root_markers` 改变项目根识别规则；`.agents/skills` 目录名固定 |
-| 项目配置层的 `.codex/skills` | 只对该配置层所属项目内的 Agent 生效，项目外的 Agent 不可见 | 随项目 `.codex` 配置层的位置变化；`skills` 子目录名固定，可增删其中的 Skill 目录 |
-| `$HOME/.agents/skills` | 对当前操作系统用户启动的所有项目和 Agent 生效，其他用户不可见 | 可修改 app-server 进程的 `$HOME`，但会影响整个进程环境；通常只增删该目录中的 Skills |
-| `$CODEX_HOME/skills` | 对共用该 `$CODEX_HOME` 的所有 Agent 生效，使用其他 `$CODEX_HOME` 的 Agent 不可见 | 可修改 `CODEX_HOME`，但会同时迁移 `config.toml` 等实例数据；不能只迁移这个 Skill 目录 |
-| `$CODEX_HOME/skills/.system` | 对共用该 `$CODEX_HOME` 且启用了内置 Skills 的所有 Agent 生效，禁用内置 Skills 的 Agent 不可见 | 跟随 `CODEX_HOME`，不能单独改址；使用 `[skills.bundled] enabled = false` 禁用整个内置作用范围 |
-| 管理员配置目录（Unix 通常为 `/etc/codex/skills`） | 对本机或容器内读取该系统配置层的所有用户和 Agent 生效，其他机器或容器不可见 | 由系统管理员部署或修改；普通 Python 应用不能通过 thread 配置改址 |
-| 已启用插件中的 `skills/` | 只对该插件的启用范围生效：用户级启用覆盖该用户的所有项目，项目级启用只覆盖对应项目 | 跟随插件安装目录；通过插件配置启用或禁用整个插件，也可用 `[[skills.config]]` 禁用其中的单个 Skill |
+通过 `thread_start(cwd=...)` 指定项目工作目录，运行时会发现项目根到该 `cwd`
+路径上各级 `.agents/skills` 中的 Skill。其他作用域的发现位置和持久管理方式见
+[配置文件使用说明](configuration.md#skills-管理)。
 
 例如，为一个工程 Agent 配置包含代码审查、故障诊断和发布说明三项能力的 Skill 池：
 
@@ -108,13 +100,13 @@ Python 侧不需要逐项注册这个池。只要把 Agent 的 `cwd` 指向上�
 ```python
 from pathlib import Path
 
-from openai_codex import Codex, CodexConfig
+from brainary import Brainary, BrainaryConfig
 
 workspace = Path("/absolute/path/to/workspace").resolve()
-config = CodexConfig(codex_bin="/absolute/path/to/brainary")
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
 
-with Codex(config=config) as codex:
-    agent = codex.thread_start(
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(
         cwd=str(workspace),
         developer_instructions=(
             "根据任务和可用 Skill 的 description 自主选择合适的 Skill；"
@@ -126,75 +118,69 @@ with Codex(config=config) as codex:
     print(result.final_response)
 ```
 
-## 启用、禁用和维护 Skill
+## 用代码配置 Skill 池
 
-发现目录中的 Skill 默认启用。为了让 Agent 能够自主选择，应保留自动 Skill 说明；下面的配置还会关闭不需要的内置 Skills：
-
-```toml
-# $CODEX_HOME/config.toml
-[skills]
-include_instructions = true
-
-[skills.bundled]
-enabled = false
-```
-
-`include_instructions = true` 让每个 turn 获得当前可用 Skill 的目录说明。`skills.bundled.enabled` 只控制运行时内置 Skills，不影响项目目录或用户目录中的 Skills。
-
-需要暂时下线某个 Skill 时，可以在 `$CODEX_HOME/config.toml` 中按 `SKILL.md` 的绝对路径禁用：
-
-```toml
-[[skills.config]]
-path = "/absolute/path/to/workspace/.agents/skills/diagnose-failure/SKILL.md"
-enabled = false
-```
-
-也可以按名称配置：
-
-```toml
-[[skills.config]]
-name = "diagnose-failure"
-enabled = false
-```
-
-本地 Skill 推荐按路径配置，以免同名 Skill 来自用户目录、项目目录或插件时产生歧义。重新启用时删除对应的禁用项，或者把 `enabled` 改为 `true`。持久配置作用于使用同一 `$CODEX_HOME` 的 Agent；直接修改配置文件后，应新建 Codex 客户端或 thread 以确保新配置生效。
-
-只想为某个 Agent 临时改变启用状态时，可以在 `thread_start(config=...)` 中提供 session 级覆盖，不修改全局文件：
+在 `thread_start(config=...)` 中设置 `skills`，可以为这个 Agent 控制自动目录说明、
+内置 Skills 和单项启用状态：
 
 ```python
-disabled_skill = (
-    workspace / ".agents/skills/diagnose-failure/SKILL.md"
-).resolve()
+from pathlib import Path
 
-release_agent = codex.thread_start(
-    cwd=str(workspace),
-    config={
-        "skills": {
-            "config": [
-                {
-                    "path": str(disabled_skill),
-                    "enabled": False,
-                }
-            ]
-        }
-    },
-)
+from brainary import Brainary, BrainaryConfig
+
+workspace = Path("/absolute/path/to/workspace").resolve()
+disabled_skill = workspace / ".agents/skills/diagnose-failure/SKILL.md"
+config = BrainaryConfig(brainary_bin="/absolute/path/to/brainary")
+
+with Brainary(config=config) as brainary:
+    agent = brainary.thread_start(
+        cwd=str(workspace),
+        config={
+            "skills": {
+                "include_instructions": True,
+                "bundled": {"enabled": False},
+                "config": [
+                    {"path": str(disabled_skill.resolve()), "enabled": False},
+                ],
+            }
+        },
+    )
+    result = agent.run("根据当前改动生成发布说明。")
+    print(result.final_response)
 ```
 
-这适合从当前 Agent 已发现的 Skill 池中临时排除少量 Skill。禁用项较多时，应直接调整项目级 Skill 池，避免维护大量配置项。
+| 字段 | 含义 |
+| --- | --- |
+| `include_instructions` | 默认为 `True`，向 turn 提供可用 Skills 的自动目录说明；设为 `False` 只关闭此说明，不等于禁用 Skill |
+| `bundled.enabled` | 默认为 `True`；设为 `False` 排除运行时内置 Skills，保留项目、用户等其他作用域的 Skills |
+| `config[].path` | 按 `SKILL.md` 的绝对路径选择 Skill |
+| `config[].name` | 按名称选择 Skill，会匹配当前发现的所有同名 Skill |
+| `config[].enabled` | 控制匹配 Skill 的启用状态，必须显式提供布尔值 |
+
+每项规则必须且只能指定 `path` 或 `name`。本地 Skill 推荐按路径配置；按名称禁用
+可以改用 `{"name": "diagnose-failure", "enabled": False}`。重新启用时传入对应的
+`enabled=True` 规则；如果已有较低优先级的禁用规则，仅省略当前覆盖不会重新启用。
+
+`skills.config` 用于筛选已发现的 Skill，不会把任意路径注册为新的 Skill 池。
+`SkillInput` 同样只能选择已发现且启用的 Skill，不会绕过禁用规则。以上覆盖不会
+写入配置文件；多个 Agent 可以复用配置字典，跨进程恢复或分叉 thread 时需再次传入。
+配置文件中的启用、禁用和维护操作见[配置文件使用说明](configuration.md#skills-管理)。
 
 ## 同时传入文本、图片和 Skill
 
-turn 输入可以是多项列表：
+将 `ui-review` 放入同一工作区的 `.agents/skills` 后，turn 输入可以是多项列表：
 
 ```python
-from openai_codex import LocalImageInput, SkillInput, TextInput
+from brainary import LocalImageInput, SkillInput, TextInput
 
 result = agent.run(
     [
         TextInput("按照界面审查 Skill 分析这张截图。"),
         LocalImageInput("/absolute/path/to/screenshot.png"),
-        SkillInput("ui-review", "/absolute/path/to/ui-review/SKILL.md"),
+        SkillInput(
+            "ui-review",
+            str(workspace / ".agents/skills/ui-review/SKILL.md"),
+        ),
     ]
 )
 ```

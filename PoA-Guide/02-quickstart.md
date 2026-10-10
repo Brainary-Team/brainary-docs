@@ -6,7 +6,7 @@
 
 | 事项 | 当前状态 |
 | --- | --- |
-| 从哪个前端提交 PoA | `brainary exec --poa` 与 `brainary app-server` 的 `thread/codeMode/exec` 两条，均已可用。TUI、SDK 与 `brainary mcp-server` 暂不支持 |
+| 从哪个前端提交 PoA | `brainary exec --poa` 与 `brainary app-server` 的 `thread/codeMode/exec` 两条，均已可用；[Python SDK](../App-SDK/Python-SDK/run-poa.md) 封装了后者。TUI 与 `brainary mcp-server` 暂不支持 |
 | 二进制从哪来 | 本项目发布的 release 制品。 |
 | 程序以什么形态提交 | 一个包目录（`manifest.toml` + `main.js`）。`brainary exec --poa <目录>`  |
 | 用哪代多 agent 后端 | 由模型元数据决定，另有一个 feature 可以强制到 v2。跑探针查，见 §2 |
@@ -113,6 +113,7 @@ wire_api = "anthropic"
 
 ```toml
 [poa]
+namespace = "examples"
 name = "probe"
 version = "0.1.0"
 runtime = "codex-v8"
@@ -201,7 +202,7 @@ max_concurrent_threads_per_session = 8   # 默认 4，而 root 线程占一个�
 ## 3. 第二步：接第一个 agent
 
 先按《03-concepts.md》§2 组装 `main.js`：第 1 行写 pragma，其后放
-[《07 API 参考》§2.4](07-api-reference.md#24-prelude-全文)，最后追加下面这段。
+[Prelude API](07-api-reference/02-prelude.md)，最后追加下面这段。
 
 ```js
 const message = '用一句话说明当前目录是做什么的。只回一行 JSON：{"purpose":"..."}';
