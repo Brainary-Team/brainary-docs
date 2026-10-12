@@ -33,7 +33,7 @@ graph LR
 
 ## 2. 程序必须能独自跑完
 
-当前 PoA 机制上没有任何人工介入点，因此书写的 PoA 程序必须能独立运行。
+PoA 的人工交互取决于启动入口。TUI `/poa fg` 以 `interactive` 模式运行，脚本可调用 `ask()`；TUI `/poa bg`、`brainary poa` 和 `brainary exec --poa` 以 `unavailable` 模式运行，`ask()` 会立即返回非交互结果。app-server 客户端可在 `thread/codeMode/exec` 中显式传入 `userInputMode`，但应先检查 `initialize` 返回的 `capabilities.userInputMode`。因此，面向 CLI、后台或当前 Python SDK 的包仍必须能在没有用户回答时完成任务。
 
 ---
 

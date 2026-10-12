@@ -13,6 +13,6 @@
 | [子代理 v1](07-api-reference/05-agent-v1.md) | `multi_agent_v1__*` 原生接口 |
 | [MCP 资源](07-api-reference/06-mcp-resources.md) | 资源列表、模板、读取和动态 MCP tool 调用 |
 | [POA INPUT SDK](07-api-reference/07-poa-input-sdk.md) | `input_schema.ts`、JSON Schema、`POA_INPUT`、输入校验和调用方输入 |
-| [`ask()` 交互](07-api-reference/08-ask.md) |
+| [`ask()` 交互](07-api-reference/08-ask.md) | 脚本提问、入口模式、返回结构和客户端能力检查 |
 | [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md) | `manifest.toml`、stdio server、工具发现、`CallToolResult` 和生命周期 |
 | [Provider 扩展工具](07-api-reference/10-provider-tools.md) | web、skills、图片生成、环境和插件工具 |

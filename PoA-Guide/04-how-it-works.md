@@ -79,6 +79,10 @@ thread/codeMode/exec   { threadId, package, input? }  →  { output }
 
 **③** 工具面在 cell 起跑前就定死了。包申报的 server 必须在捕获工具面之前起完，起不来直接拒跑，而不是少个工具照跑。所以 `ALL_TOOLS` 在程序里读一次就够，它在这次运行中不会再变。
 
+### 用户输入如何返回
+
+`thread/codeMode/exec` 可通过 `userInputMode` 控制脚本是否具有 `ask()`。`interactive` 模式下，脚本的 `ask()` 通过宿主发出 `item/tool/requestUserInput`，客户端按请求回答后，结果回到等待中的 cell；PoA 派出的子 agent 也可在自己的线程调用 `request_user_input`，答案回到该子 agent 的 turn。请求使用非阻塞模式，服务端没有自动超时；客户端需要处理无人回答的情况。完整入口和返回结构见 [`ask()` 交互](07-api-reference/08-ask.md)。
+
 ---
 
 ## 3. `tools.foo()` 实际发生了什么

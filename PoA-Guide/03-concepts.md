@@ -25,7 +25,7 @@ graph TD
 
 - **PoA 程序**：一段 JS，一次提交、一次跑完。
 - **工具**：沙箱里有个全局对象 `tools`，上面挂着可调用的函数。`tools.exec_command` 提供一个真正的 shell。
-- **子 agent**：一个独立的 AI 会话，有自己的上下文和工具。它接收一段任务文字，自己决定读哪些文件、怎么读，最后交回一段回答。它是异步的，派出去先拿到一个 handle，何时去等由程序决定。它在自己的 thread 上取得工具面，不保证与 root 完全相同；尤其是 `.poa` 包自带的 MCP 只注册到 root thread，子 agent 拿不到。
+- **子 agent**：一个独立的 AI 会话，有自己的上下文和工具。它接收一段任务文字，自己决定读哪些文件、怎么读，最后交回一段回答。它是异步的，派出去先拿到一个 handle，何时去等由程序决定。它在自己的 thread 上取得工具面，不保证与 root 完全相同；尤其是 `.poa` 包自带的 MCP 只注册到 root thread，子 agent 拿不到。交互式 PoA 派出的子 agent 可以在自己的 thread/turn 调用 `request_user_input`，模式由 PoA 运行继承；详见 [`ask()` 交互](07-api-reference/08-ask.md#子-agent-自主提问)。
 - **cell**：一次提交的那整段 JS 的一次运行。一次提交 = 一个 cell = 一次跑完。
 
 cell 单列成一个词，是因为它决定了以下几件事：
@@ -128,3 +128,5 @@ max_concurrent_threads_per_session = 8   # 默认 4，root 占一个，所以默
 | 递归深度限制 | 有，且拦两道，子 agent 天然派不出孙 agent | 没有，无条件放行。限制只能在 JS 里自行实现 |
 
 批量写法见《05-writing.md》§6.3；递归风险见《05-writing.md》§6.4。
+
+两代子 agent 都可在交互式 PoA 中自行提问，但 v1 的深度限制仍适用；v2 后代继续继承原运行的交互模式。脚本调用 `ask()` 与子 agent 调用 `request_user_input` 是不同的入口，客户端须按发问线程处理子 agent 的问题。

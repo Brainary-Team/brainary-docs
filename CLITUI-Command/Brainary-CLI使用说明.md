@@ -88,6 +88,7 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 | 在交互界面中运行 | `/poa <PATH>` |
 
 PoA 中的控制程序直接执行；如果程序调用 Agent，相关调用仍然会产生模型请求。
+Shell 中的 `brainary poa` 和 `brainary exec --poa` 都是非交互入口：程序的 `ask()` 返回 `{ status: "unavailable", reason: "nonInteractive" }`，子 agent 自行调用 `request_user_input` 不会向终端发出待答问题。需要用户回答时使用 TUI 前台 `/poa fg`；协议细节见 [交互 API](../PoA-Guide/07-api-reference/08-ask.md)。
 
 ## 命令详情
 

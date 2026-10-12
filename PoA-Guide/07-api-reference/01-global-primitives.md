@@ -109,7 +109,7 @@ text(result.current_time);
 由 PoA 调用方注入的业务 JSON。没有输入时不会注入该全局变量；输入 schema 和 SDK 用法见
 [POA INPUT SDK](07-poa-input-sdk.md)。
 
-## `ask()`（PR 79，尚未合并）
+## `ask()`
 
 `ask` 只在 `interactive` 或 `unavailable` 用户输入模式下注入；默认的 `disabled` 模式中
-不存在该函数。完整协议、限制、错误和示例见 [ask 交互 API](08-ask.md)。
+不存在该函数。完整协议、入口限制、错误和示例见 [ask 交互 API](08-ask.md)。

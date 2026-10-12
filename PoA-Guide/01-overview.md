@@ -121,8 +121,8 @@ thread/codeMode/exec   { threadId, package, input? }  →  { output }
 | --- | --- |
 | `brainary exec --poa <目录或 .poa 文件>` | 可用。日常开发与分发都走这条 |
 | `brainary app-server` 的 `thread/codeMode/exec` | 可用，自研客户端走这条。|
-| TUI 交互界面 | 暂不支持 |
-| Python SDK | 可用，通过 `Poa.run(input=...)` 或 `thread.run_poa(package, input=...)` 运行，见[SDK 文档](../App-SDK/Python-SDK/run-poa.md) |
+| TUI 交互界面 | 支持 `/poa fg` 前台交互和 `/poa bg` 后台非交互运行；前台可使用 `ask()` |
+| Python SDK | 可运行 PoA，但当前公共方法未暴露 `userInputMode`，不能直接获得 `ask()` 交互能力；见[SDK 文档](../App-SDK/Python-SDK/run-poa.md) |
 | TypeScript SDK | 暂不支持 |
 | `brainary mcp-server` | 暂不支持。 |
 
@@ -171,6 +171,6 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 
 **①** PoA 程序运行在一个精简的 V8 沙箱中。没有 Node、没有文件系统 API、没有网络，也没有 `console.log`。但 `tools.exec_command` 提供了一个真实的 shell，因此"没有文件系统"仅指 JS 层面，读写文件仍然可以通过命令完成。
 
-**②** 程序能传给子 agent 的只有一段任务文字。系统提示词无法修改。
+**②** 程序能传给子 agent 的任务入口仍是一段任务文字，系统提示词无法修改。交互式 PoA 运行中，子 agent 还可以在自己的线程调用 `request_user_input` 向用户提问；提问能力继承自 PoA 运行的 `userInputMode`，不能由子 agent 自行提升。
 
 **③** 文本输出只有 `text()` 一条路径。中间过程全部留在沙箱内，只有主动写入返回值的内容才会返回。`image()` / `audio()` / `generatedImage()` 也会进入返回值（渲染成 `[input_image] …` 这样的一行摘要），但它们不是文本通道，供人阅读的正文仍然只能通过 `text()` 输出。
