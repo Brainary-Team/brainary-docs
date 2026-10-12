@@ -285,3 +285,5 @@ turn 上的 `sandbox=` 会应用于该 turn，并成为这个 thread 后续 turn
 Python SDK 没有 `spawn_agent()` 之类的直接公共方法。`thread_start()` 创建的是 Python 调用方直接控制的主 Agent。运行时是否向模型暴露多 Agent 工具，由 Brainary 运行时的配置和能力决定。
 
 需要由 Python 同时控制多个独立 Agent 时，创建多个 thread；需要确定性的子 Agent 扇出、等待和汇总时，使用 [PoA](run-poa.md) 更合适。
+
+当前 Python SDK 的 PoA 运行方法未暴露 `userInputMode`，因此不能直接使用脚本 `ask()` 或 PoA 派生子 Agent 的用户提问能力。该限制只针对当前 SDK 的 PoA 入口；入口差异见 [交互 API](../../PoA-Guide/07-api-reference/08-ask.md)。

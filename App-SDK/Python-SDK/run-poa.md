@@ -96,6 +96,7 @@ result = thread.run_poa(
 - 默认绑定的运行时版本可能尚未支持这些接口；通过
   `BrainaryConfig(brainary_bin=...)` 明确指定 Brainary 二进制。
 - 启动 PoA 本身不会触发模型采样，程序调用子 agent 等工具时可能会调用模型。
+- 当前 `Poa.run` 和 `thread.run_poa` 公共方法未发送 `userInputMode`，因此使用默认 `disabled` 模式，脚本中没有 `ask()`；由它们派生的子 agent 也不能向用户发起 PoA 交互。需要交互的客户端应使用支持 `userInputMode` 和用户输入请求的 app-server 协议，并先检查服务端能力；见 [交互 API](../../PoA-Guide/07-api-reference/08-ask.md)。
 - `Poa(thread, package).run(input=poa_input)` 与
   `thread.run_poa(package, input=poa_input)` 等价。
 - 异步应用使用 `AsyncBrainary` 和 `AsyncPoa`，对应调用为

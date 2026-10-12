@@ -3,6 +3,8 @@
 本页只描述 `multi_agent_v1__*`。派发 agent 的 v2 (`collaboration__*`) 明确不在本文档范围内。
 Prelude 的 `spawnAgent`、`collectAll` 等封装最终调用本页工具。
 
+交互式 PoA 派出的 v1 子代理可以在自己的线程调用 `request_user_input` 主动向用户提问。该能力继承 PoA 的交互模式，并非 `multi_agent_v1__send_input` 的一部分；`unavailable` 或 `disabled` 模式下不会发出用户请求。请求归属、客户端路由和 v2 的共同行为见 [`ask()` 交互](08-ask.md#子-agent-自主提问)。
+
 ## `multi_agent_v1__spawn_agent`
 
 创建一个 v1 子代理。

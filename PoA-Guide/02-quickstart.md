@@ -6,7 +6,7 @@
 
 | 事项 | 当前状态 |
 | --- | --- |
-| 从哪个前端提交 PoA | `brainary exec --poa` 与 `brainary app-server` 的 `thread/codeMode/exec` 两条，均已可用；[Python SDK](../App-SDK/Python-SDK/run-poa.md) 封装了后者。TUI 与 `brainary mcp-server` 暂不支持 |
+| 从哪个前端提交 PoA | CLI、app-server 和 TUI 均可运行；TUI `/poa fg` 支持交互式 `ask()`，`/poa bg` 和 CLI 为非交互模式。Python SDK 可运行 PoA，但当前未暴露 `userInputMode`；`brainary mcp-server` 暂不支持 |
 | 二进制从哪来 | 本项目发布的 release 制品。 |
 | 程序以什么形态提交 | 一个包目录（`manifest.toml` + `main.js`）。`brainary exec --poa <目录>`  |
 | 用哪代多 agent 后端 | 由模型元数据决定，另有一个 feature 可以强制到 v2。跑探针查，见 §2 |
