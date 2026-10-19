@@ -9,13 +9,13 @@ PoA 把这个关系倒过来：调度、分发、汇总、判定全部写在程�
 于是编排逻辑变成确定的：`for` 就是循环，`Promise.all` 就是并发，`if` 就是分支。这段编排不消耗任何模型调用，每次运行行为一致。
 
 > **只想跑通第一个**：[02 快速开始](02-quickstart.md) →
-> [Prelude API](07-api-reference/02-prelude.md)（按需复制）→
+> [Prelude API](07-api-reference/01-agent-orchestration.md)（按需复制）→
 > [05 编写指南 §12](05-writing.md#12-完整范例)。其余按需查。
 
 下面只画程序的结构，**是伪代码，不能直接运行**：其中三个 helper 来自 prelude。
 
 ```js
-// 结构示意（伪代码）：先复制《07-api-reference/02-prelude.md》中的 helper 才能使用这些函数
+// 结构示意（伪代码）：先复制《07-api-reference/01-agent-orchestration.md》中的 helper 才能使用这些函数
 // 列出目录 → 每个派一个 agent → 收齐 → 汇总
 const prompt = (folder) => `分析 ./${folder}，只回一行 JSON：{"purpose":"..."}`;
 
@@ -48,7 +48,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按功能拆分） | [07-api-reference.md](07-api-reference.md) | 全局、Prelude、执行、记忆、v1 agent、MCP、POA INPUT SDK、MCP 扩展 SDK、ask 与 provider 工具 |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 与 AgentConfig |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 
@@ -74,5 +74,5 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | handle | 派出一个子 agent 后拿到的句柄，后续等待、追问、关闭都靠它 |
 | 并行派发（扇出 / fan-out） | 一次派出 N 个子 agent 并行执行的形状 |
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
-| prelude | 一层编排 primitive，16 个，不是内置的。全文在 [Prelude API](07-api-reference/02-prelude.md)，要抄进程序才有 |
-| 后端 v1 / v2 | codex 的两代多 agent 工具，接口形状完全不同。prelude 存在的理由就是抹平这个差异 |
+| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 和 AgentConfig；详见 [API 参考](07-api-reference.md) |
+| Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |

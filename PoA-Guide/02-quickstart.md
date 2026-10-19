@@ -202,7 +202,7 @@ max_concurrent_threads_per_session = 8   # 默认 4，而 root 线程占一个�
 ## 3. 第二步：接第一个 agent
 
 先按《03-concepts.md》§2 组装 `main.js`：第 1 行写 pragma，其后放
-[Prelude API](07-api-reference/02-prelude.md)，最后追加下面这段。
+[Prelude API](07-api-reference/01-agent-orchestration.md)，最后追加下面这段。
 
 ```js
 const message = '用一句话说明当前目录是做什么的。只回一行 JSON：{"purpose":"..."}';
