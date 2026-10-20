@@ -423,7 +423,7 @@ entry = "main.js"
 
 ### 12.1 使用 prelude
 
-`main.js` 的顺序是：首行 pragma → [Prelude API](07-api-reference/02-prelude.md) 全文 → 下面这段。
+`main.js` 的顺序是：首行 pragma → [Prelude API](07-api-reference/01-agent-orchestration.md) 全文 → 下面这段。
 
 ```js
 // @exec: {"yield_time_ms": 900000, "max_output_tokens": 30000}
@@ -736,7 +736,7 @@ brainary exec --poa ./my-poa -C /path/to/target
 
 ## 13. 包这条路上另外两件事
 
-**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md)。
+**①** 工具名从 `ALL_TOOLS` 里找，不能写死。尤其是包自带的那些，`mcp__<server>__<tool>` 的前缀会被清洗、重名时加哈希后缀。写法与理由见 [PoA MCP Tool 扩展 SDK](07-api-reference/10-mcp-tool-config.md)。
 
 **②** 包自带的能力与宿主提供的能力，可靠性不是一回事。包里 `[[capabilities.mcp]]` 申报的 server 起不来会直接拒跑，所以这些工具不用探测；宿主侧的工具（`memories__*`、`clock__curr_time` 之类）仍然要照 [§8](#8-容错四个必须写的地方) 那样探测 + 写降级。两者在 `ALL_TOOLS` 里混在一起，但可靠性完全不同。
 

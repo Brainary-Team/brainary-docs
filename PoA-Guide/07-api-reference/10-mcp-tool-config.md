@@ -26,14 +26,14 @@ description = "回显消息"
 
 字段结构：
 
-| 字段 | 输入结构 | 作用 |
+| 字段 | 类型与约束 | 作用 |
 | --- | --- | --- |
 | `name` | 非空字符串，只允许字母、数字、`_`、`-` | server 名，参与工具注册名生成 |
 | `type` | 当前只能是 `"stdio"` | 指定 MCP transport |
 | `shell` | 非空命令字符串 | 由宿主拆为直接子进程的 argv，不通过 shell 执行 |
 | `description` | 可选字符串 | server 说明 |
 
-返回结果：manifest 解析成功时得到一个已校验的 server 声明；字段缺失、transport 不支持、
+manifest 解析成功时得到一个已校验的 server 声明；字段缺失、transport 不支持、
 命令语法无效或路径不合法时，包在启动前被拒绝。
 
 ## MCP server 最小实现
@@ -86,8 +86,8 @@ const result = await tools[echo.name]({
 text(result.structuredContent ?? result.content);
 ```
 
-`ALL_TOOLS` 的输入结构是无参数的全局读取；返回 `Array<{ name: string; description: string }>`。
-`tools[toolName]` 的输入和返回 schema 取决于 MCP server 的声明。
+`ALL_TOOLS` 是全局工具列表，类型为 `Array<{ name: string; description: string }>`。
+`tools[tool_name]` 是工具调用函数，其输入和返回 schema 取决于 MCP server 的声明。
 后缀匹配仅适用于工具名未被截断或追加哈希的场景；无法匹配时，应检查
 `ALL_TOOLS` 中的实际名称与说明，并使用该名称调用。
 

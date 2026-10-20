@@ -132,7 +132,7 @@ graph TD
 
 ### 4.1 从 `ALL_TOOLS` 里找工具名，不要硬编码
 
-`mcp__echo__echo` 是当前配置下的产物，前缀由宿主的命名规则决定，命名空间会被清洗，长名或冲突还会触发哈希后缀与 64 字符截断。短名字可以从 `ALL_TOOLS` 里按后缀找并断言唯一来扛前缀变化，但这不是稳定契约，也扛不住上述哈希与截断；完整边界见 [PoA MCP Tool 扩展 SDK](07-api-reference/09-poa-mcp-extension-sdk.md)。
+`mcp__echo__echo` 是当前配置下的产物，前缀由宿主的命名规则决定，命名空间会被清洗，长名或冲突还会触发哈希后缀与 64 字符截断。短名字可以从 `ALL_TOOLS` 里按后缀找并断言唯一来扛前缀变化，但这不是稳定契约，也扛不住上述哈希与截断；完整边界见 [PoA MCP Tool 扩展 SDK](07-api-reference/10-mcp-tool-config.md)。
 
 ### 4.2 给每个 MCP 工具写三条 annotations
 
