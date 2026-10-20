@@ -6,10 +6,18 @@
 
 **作用**：表示 Agent 当前生命周期状态。
 
-**输入类型**：枚举值 "PendingInit" | "Running" | "Interrupted" | "Completed" |
-"Errored" | "Shutdown" | "NotFound"。
+**类型定义**：
 
-**返回值类型**：状态值。
+~~~ts
+type AgentState =
+  | "PendingInit"
+  | "Running"
+  | "Interrupted"
+  | "Completed"
+  | "Errored"
+  | "Shutdown"
+  | "NotFound";
+~~~
 
 **示例**：
 
@@ -23,7 +31,7 @@ if (agentMonitor.get_state(agent.agent_id) === "Completed") {
 
 **作用**：记录 Agent 的 token 消耗。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface TokenUsage {
@@ -36,8 +44,6 @@ interface TokenUsage {
 }
 ~~~
 
-**返回值类型**：[TokenUsage](04-agent-monitor.md) 快照。
-
 **示例**：
 
 ~~~js
@@ -49,7 +55,7 @@ text(usage.total_tokens);
 
 **作用**：记录 Agent 上下文窗口的使用情况。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface ContextUsage {
@@ -60,8 +66,6 @@ interface ContextUsage {
   used_ratio: number;
 }
 ~~~
-
-**返回值类型**：[ContextUsage](04-agent-monitor.md) 快照。
 
 **示例**：
 

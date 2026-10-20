@@ -4,7 +4,7 @@
 
 **作用**：标识当前运行时可暴露的工具类别；具体工具参数和返回值由对应执行器或 provider 定义。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 type Tool =
@@ -17,7 +17,7 @@ type Tool =
   | "memory_*";
 ~~~
 
-**返回值类型**：工具枚举值，可用于 [Capabilities](02-agent-config.md).brainary_tool 的声明和能力检查。
+工具枚举值可用于 [Capabilities](02-agent-config.md).brainary_tool 的声明和能力检查。
 
 **示例**：
 

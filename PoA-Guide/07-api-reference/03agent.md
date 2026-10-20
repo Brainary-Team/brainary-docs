@@ -6,7 +6,7 @@
 
 **作用**：保存 Agent 身份、描述和只读配置。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface Agent {
@@ -17,39 +17,45 @@ interface Agent {
 }
 ~~~
 
-**返回值类型**：由 [AgentOrchestration](01-agent-orchestration.md).create_agent 返回的 [Agent](03agent.md) 实例。
-
 **示例**：
 
 ~~~js
 const agent = orchestration.create_agent("reviewer", "代码审查", {
-  model: { model_id: "gpt-6" },
+  model: {
+    model_id: "gpt-6-sol",
+    provider: "openAI",
+    reasoningEffort: "high",
+  },
 });
 ~~~
 
-### run(message, input_items?, output_schema?)
+### run(message?, input_items?, output_schema?)
 
 **作用**：执行一次完整 Agent 任务并等待最终结果。
 
-**输入类型**：message: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 时，未选择的输入参数使用 undefined 占位。
 
 **返回值类型**：Promise<[AgentResult](03agent.md)>。
 
 **示例**：
 
 ~~~js
-const result = await agent.run("检查 README", [], {
+const result = await agent.run("检查 README", undefined, {
   type: "object",
   properties: { issues: { type: "array" } },
 });
 text(result.output);
 ~~~
 
-### wait_run(message, input_items?, output_schema?)
+### wait_run(message?, input_items?, output_schema?)
 
 **作用**：提交任务并等待 Agent 运行完成。
 
-**输入类型**：message: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+
+**参数约束**：message 和 input_items 必须且只能传入一个；仅传入 input_items 时，message 使用 undefined 占位。
 
 **返回值类型**：Promise<[AgentResult](03agent.md)>。
 
@@ -66,12 +72,14 @@ text(result.text);
 
 **输入类型**：message?: string；input_items?: IOInput[]；interrupt?: boolean。
 
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 interrupt 时，未选择的输入参数使用 undefined 占位。
+
 **返回值类型**：Promise<void>。
 
 **示例**：
 
 ~~~js
-await agent.send_input("优先检查认证逻辑", [], true);
+await agent.send_input("优先检查认证逻辑", undefined, true);
 ~~~
 
 ### compact(compact_template?)
@@ -138,9 +146,7 @@ text({
 
 **作用**：表示一次 Agent 运行的最终结果。
 
-**输入类型**：由 run 或 wait_run 生成。
-
-**返回值类型**：
+**类型定义**：
 
 ~~~ts
 interface AgentResult {
@@ -155,6 +161,6 @@ output 在传入 output_schema 时是校验后的对象，否则是最终文本�
 **示例**：
 
 ~~~js
-const result = await agent.run("返回状态", [], { type: "object" });
+const result = await agent.run("返回状态", undefined, { type: "object" });
 text({ structured: result.output, raw: result.text });
 ~~~

@@ -45,7 +45,7 @@ export interface InputParams {
 }
 ```
 
-输入结构（源类型）：
+类型定义（简化）：
 
 ```ts
 type InputParams = {
@@ -54,8 +54,8 @@ type InputParams = {
 };
 ```
 
-返回结果：该文件不是运行时函数，没有调用返回值；打包器成功时生成
-`input_schema.json`，失败时报告 schema 编译错误。没有声明 `InputParams`、根类型不是
+打包器成功编译该文件时生成 `input_schema.json`，失败时报告 schema 编译错误。
+没有声明 `InputParams`、根类型不是
 对象或语法无效时，打包应失败。
 
 ## 打包生成 JSON Schema
@@ -90,13 +90,13 @@ JSON Schema Draft 2020-12。
 `JSON.parse`。有 schema 的包在启动 JavaScript 前校验输入；没有 schema 的包只接受空对象，
 此时 `POA_INPUT` 的值是空对象 `{}`。
 
-全局输入结构：
+全局常量类型：
 
 ```ts
 declare const POA_INPUT: InputParams;
 ```
 
-返回结构：读取 `POA_INPUT` 本身不会产生返回值；它的值就是调用方传入的业务 JSON。
+程序直接读取该常量获取业务 JSON：
 
 ```js
 const { message, repeat = 1 } = POA_INPUT;

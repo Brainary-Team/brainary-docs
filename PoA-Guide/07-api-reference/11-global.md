@@ -2,32 +2,32 @@
 
 global 提供定时器、耗时统计和流程控制函数。
 
-### setTimeout(callback, delayMs?)
+### set_timeout(callback, delay_ms)
 
 **作用**：安排一次延迟回调。
 
-**输入类型**：callback: () => void；delayMs?: number，单位为毫秒。
+**输入类型**：callback: () => void；delay_ms: number，单位为毫秒。两个参数均必填。
 
 **返回值类型**：number，定时器 ID。
 
 **示例**：
 
 ~~~js
-const timeoutId = setTimeout(() => text("done"), 100);
+const timeout_id = set_timeout(() => text("done"), 100);
 ~~~
 
-### clearTimeout(timeoutId?)
+### clear_timeout(timeout_id)
 
 **作用**：取消尚未执行的定时器。
 
-**输入类型**：timeoutId?: number。
+**输入类型**：timeout_id: number，必填。
 
 **返回值类型**：void。
 
 **示例**：
 
 ~~~js
-clearTimeout(timeoutId);
+clear_timeout(timeout_id);
 ~~~
 
 ### timed(fn)

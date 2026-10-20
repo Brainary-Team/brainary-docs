@@ -7,17 +7,17 @@
 
 **作用**：指定 Agent 使用的模型和推理参数。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface ModelSpec {
   model_id: string;
-  provider?: string;
-  reasoningEffort?: string;
+  provider: string;
+  reasoningEffort: string;
 }
 ~~~
 
-**返回值类型**：[ModelSpec](02-agent-config.md) 配置对象。
+model_id、provider 和 reasoningEffort 均为必填字段。
 
 **示例**：
 
@@ -33,7 +33,7 @@ const model = {
 
 **作用**：声明 Agent 可以访问的 Brainary tool、MCP server 和 PoA 能力。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface Capabilities {
@@ -43,14 +43,12 @@ interface Capabilities {
 }
 ~~~
 
-**返回值类型**：[Capabilities](02-agent-config.md) 配置对象。
-
 **示例**：
 
 ~~~js
 const capabilities = {
   brainary_tool: ["exec_command", "multi_agent"],
-  mcp: ["filesystem"],
+  mcp: ["github_server/*"],
   poa: ["review-package"],
 };
 ~~~
@@ -59,9 +57,11 @@ const capabilities = {
 
 **作用**：限定 Agent 的文件系统访问级别。
 
-**输入类型**：枚举值 "read_only" | "workspace_write" | "danger_full_access"。
+**类型定义**：
 
-**返回值类型**：[Sandbox](02-agent-config.md) 配置值。
+~~~ts
+type Sandbox = "read_only" | "workspace_write" | "danger_full_access";
+~~~
 
 **示例**：
 
@@ -73,9 +73,11 @@ const sandbox = "workspace_write";
 
 **作用**：决定执行需要审批时的处理策略。
 
-**输入类型**：枚举值 "auto_review" | "deny_all"。
+**类型定义**：
 
-**返回值类型**：[ApprovalPolicy](02-agent-config.md) 配置值。
+~~~ts
+type ApprovalPolicy = "auto_review" | "deny_all";
+~~~
 
 **示例**：
 
@@ -87,7 +89,7 @@ const approvalPolicy = "auto_review";
 
 **作用**：指定 Agent 的工作目录、沙箱和审批策略。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface RuntimeSpec {
@@ -96,8 +98,6 @@ interface RuntimeSpec {
   approvalPolicy?: ApprovalPolicy;
 }
 ~~~
-
-**返回值类型**：[RuntimeSpec](02-agent-config.md) 配置对象。
 
 **示例**：
 
@@ -113,7 +113,7 @@ const runtime = {
 
 **作用**：组合 Agent 的模型、系统提示、能力、运行时和可派发的 Agent。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface AgentConfig {
@@ -123,17 +123,21 @@ interface AgentConfig {
   runtime?: RuntimeSpec;
   subagents?: Agent[];
   remote_agents?: RemoteAgent[];
-  handoff?: Handle;
+  handof?: Handof[];
 }
 ~~~
 
-**返回值类型**：[AgentConfig](02-agent-config.md) 配置对象；创建 Agent 后以只读配置暴露。
+创建 Agent 后，配置以只读方式暴露。
 
 **示例**：
 
 ~~~js
 const config = {
-  model: { model_id: "gpt-6" },
+  model: {
+    model_id: "gpt-6-sol",
+    provider: "openAI",
+    reasoningEffort: "high",
+  },
   system_prompt: "只输出可执行的审查结论",
   capabilities: { brainary_tool: ["exec_command"] },
   runtime: { sandbox: "read_only" },

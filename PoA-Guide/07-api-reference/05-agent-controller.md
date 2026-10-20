@@ -34,7 +34,9 @@ await agentController.close(agent.agent_id);
 
 **作用**：向运行中的 Agent 发送转向输入，使它调整当前任务。
 
-**输入类型**：agent_id: string；message?: string；input_items?:[]。
+**输入类型**：agent_id: string；message?: string；input_items?: IOInput[]。
+
+**参数约束**：message 和 input_items 必须且只能传入一个；仅传入 input_items 时，message 使用 undefined 占位。
 
 **返回值类型**：Promise<void>。
 

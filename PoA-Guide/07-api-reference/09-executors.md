@@ -9,7 +9,7 @@
 
 **作用**：描述一次执行调用的调用方、方法、输入和环境。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface ExecutorContext {
@@ -25,7 +25,7 @@ interface ExecutorContext {
 }
 ~~~
 
-**返回值类型**：不是函数返回值；作为 hook 的输入。
+该上下文作为 pre hook 的输入。
 
 **示例**：
 
@@ -44,7 +44,7 @@ const context = {
 
 **作用**：补充执行完成后的状态、输出、错误和耗时。
 
-**输入类型**：ExecutorContext 加上 outcome、output、error 和 duration_ms。
+**类型定义**：继承 ExecutorContext，并补充必填的 outcome、duration_ms 和可选的 output、error。
 
 ~~~ts
 interface PostExecutorContext extends ExecutorContext {
@@ -56,7 +56,7 @@ interface PostExecutorContext extends ExecutorContext {
 }
 ~~~
 
-**返回值类型**：不是函数返回值；作为 post hook 的输入。
+该上下文作为 post hook 的输入。
 
 **示例**：
 
@@ -73,16 +73,14 @@ const post = {
 
 **作用**：在执行器调用前后插入审计、限流或结果处理逻辑。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface Hooks {
-  pre_executor_hooks?: Array<(context: ExecutorContext) => void | Promise<void>>;
-  post_executor_hooks?: Array<(context: PostExecutorContext) => void | Promise<void>>;
+  pre_executor_hooks?: PreExecutorHooks[];
+  post_executor_hooks?: PostExecutorHooks[];
 }
 ~~~
-
-**返回值类型**：[Hooks](09-executors.md) 配置对象。
 
 **示例**：
 
@@ -92,11 +90,49 @@ const hooks = {
 };
 ~~~
 
+### PreExecutorHooks
+
+**作用**：表示执行器调用前运行的单个 hook，接收 ExecutorContext。
+
+**类型定义**：
+
+~~~ts
+type PreExecutorHooks = (context: ExecutorContext) => void | Promise<void>;
+~~~
+
+**示例**：
+
+~~~js
+const pre_executor_hook = (context) => {
+  text({ call_id: context.call_id, method: context.method });
+};
+const hooks = { pre_executor_hooks: [pre_executor_hook] };
+~~~
+
+### PostExecutorHooks
+
+**作用**：表示执行器调用完成后运行的单个 hook，接收 PostExecutorContext。
+
+**类型定义**：
+
+~~~ts
+type PostExecutorHooks = (context: PostExecutorContext) => void | Promise<void>;
+~~~
+
+**示例**：
+
+~~~js
+const post_executor_hook = (context) => {
+  text({ outcome: context.outcome, duration_ms: context.duration_ms });
+};
+const hooks = { post_executor_hooks: [post_executor_hook] };
+~~~
+
 ### Executor
 
 **作用**：聚合各类执行器和可选的 hooks。
 
-**输入类型**：
+**类型定义**：
 
 ~~~ts
 interface Executor {
@@ -108,8 +144,6 @@ interface Executor {
 }
 ~~~
 
-**返回值类型**：[Executor](09-executors.md) 实例。
-
 **示例**：
 
 ~~~js
@@ -118,6 +152,8 @@ text(result.output);
 ~~~
 
 ## FileExecutor
+
+文件执行器，通过 executor.fileExecutor 访问，提供以下文件操作方法。
 
 ### apply_patch(patch)
 
@@ -152,11 +188,13 @@ image(picture);
 
 ## TerminalExecutor
 
+终端执行器，通过 executor.terminalExecutor 访问，提供以下命令和会话管理方法。
+
 ### exec_command(input)
 
 **作用**：在指定环境运行 shell 命令或脚本。
 
-**输入类型**：ExecCommandInput，至少包含 cmd: string，可选工作目录、shell、TTY、等待时间、
+**输入类型**：input: ExecCommandInput，至少包含 cmd: string，可选工作目录、shell、TTY、等待时间、
 输出上限和环境权限字段。
 
 **返回值类型**：Promise<ExecCommandResult>，包含 output、可选 exit_code、session_id 等字段。
@@ -168,25 +206,27 @@ const result = await executor.terminalExecutor.exec_command({ cmd: "pwd", workdi
 text(result.output);
 ~~~
 
-### write_stdin(input)
+### write_stdin(session_id, chars, yield_time_ms, max_output_tokens)
 
 **作用**：向已有终端会话写入标准输入，或轮询新增输出。
 
-**输入类型**：{ session_id: number; chars?: string; yield_time_ms?: number; max_output_tokens?: number }。
+**输入类型**：session_id: number；chars: string；yield_time_ms: number；max_output_tokens: number。四个参数均必填；轮询时 chars 传入空字符串。
 
 **返回值类型**：Promise<ExecCommandResult>。
 
 **示例**：
 
 ~~~js
-const result = await executor.terminalExecutor.write_stdin({
+const result = await executor.terminalExecutor.write_stdin(
   session_id,
-  chars: "yes\\n",
-});
+  "yes\n",
+  1000,
+  2000,
+);
 text(result.output);
 ~~~
 
-### shellines(command)
+### shelllines(command)
 
 **作用**：执行命令并把输出按行切分、去除空行和首尾空白。
 
@@ -197,7 +237,7 @@ text(result.output);
 **示例**：
 
 ~~~js
-const names = await executor.terminalExecutor.shellines("find . -maxdepth 1 -type f");
+const names = await executor.terminalExecutor.shelllines("find . -maxdepth 1 -type f");
 text(names);
 ~~~
 
@@ -217,11 +257,15 @@ await executor.terminalExecutor.wait_environment("env-123");
 
 ## RemoteAgentExecutor
 
+远程 Agent 执行器，通过 executor.remoteAgentExecutor 访问，提供以下远程输入方法。
+
 ### send_input(agent_id, message?, input_items?, output_schema?)
 
 **作用**：向远程 Agent 发送输入，并请求一次结构化或文本结果。
 
 **输入类型**：agent_id: string；message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 时，未选择的输入参数使用 undefined 占位。
 
 **返回值类型**：Promise<[AgentResult](03agent.md)>。
 
@@ -231,13 +275,15 @@ await executor.terminalExecutor.wait_environment("env-123");
 const result = await executor.remoteAgentExecutor.send_input(
   remote.agent_id,
   "分析这个文件",
-  [],
+  undefined,
   { type: "object" },
 );
 text(result.output);
 ~~~
 
 ## McpExecutor
+
+MCP 执行器，通过 executor.mcpExecutor 访问，提供以下资源查询、读取和工具调用方法。
 
 ### list_mcp_resources(server?, cursor?)
 
