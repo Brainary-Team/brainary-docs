@@ -261,8 +261,6 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](15-bgrap
 
 BNeighborItem 的字段全集尚未确定，未列出的字段不能作为调用依据。
 
-BatchGraph、BatchTree、BatchList、BatchMap 四个类型名由本指南给出，协议侧只定义了「批次专用句柄」这一概念，名称尚未在契约中确认。
-
 ## 相关文档
 
 - [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
