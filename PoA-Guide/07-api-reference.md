@@ -21,7 +21,7 @@
 | [BGraph](07-api-reference/15-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](07-api-reference/16-btree.md) | 树的读写、约束模型和层级查询 |
 | [BList 与 BMap](07-api-reference/17-blist-bmap.md) | 有序项追加与键值读写 |
-| [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) | BNode、BEdge、BatchBuilder、CommitResult、BPage 和三个项类型 |
+| [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) | BNode、BEdge、BatchBuilder 与批次专用句柄、CommitResult、BPage 和三个项类型 |
 | [Working Memory 异常](07-api-reference/19-wm-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
 | [memory.snapshot](07-api-reference/20-wm-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 | [PoA Input](07-api-reference/07-poa-input.md) | input_schema.ts、JSON Schema、POA_INPUT 和校验规则 |
@@ -46,7 +46,7 @@
 | BGraph | [BGraph](07-api-reference/15-bgraph.md) |
 | BTree | [BTree](07-api-reference/16-btree.md) |
 | BList、BMap | [BList 与 BMap](07-api-reference/17-blist-bmap.md) |
-| BNode、BEdge、BatchBuilder、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) |
+| BNode、BEdge、BatchBuilder、BatchGraph、BatchTree、BatchList、BatchMap、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) |
 | WmError、WmUsageError、WmRequestError、WmErrorCode | [Working Memory 异常](07-api-reference/19-wm-errors.md) |
 | SnapshotPage | [memory.snapshot](07-api-reference/20-wm-snapshot.md) |
 
