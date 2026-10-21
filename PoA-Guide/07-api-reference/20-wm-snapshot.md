@@ -1,0 +1,117 @@
+# memory.snapshot
+
+[memory.snapshot](20-wm-snapshot.md) 提供 Working Memory 的快照创建、列举和只读查询。它挂在
+[memory](14-memory.md) 上，三个方法都返回 Promise，都不在 [BatchBuilder](18-wm-elements.md) 上提供，在 batch
+回调窗口内调用会同步抛 [WmUsageError](19-wm-errors.md)。
+
+创建、列举和只读查询都不推进当前 Run 的版本。
+
+当前不提供装载动作：历史数据只能用本页的只读查询读取，不能把它当成可写 Run 的恢复流程。跨进程导出的文件没有 SDK
+导入动作，PoA 程序也不能直接读取导出的文件；业务需要跨 Run 查找快照时，必须由宿主保存快照 id、schema 标识和关联
+信息，并提供额外的读取通道。
+
+[memory](14-memory.md) 当前使用内存存储，进程退出后运行态与内存中的快照都会丢失，只有此前成功导出的文件和接入侧
+记录能留存。所以接入侧应在每次快照成功后持久记录快照 id、schema 标识、序号和业务关联键，导出成功时还应记录文件
+位置，导出失败须显式记录。新 Run 无法通过列举发现旧 Run 的快照，旧快照的 id 只能来自接入侧索引；索引本身不等于
+快照内容已持久化。
+
+创建与关闭的完整返回形状、列举与查询的分页参数位置、以及导出结果的字段名，由宿主与后端能力定义。
+
+## 类型
+
+### SnapshotPage
+
+**作用**：承载快照侧的分页结果，由 list 和 query 共用。
+
+**类型定义**：
+
+~~~ts
+interface SnapshotPage {
+  entries: unknown[];
+  next_cursor?: unknown;
+}
+~~~
+
+快照侧不使用 [BPage](18-wm-elements.md)，这个分页外壳不带 revision，因为快照分页绑定的是不可变的快照 id 而不是
+一个读版本。list 返回的 entries 是快照元数据条目，query 返回的 entries 是查询结果，两者共用同一个外壳。
+
+**示例**：
+
+~~~js
+const page = await memory.snapshot.list();
+text(page.entries.length);
+~~~
+
+## 方法
+
+### create(association?)
+
+**作用**：捕获当前已提交状态，生成一个不可变快照。
+
+**输入类型**：association?: object，由接入侧自定义的业务关联信息。
+
+**参数约束**：association 是有大小上限的 JSON 对象，上限由宿主能力声明提供。
+
+**返回值类型**：Promise<object>，成功结果含快照 id、捕获时绑定的 schema 标识、实际捕获的状态版本、实例内的快照
+序号，以及一个明确区分导出成功和失败的导出结果。
+
+**示例**：
+
+~~~js
+const created = await memory.snapshot.create({ kind: "check", round_ref: "round-3" });
+text(created.snapshot_id);
+~~~
+
+快照 id 由 WM 生成且不可猜测，供历史读取使用；它不得自行构造或按序号枚举，也不能替代 workspace 授权。序号是实例内
+的快照序号，列举按它排序。期望版本由 SDK 携带，期望版本过期时返回 REVISION_CONFLICT，不会把较新状态当作指定版本的
+快照。
+
+association 由 WM 只校验形状和大小、保存并返回，不解释业务含义；它是接入侧的业务字段，不是 WM 解释执行的控制参数。
+检查轮次建议记录类别、稳定的轮次引用和结果，适用时另记判据引用与判据版本。
+
+导出失败不使快照创建失败，但会在响应中显式标出。这时快照仍可在本 WM 进程内读取，却没有得到可跨进程留存的文件，
+所以调用方不能仅凭快照创建成功就认定数据已持久保存；收到创建成功而导出失败时，应按该快照不可跨进程使用处理。
+
+同一状态可以生成多个不同快照。响应丢失后重试可能多拍一份，WM 不去重，也不标记重试产物，所以同一个业务轮次可能对应
+多条快照，不能假定一轮一快照。
+
+### list()
+
+**作用**：列举当前 Run 关联的快照。
+
+**输入类型**：无。
+
+**返回值类型**：Promise<[SnapshotPage](20-wm-snapshot.md)>，entries 按快照序号排序。
+
+**示例**：
+
+~~~js
+const page = await memory.snapshot.list();
+text(page.entries);
+~~~
+
+条目包含快照 id、捕获版本、序号及关联信息；接入侧还需自行保存对应的 schema 标识。本方法只列当前 Run 关联的快照，
+不提供跨 Run 发现。分页参数的传入位置由后端能力定义，所以 list 只表示方法入口，不表示完整的分页签名。
+
+### query(snapshot_id, options)
+
+**作用**：按已知快照 id 只读查询历史数据。
+
+**输入类型**：snapshot_id: string；options: object，目标、集合、过滤和排序字段沿用四类集合的 query。
+
+**返回值类型**：Promise<[SnapshotPage](20-wm-snapshot.md)>，entries 是查询结果。
+
+**示例**：
+
+~~~js
+const page = await memory.snapshot.query(created.snapshot_id, { target: "nodes" });
+text(page.entries.length);
+~~~
+
+它不装载、也不改写当前 Run。结果必须按快照捕获时的 schema 解释，历史数据不按当前 schema 重新解释。查询按宿主注入的
+workspace 授权，可以跨 Run，但只在 WM 进程仍持有对应快照时有效。map 的历史不另建一套接口，用的就是本方法。
+
+## 相关文档
+
+- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
+- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
