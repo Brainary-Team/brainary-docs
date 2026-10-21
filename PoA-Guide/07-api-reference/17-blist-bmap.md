@@ -6,8 +6,9 @@
 这两类集合的 value 不用包装类：一个 list 只有一个 item_type、一个 map 只有一个 value_type，不需要包装类区分类别，
 所以直接接收原值。声明为内联标量时，value 就是裸标量本身。
 
-写方法成功提交时推进一次版本，读方法不推进。替换与删除方法的参数字段、以及 query 的查询选项字段，由 schema 声明与
-宿主能力共同定义。各条目只说明该方法的特定失败，完整错误码见 [WmErrorCode](19-wm-errors.md)。
+写方法成功提交时推进一次版本，读方法不推进。BList 的 replace 与 delete、BMap 的 delete，以及两个 query 的选项
+形状，都尚未确定。下面给出这些方法需要表达的信息和当前的调用形态，但它们还不能作为稳定调用签名。各条目只说明该
+方法的特定失败，完整错误码见 [WmErrorCode](19-wm-errors.md)。
 
 ## BList
 
@@ -29,13 +30,15 @@ position；字段说明见 [BListItem](18-wm-elements.md)。item_id 由调用方
 
 ~~~js
 const result = await evidenceList.append("ev-1", { note: "网关时间快 31 秒" });
+if (!result.ok) throw new Error("追加未提交，需重读后重新计算");
 text(result.generated.position);
 ~~~
 
-这是四类集合里唯一会带 generated 的方法。position 由服务端分配，不能自行指定；版本冲突时未分配位置，不能读取该
-字段。position 分配是生成器，按书写顺序递增，取每个 list 的单调高水位加一，所以同一批次里两个 append 的相对次序
-必须由调用登记顺序决定，这一类不是顺序无关的。一个批次包含多个 append 时 generated 如何对应各项由后端能力定义，
-当前批次中的 append 不作为 generated 的调用依据。
+这是四类集合里唯一会带 generated 的方法。position 由服务端分配，不能自行指定；版本冲突时未分配位置、整个
+generated 都缺省，所以读它前必须像上面那样先判 ok，否则冲突路径上拿到的是一个 TypeError 而不是一个可处理的失败。
+position 分配是生成器，按书写顺序递增，取每个 list 的单调高水位加一，所以同一批次里两个 append 的相对次序必须由
+调用登记顺序决定，这一类不是顺序无关的。一个批次包含多个 append 时 generated 如何对应各项尚未确定，所以批次里的
+append 当前不能依赖这个字段。
 
 item_id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT。value 不符声明的 item_type 返回 INVALID_STRUCTURE，
 item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
@@ -57,7 +60,8 @@ const result = await evidenceList.replace("ev-1", { note: "复测后时钟已同
 ~~~
 
 replace 替换完整 value，item_id 与 position 保持不变。它与先删再追加是两种不同的改法：先删再追加会让同一个 item_id
-拿到新的 position，语义是删掉再追加到末尾。目标不存在时返回 NOT_FOUND，这与图和树侧的 NOT_FOUND_OR_DENIED 不同。
+拿到新的 position，语义是删掉再追加到末尾。目标不存在时返回 NOT_FOUND，这与图和树侧的 NOT_FOUND_OR_DENIED 不同；
+两者要不要统一尚未确定，调用方按具体方法分别处理。
 
 ### delete(item_id)
 
@@ -128,8 +132,8 @@ const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 ~~~
 
 模式不匹配一定报错，不会静默覆盖或静默创建：create 撞上已存在的 key、replace 撞上不存在的 key，都返回
-STRUCTURE_CONFLICT，由 details 区分是哪一种。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成
-字符串属于这一类，不做隐式转换。
+STRUCTURE_CONFLICT。协议层在 details 里回带究竟是哪一种，但 details 怎么跨传输边界传到 JS 面尚未确定，所以不要按
+它写分支。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
 
 mode 比对是前置条件，按该操作之前的前缀状态求值，由此确定三种批次组合的结果：先 create 再 replace 同一个 key 通过，
 第二项看到第一项的结果；两次 create 同一个 key 被拒绝；同一个 key 两次 upsert 不同 value 时后者生效。

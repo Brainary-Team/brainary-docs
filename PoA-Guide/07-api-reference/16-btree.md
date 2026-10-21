@@ -13,8 +13,9 @@ parent_id 为 null 的节点，不允许游离节点，父链不成环；把一�
 
 五条判定按固定顺序评估：引用完整性、单根、无环、深度上限、父子类别相容。顺序本身有后果，一个输入同时违反两条时
 返回前一条检查对应的错误码；无环排在深度之前，因为环上的节点到根没有路径、深度无定义。深度是根到该节点的边数，
-根为 0，上限由宿主能力声明带出、不进 schema；深度超限不是 RESOURCE_EXHAUSTED，它是确定性的输入性失败，归在
-CONSTRAINT_VIOLATION。违反以上任一条都返回 CONSTRAINT_VIOLATION，由 details 区分具体是哪一条。
+根为 0，上限由宿主能力声明带出、不进 schema，具体数值待实测；深度超限不是 RESOURCE_EXHAUSTED，它是确定性的
+输入性失败，归在 CONSTRAINT_VIOLATION。违反以上任一条都返回 CONSTRAINT_VIOLATION。协议层在 details 里回带究竟
+是哪一条，但 details 怎么跨传输边界传到 JS 面尚未确定，所以不要按它写分支。
 
 单个方法另有自己的检查顺序，只执行该操作适用的检查：字段形状与必填、集合归属、目标状态前提、CAS、空操作、批次级
 禁令。这六步的作用域是单个方法和它自己的前缀状态，五条判定的作用域是整批和最终状态，两者不是一条流水线：先按书写
@@ -24,8 +25,9 @@ CONSTRAINT_VIOLATION。违反以上任一条都返回 CONSTRAINT_VIOLATION，由
 也没有 neighbors，那是 [BGraph](15-bgraph.md) 专属。祖先链、深度、叶集、子树节点集和子树高度可由调用方从一次不带
 filter 的 query 结果计算，SDK 不为它们提供单独的方法。
 
-更新与删除方法的参数字段、children 的分页参数、以及 query 的查询选项字段，由 schema 声明与宿主能力共同定义。
-各条目只说明该方法的特定失败，完整错误码见 [WmErrorCode](19-wm-errors.md)。
+update 与 delete 的参数形状、children 的分页参数、以及 query 的查询选项形状，都尚未确定。下面给出这些方法需要
+表达的信息和当前的调用形态，但它们还不能作为稳定调用签名。各条目只说明该方法的特定失败，完整错误码见
+[WmErrorCode](19-wm-errors.md)。
 
 ### add_root(node)
 
@@ -45,8 +47,6 @@ const result = await taskTree.add_root(
 
 已有根时建根违反单根，按最终状态判，所以同一批次删旧根再建新根是允许的。建根时父子类别相容检查空转，但 node_class
 仍须是该树已声明的类别；某个类别只能当根，是没有任何类别把它列进 child_classes 的结果，不是独立的根类别声明。
-
-空树上建一个 parent_id 指向自身的节点时，最终状态同时是自环且零根，按固定顺序先判单根，所以返回的是零根那一条。
 
 ### add_child(parent_id, node)
 
@@ -68,6 +68,10 @@ const result = await taskTree.add_child(
 树节点必须在创建时就有位置，没有先建后挂这条路，所以节点位置由所选方法及其参数确定，不需要自行组装父节点字段。
 新增不会覆盖已有节点：id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT。parent_id 指向另一棵树或某个图的
 节点时返回 INVALID_STRUCTURE，不支持跨树移动。父的 child_classes 不含该节点的 node_class 时违反父子类别相容。
+
+把 parent_id 传成新节点自己的 id，一个调用就能同时造出自环和零根两种违规，但按固定顺序只返回一个码：在空树上
+这么做，最终状态是自环且零根，单根先判，所以回零根那一条；要单独撞到成环，得在非空树上这么做，此时根还在、单根
+通过，无环才会命中。
 
 ### set_parent(node_id, new_parent_id, expected_parent_id)
 
@@ -209,7 +213,8 @@ text(childPage.items.map((child) => child.id));
 ~~~
 
 它等价于 query 按 parent_id 过滤，只返回一跳子集，不包含孙节点；有 next_cursor 时本页也不是全部直接子节点。
-children 的分页参数由后端能力定义，需要明确表达分页时用 query 并传入 cursor。
+children 的 cursor 与 limit 传在哪里尚未确定，所以不能假定上面这个形式可以读取后续页；需要明确表达分页时改用
+query 按 parent_id 过滤并传入 cursor，但 query 的选项形状同样尚未确定。
 
 子节点无序。返回顺序由排序规定决定，默认按 id 升序，它是展示顺序、不承载业务含义。需要顺序的层级有两条出路：
 改用 [BList](17-blist-bmap.md)，或在节点属性上自带一个序号字段由调用方排序。

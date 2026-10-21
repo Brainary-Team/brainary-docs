@@ -11,8 +11,9 @@
 [WmRequestError](19-wm-errors.md)，只有 REVISION_CONFLICT 以 ok 为 false 回到
 [CommitResult](18-wm-elements.md)。各条目只说明该方法的特定失败，完整错误码见 [WmErrorCode](19-wm-errors.md)。
 
-更新与删除方法的参数字段、以及 query 与 neighbors 的查询选项字段，由 schema 声明与宿主能力共同定义。下面给出每个
-方法需要表达的信息和当前的调用形态。
+update_node、delete_node、update_edge、delete_edge 的参数形状，以及 query 与 neighbors 的查询选项形状，都尚未
+确定。下面给出这些方法需要表达的信息和当前的调用形态，但它们还不能作为稳定调用签名；写业务代码时应把这几处集中
+封装在一处。
 
 ### add_node(node)
 
@@ -99,7 +100,8 @@ const result = await incidentGraph.delete_node("node-1");
 
 不级联删边。删除后仍留下关联边时返回 CONSTRAINT_VIOLATION；悬空边这一条是谓词、按最终状态校验、与操作顺序无关，
 所以同一批次同时删边删点是允许的。同一批次内重复删同一个目标按去重处理，不返回 NOT_FOUND_OR_DENIED，删除在最终
-状态语义下幂等；单次删除一个不存在的目标仍然报错。
+状态语义下幂等；单次删除一个不存在的目标仍然报错。更复杂的删除序列的结果尚未确定：对批次开始时就不存在的目标，
+以及删除、重建后再次删除这类组合，都不能按上面的去重规则推导结果。
 
 ### update_edge(id, update)
 
@@ -178,8 +180,9 @@ text(page.items.map((node) => node.id));
 ~~~
 
 filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配，只在所选集合内筛选；未命中返回合法空结果，不改报
-集合归属错误。sort 的可用字段是已声明的一层标量字段，并自动追加元素 id 作为末级排序键。未指定 sort 时的默认顺序由
-后端决定，需要稳定顺序时应显式传入 sort。集合名不存在或种类不符返回 INVALID_STRUCTURE，与取句柄时的拒绝口径一致。
+集合归属错误。sort 的可用字段是已声明的一层标量字段，并自动追加元素 id 作为末级排序键。graph 未指定 sort 时的
+默认顺序尚未固定，需要稳定顺序时必须显式传入 sort。集合名不存在或种类不符返回 INVALID_STRUCTURE，与取句柄时的
+拒绝口径一致。
 
 翻页时把上一页的 next_cursor 原样传回，并沿用同一组查询条件：
 

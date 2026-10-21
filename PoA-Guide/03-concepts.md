@@ -54,7 +54,7 @@ cell 单列成一个词，是因为它决定了以下几件事：
 
 后续各篇的示例默认已经抄了这一层。看到 `runBatch` / `shellLines` / `parseJsonReply` 就是它，看到 `tools.` 开头的就是内置。
 
-这两条线索是正向识别，不是封闭的二分：`memory.` 开头的那一组**两类都不属于**。它是宿主按包声明和运行条件注入的，既不随 codex 本体无条件存在，也抄不进 `main.js`；在 §3 的注入清单里单列一行，接口见 [memory](07-api-reference/14-memory.md)。
+上面那张表按来源分的两类**不是穷举**，这两条线索也只是正向识别：`memory.` 开头的那一组两类都不属于。它由 brainary 侧按包声明和运行条件注入，既不随 codex 本体无条件存在，也抄不进 `main.js`；在 §3 的注入清单里单列一行，接口见 [memory](07-api-reference/14-memory.md)。
 
 ### prelude 为什么存在
 
