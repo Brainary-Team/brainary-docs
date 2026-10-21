@@ -17,6 +17,13 @@
 | [AgentOrchestration](07-api-reference/01-agent-orchestration.md) | Agent 创建、任务派发、批量等待、Handle 和 RemoteAgent |
 | [Executor](07-api-reference/09-executors.md) | 执行器上下文、Hooks、PreExecutorHooks、PostExecutorHooks、文件、终端、远程 Agent、MCP 调用 |
 | [AgentConfig](07-api-reference/02-agent-config.md) | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec 和 AgentConfig |
+| [memory](07-api-reference/14-memory.md) | 集合访问器、batch、close_run_memory，以及 Working Memory 的作用域与版本规则 |
+| [BGraph](07-api-reference/15-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
+| [BTree](07-api-reference/16-btree.md) | 树的读写、约束模型和层级查询 |
+| [BList 与 BMap](07-api-reference/17-blist-bmap.md) | 有序项追加与键值读写 |
+| [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) | BNode、BEdge、BatchBuilder、CommitResult、BPage 和三个项类型 |
+| [Working Memory 异常](07-api-reference/19-wm-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
+| [memory.snapshot](07-api-reference/20-wm-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 | [PoA Input](07-api-reference/07-poa-input.md) | input_schema.ts、JSON Schema、POA_INPUT 和校验规则 |
 | [ask()](07-api-reference/08-ask.md) | 问题结构、答案结构和交互模式 |
 | [MCP tool 配置](07-api-reference/10-mcp-tool-config.md) | manifest.toml、MCP server、工具发现和生命周期 |
@@ -35,6 +42,13 @@
 | FileExecutor、TerminalExecutor、RemoteAgentExecutor、McpExecutor | [各类执行器](07-api-reference/09-executors.md#fileexecutor) |
 | global、helper | [global](07-api-reference/11-global.md)、[helper](07-api-reference/12-helper.md) |
 | tools（枚举）、SkillsManager | [工具枚举与 SkillsManager](07-api-reference/13-skills-manager.md) |
+| memory | [memory](07-api-reference/14-memory.md) |
+| BGraph | [BGraph](07-api-reference/15-bgraph.md) |
+| BTree | [BTree](07-api-reference/16-btree.md) |
+| BList、BMap | [BList 与 BMap](07-api-reference/17-blist-bmap.md) |
+| BNode、BEdge、BatchBuilder、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](07-api-reference/18-wm-elements.md) |
+| WmError、WmUsageError、WmRequestError、WmErrorCode | [Working Memory 异常](07-api-reference/19-wm-errors.md) |
+| SnapshotPage | [memory.snapshot](07-api-reference/20-wm-snapshot.md) |
 
 ## 共享约定
 

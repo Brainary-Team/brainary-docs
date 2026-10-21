@@ -48,7 +48,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 与 AgentConfig |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 与 Working Memory（memory、BGraph、BTree、BList、BMap） |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 
@@ -74,5 +74,11 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | handle | 派出一个子 agent 后拿到的句柄，后续等待、追问、关闭都靠它 |
 | 并行派发（扇出 / fan-out） | 一次派出 N 个子 agent 并行执行的形状 |
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
-| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 和 AgentConfig；详见 [API 参考](07-api-reference.md) |
+| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 和 Working Memory 的 memory、BGraph、BTree、BList、BMap；详见 [API 参考](07-api-reference.md) |
 | Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |
+| Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-memory.md) |
+| Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent。它与 cell、turn、thread 都不等同 —— 一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态 |
+| owner / guest | owner 是发起当前 Run 的那个 PoA，持有初始化、快照和关闭 Run 的权限；guest 是经授权访问其他实例中共享集合的调用方，附着入口当前未提供 |
+| 集合句柄 | `memory.graph` / `tree` / `list` / `map` 同步返回的那个对象。它只指定集合，不是集合内容；同一个 Run 内同名返回同一对象 |
+| revision / CAS | `revision` 是当前 Run 内的提交序号，只向前推进。每个写动作都带期望版本做比较，版本不符则拒绝本次提交；该值由 SDK 自己携带，不进调用参数 |
+| WM schema | PoA 声明的 Working Memory 数据结构：集合名、元素类别、值类型和约束。它与 `input_schema` 是两份不同的 schema，用途与可见性都不同 |
