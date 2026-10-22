@@ -76,7 +76,7 @@ const sandbox = "workspace_write";
 **类型定义**：
 
 ~~~ts
-type ApprovalPolicy = "auto_review" | "deny_all";
+type ApprovalPolicy = "auto_review" | "deny_all | manual_review";
 ~~~
 
 **示例**：

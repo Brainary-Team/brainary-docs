@@ -93,7 +93,7 @@ const analyst = orchestration.create_remote_agent("analyst", "调用远程分析
 
 ### spawn_agent(message?, input_items?, agent_name, meta?)
 
-**作用**：按 Agent 名称派发一次任务，并返回可用于后续管理的句柄。
+**作用**：按 Agent 名称派发一次任务，并返回可用于后续管理的句柄。派发Agent的能力来源于～/brainary/config.toml文件。
 
 **输入类型**：message?: string；input_items?: IOInput[]；agent_name: string；meta?: unknown。
 

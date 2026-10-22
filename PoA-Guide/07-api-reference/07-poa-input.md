@@ -1,8 +1,7 @@
 # POA INPUT SDK
 
 本页说明 `.poa` 包如何声明业务输入、如何把 TypeScript 类型编译为 JSON Schema，以及
-程序如何在运行时读取经过校验的 `POA_INPUT`。实现位于仓库的 `codex-rs/poa` 和
-`codex-rs/code-mode-runtime`。
+程序如何在运行时读取经过校验的 `POA_INPUT`。
 
 ## 包结构
 
