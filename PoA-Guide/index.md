@@ -48,7 +48,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 与 AgentConfig |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 与 Working Memory（memory、BGraph、BTree、BList、BMap、memory.snapshot，以及元素与异常类型） |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 
@@ -74,5 +74,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | handle | 派出一个子 agent 后拿到的句柄，后续等待、追问、关闭都靠它 |
 | 并行派发（扇出 / fan-out） | 一次派出 N 个子 agent 并行执行的形状 |
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
-| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor 和 AgentConfig；详见 [API 参考](07-api-reference.md) |
+| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 和 Working Memory 的 memory、BGraph、BTree、BList、BMap、memory.snapshot 及其元素与异常类型；详见 [API 参考](07-api-reference.md) |
 | Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |
+| Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
+| Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent，与 cell、turn、thread 都不等同。一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态；作用域与实例的完整规则见 [memory](07-api-reference/14-working-memory/01-memory.md) |
