@@ -29,13 +29,13 @@ const agent = orchestration.create_agent("reviewer", "代码审查", {
 });
 ~~~
 
-### run(message?, input_items?, output_schema?)
+### run(message?, input_items?, output_schema?, timeout?)
 
 **作用**：执行一次完整 Agent 任务并等待最终结果。
 
-**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
 
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 时，未选择的输入参数使用 undefined 占位。
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
 
 **返回值类型**：Promise<[AgentResult](03agent.md)>。
 
@@ -45,7 +45,7 @@ const agent = orchestration.create_agent("reviewer", "代码审查", {
 const result = await agent.run("检查 README", undefined, {
   type: "object",
   properties: { issues: { type: "array" } },
-});
+}, timeout);
 text(result.output);
 ~~~
 
@@ -66,20 +66,20 @@ const result = await agent.wait_run("汇总检查结果");
 text(result.text);
 ~~~
 
-### send_input(message?, input_items?, interrupt?)
+### send_input(message?, input_items?, interrupt?, timeout?)
 
 **作用**：向 Agent 发送后续输入；interrupt=true 时请求打断当前运行。
 
-**输入类型**：message?: string；input_items?: IOInput[]；interrupt?: boolean。
+**输入类型**：message?: string；input_items?: IOInput[]；interrupt?: boolean；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
 
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 interrupt 时，未选择的输入参数使用 undefined 占位。
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 interrupt 或 timeout 时，省略的前置可选参数使用 undefined 占位。
 
 **返回值类型**：Promise<void>。
 
 **示例**：
 
 ~~~js
-await agent.send_input("优先检查认证逻辑", undefined, true);
+await agent.send_input("优先检查认证逻辑", undefined, true, timeout);
 ~~~
 
 ### compact(compact_template?)
@@ -153,14 +153,17 @@ interface AgentResult {
   agent_id: string;
   output: unknown;
   text: string;
+  agent_state: AgentState;
 }
 ~~~
 
 output 在传入 output_schema 时是校验后的对象，否则是最终文本；text 始终保留原始最终回复。详见 [AgentResult](03agent.md)。
 
+agent_state 表示本次运行返回时的 Agent 状态，类型为 [AgentState](04-agent-monitor.md#agentstate)。
+
 **示例**：
 
 ~~~js
 const result = await agent.run("返回状态", undefined, { type: "object" });
-text({ structured: result.output, raw: result.text });
+text({ structured: result.output, raw: result.text, state: result.agent_state });
 ~~~
