@@ -259,13 +259,13 @@ await executor.terminalExecutor.wait_environment("env-123");
 
 远程 Agent 执行器，通过 executor.remoteAgentExecutor 访问，提供以下远程输入方法。
 
-### send_input(agent_id, message?, input_items?, output_schema?)
+### send_input(agent_id, message?, input_items?, output_schema?, timeout?)
 
 **作用**：向远程 Agent 发送输入，并请求一次结构化或文本结果。
 
-**输入类型**：agent_id: string；message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
+**输入类型**：agent_id: string；message?: string；input_items?: IOInput[]；output_schema?: JsonSchema；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
 
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 时，未选择的输入参数使用 undefined 占位。
+**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
 
 **返回值类型**：Promise<[AgentResult](03agent.md)>。
 
@@ -277,6 +277,7 @@ const result = await executor.remoteAgentExecutor.send_input(
   "分析这个文件",
   undefined,
   { type: "object" },
+  timeout,
 );
 text(result.output);
 ~~~
