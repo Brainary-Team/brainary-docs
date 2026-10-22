@@ -1,6 +1,6 @@
 # BNode、BEdge、BatchBuilder 与读写返回类型
 
-本页描述 Working Memory 的构造类型、批次构建器和读写返回类型。构造类型用于写入 [BGraph](15-bgraph.md) 与 [BTree](16-btree.md)，返回类型由四类集合的读写方法和 [memory](14-memory.md) 的 batch 返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，它们由 memory 上同名的访问器取得。
+本页描述 Working Memory 的构造类型、批次构建器和读写返回类型。构造类型用于写入 [BGraph](02-bgraph.md) 与 [BTree](03-btree.md)，返回类型由四类集合的读写方法和 [memory](01-memory.md) 的 batch 返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，它们由 memory 上同名的访问器取得。
 
 ### BNode
 
@@ -45,7 +45,7 @@ interface BEdge {
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, properties }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](19-wm-errors.md)。该边类别声明了 value_type 时 properties 必填，未声明时必须是空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, properties }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 properties 必填，未声明时必须是空对象或省略。
 
 **示例**：
 
@@ -61,7 +61,7 @@ const edge = new BEdge({
 
 ### BatchBuilder
 
-**作用**：在 [memory](14-memory.md) 的 batch 回调内选择集合，并登记这一批次的写入。
+**作用**：在 [memory](01-memory.md) 的 batch 回调内选择集合，并登记这一批次的写入。
 
 **类型定义**：
 
@@ -99,7 +99,7 @@ interface CommitResult {
 }
 ~~~
 
-ok 表示本次提交是否落地，接受一次调用不等于提交成功。revision 在成功时是提交后的新版本，在版本冲突时是服务端的当前版本。generated 只出现在 [BList](17-blist-bmap.md) 的 append 上，带出服务端分配的 position，其余方法没有这一位，不是空对象。
+ok 表示本次提交是否落地，接受一次调用不等于提交成功。revision 在成功时是提交后的新版本，在版本冲突时是服务端的当前版本。generated 只出现在 [BList](04-blist-bmap.md) 的 append 上，带出服务端分配的 position，其余方法没有这一位，不是空对象。
 
 **示例**：
 
@@ -135,7 +135,7 @@ while (page.next_cursor) {
 
 ### BListItem
 
-**作用**：表示 [BList](17-blist-bmap.md) 查询结果中的一个项。
+**作用**：表示 [BList](04-blist-bmap.md) 查询结果中的一个项。
 
 **类型定义**：
 
@@ -158,7 +158,7 @@ text(page.items.map((item) => item.position));
 
 ### BMapItem
 
-**作用**：表示 [BMap](17-blist-bmap.md) 查询结果中的一个项。
+**作用**：表示 [BMap](04-blist-bmap.md) 查询结果中的一个项。
 
 **类型定义**：
 
@@ -180,7 +180,7 @@ text(page.items[0].value);
 
 ### BNeighborItem
 
-**作用**：表示 [BGraph](15-bgraph.md) 的 neighbors 结果中的一对相邻节点和边。
+**作用**：表示 [BGraph](02-bgraph.md) 的 neighbors 结果中的一对相邻节点和边。
 
 **类型定义**：
 
@@ -212,7 +212,7 @@ properties 的更新粒度是一层字段，嵌套对象与数组只能整体替
 
 ## 树节点的 parent_id
 
-parent_id 由 WM 维护，不在 BNode 的构造器参数内。建点时的位置由 [BTree](16-btree.md) 的 add_root 或 add_child 给出，改父走 set_parent，写进 update 的 set 或 unset 会返回 INVALID_ARGUMENT。它也不可用作排序字段。
+parent_id 由 WM 维护，不在 BNode 的构造器参数内。建点时的位置由 [BTree](03-btree.md) 的 add_root 或 add_child 给出，改父走 set_parent，写进 update 的 set 或 unset 会返回 INVALID_ARGUMENT。它也不可用作排序字段。
 
 写入时不传它，读回树节点时它必定带回。没有 parent_id，query 的结果之间就没有任何关系信息，调用方无法还原树的形状。图节点不携带该字段。
 
@@ -233,13 +233,13 @@ BatchBuilder 与批次专用句柄仅在所属回调同步执行期间有效。�
 
 每个写方法和 batch 都返回 CommitResult。写成功推进一次版本，读和快照创建不推进，一个批次无论含多少个写方法整批成功只推进一次。
 
-约束失败一律抛 [WmRequestError](19-wm-errors.md)。只有 REVISION_CONFLICT 以 ok 为 false 回到 CommitResult，ok 为 false 只有版本冲突这一个含义。SDK 不自动合并、也不自动重试。
+约束失败一律抛 [WmRequestError](06-errors.md)。只有 REVISION_CONFLICT 以 ok 为 false 回到 CommitResult，ok 为 false 只有版本冲突这一个含义。SDK 不自动合并、也不自动重试。
 
 版本冲突时 append 未分配位置，整个 generated 都缺省，读它前必须先判 ok。
 
 ## 游标与分页
 
-items 的元素类型由调用的方法与查询目标决定：[BGraph](15-bgraph.md) 的 query 按 target 返回 BNode 或 BEdge，[BTree](16-btree.md) 的 query 与 children 返回带 parent_id 的 BNode，[BList](17-blist-bmap.md) 的 query 返回 BListItem，[BMap](17-blist-bmap.md) 的 query 返回 BMapItem，BGraph 的 neighbors 返回 BNeighborItem。
+items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgraph.md) 的 query 按 target 返回 BNode 或 BEdge，[BTree](03-btree.md) 的 query 与 children 返回带 parent_id 的 BNode，[BList](04-blist-bmap.md) 的 query 返回 BListItem，[BMap](04-blist-bmap.md) 的 query 返回 BMapItem，BGraph 的 neighbors 返回 BNeighborItem。
 
 游标由 WM 生成，对调用方不透明，只能原样传回。它至少编码了目标、规范化过滤器、排序键和读版本，并在作用域内防篡改。调用方不得自行构造、解析或偏移游标，这与 offset 式分页有本质区别。游标钉住发出它的那次读的版本，继续分页恒在同一读版本上进行，翻页期间发生的提交不使它失效。
 
@@ -257,11 +257,11 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](15-bgrap
 
 一个批次包含多个 append 时 generated 如何对应各项尚未确定，当前批次里的 append 不能依赖这个字段。
 
-游标失效的那个错误码还没有定名，不在 [WmErrorCode](19-wm-errors.md) 的清单里。游标的有效期与保留预算两个数值也尚未确定，在拿到数之前分页会不会中断只能定性，不能定量。
+游标失效的那个错误码还没有定名，不在 [WmErrorCode](06-errors.md) 的清单里。游标的有效期与保留预算两个数值也尚未确定，在拿到数之前分页会不会中断只能定性，不能定量。
 
 BNeighborItem 的字段全集尚未确定，未列出的字段不能作为调用依据。
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

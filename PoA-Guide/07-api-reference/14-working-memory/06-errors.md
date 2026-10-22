@@ -1,6 +1,6 @@
 # WmError、WmUsageError、WmRequestError 与 WmErrorCode
 
-本页描述 Working Memory 的异常类层级、错误码和捕获方式。[memory](14-memory.md) 及四类集合句柄的失败主要分成两类：请求尚未发出的本地使用错误，和请求已发出、由后端拒绝的请求错误。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](18-wm-elements.md) 与 [BEdge](18-wm-elements.md)。
+本页描述 Working Memory 的异常类层级、错误码和捕获方式。[memory](01-memory.md) 及四类集合句柄的失败主要分成两类：请求尚未发出的本地使用错误，和请求已发出、由后端拒绝的请求错误。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](05-elements.md) 与 [BEdge](05-elements.md)。
 
 ### WmError
 
@@ -38,7 +38,7 @@ interface WmUsageError extends WmError {
 }
 ~~~
 
-它没有后端错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。四处本地失败抛这个类：取集合句柄时集合名未在 schema 的 collections 下声明、或声明成了别的种类；在 batch 回调窗口内误用 memory 上的普通集合句柄；在回调窗口内调用 memory 的 snapshot 方法、close_run_memory 或嵌套 batch；构造 [BEdge](18-wm-elements.md) 时缺少端点。
+它没有后端错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。四处本地失败抛这个类：取集合句柄时集合名未在 schema 的 collections 下声明、或声明成了别的种类；在 batch 回调窗口内误用 memory 上的普通集合句柄；在回调窗口内调用 memory 的 snapshot 方法、close_run_memory 或嵌套 batch；构造 [BEdge](05-elements.md) 时缺少端点。
 
 **示例**：
 
@@ -63,7 +63,7 @@ interface WmRequestError extends WmError {
 }
 ~~~
 
-约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](18-wm-elements.md) 返回且 ok 为 false，不作为异常抛出。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.properties.title，list 与 map 形如 changes 下的 value.title。
+约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.properties.title，list 与 map 形如 changes 下的 value.title。
 
 **示例**：
 
@@ -119,7 +119,7 @@ if (!result.ok) text({ conflict_at: result.revision });
 
 本地使用错误没有 code 字段，请求错误有。版本冲突既不走本地也不走异常，它经 CommitResult 返回。
 
-还有一类落在这三者之外：超出传输帧上限时表现为传输层错误，它不带后端错误码，见 [memory](14-memory.md) 的批次。
+还有一类落在这三者之外：超出传输帧上限时表现为传输层错误，它不带后端错误码，见 [memory](01-memory.md) 的批次。
 
 code 与 details 怎么跨传输边界传到 JS 面尚未确定，两者都还不能作为已可用的能力依赖，也不能提前写成稳定的分支条件。调用方应优先按 message 记录错误，并保留原始异常和请求上下文。
 
@@ -181,11 +181,11 @@ SDK 不提供幂等键，也不会自动重试或自动合并变更，快照创�
 
 INVALID_SCHEMA、SCHEMA_CONFLICT、WM_BUSY、BACKEND_UNAVAILABLE、INSTANCE_UNRECOVERABLE、INTERNAL_ERROR、UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 和 UNSUPPORTED_VERSION 九个码的精确触发条件本指南尚未覆盖，上面给出的是它们所属的类别和调用方的处理方式。
 
-分页游标因读版本被压实而失效时另有一个错误码，它还没有定名，不在上面的清单里，见 [BPage](18-wm-elements.md)。
+分页游标因读版本被压实而失效时另有一个错误码，它还没有定名，不在上面的清单里，见 [BPage](05-elements.md)。
 
 list 与 map 侧的目标不存在用 NOT_FOUND、图与树侧用 NOT_FOUND_OR_DENIED，两者要不要统一尚未确定，调用方按具体方法分别处理。
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [CommitResult](18-wm-elements.md)：提交结果、分页体和构造类型。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [CommitResult](05-elements.md)：提交结果、分页体和构造类型。

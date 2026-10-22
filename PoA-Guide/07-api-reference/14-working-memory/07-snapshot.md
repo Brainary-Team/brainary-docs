@@ -1,6 +1,6 @@
 # memory.snapshot
 
-[memory.snapshot](20-wm-snapshot.md) 提供 Working Memory 的快照创建、列举和只读查询。它挂在 [memory](14-memory.md) 上，三个方法都返回 Promise，都不在 [BatchBuilder](18-wm-elements.md) 上提供，在 batch 回调窗口内调用会同步抛 [WmUsageError](19-wm-errors.md)。创建、列举和只读查询都不推进当前 Run 的版本。
+[memory.snapshot](07-snapshot.md) 提供 Working Memory 的快照创建、列举和只读查询。它挂在 [memory](01-memory.md) 上，三个方法都返回 Promise，都不在 [BatchBuilder](05-elements.md) 上提供，在 batch 回调窗口内调用会同步抛 [WmUsageError](06-errors.md)。创建、列举和只读查询都不推进当前 Run 的版本。
 
 ### SnapshotPage
 
@@ -15,7 +15,7 @@ interface SnapshotPage {
 }
 ~~~
 
-快照侧不使用 [BPage](18-wm-elements.md)。这个分页外壳不带 revision，快照分页绑定的是不可变的快照 id，不是一个读版本。list 返回的 entries 是快照元数据条目，query 返回的 entries 是查询结果，两者共用同一个外壳。
+快照侧不使用 [BPage](05-elements.md)。这个分页外壳不带 revision，快照分页绑定的是不可变的快照 id，不是一个读版本。list 返回的 entries 是快照元数据条目，query 返回的 entries 是查询结果，两者共用同一个外壳。
 
 **示例**：
 
@@ -49,7 +49,7 @@ text(created);
 
 **输入类型**：options?: object。
 
-**返回值类型**：Promise<[SnapshotPage](20-wm-snapshot.md)>，entries 按快照序号排序。
+**返回值类型**：Promise<[SnapshotPage](07-snapshot.md)>，entries 按快照序号排序。
 
 **示例**：
 
@@ -68,7 +68,7 @@ text(page.entries);
 
 **参数约束**：options 必须含 target 和 structure。快照路径上没有集合句柄，所以 structure 不会被自动注入，必须由调用方给出；缺少它返回 INVALID_ARGUMENT。target 取 nodes 或 edges 时 structure 必须是一个 graph 名。
 
-**返回值类型**：Promise<[SnapshotPage](20-wm-snapshot.md)>，entries 是查询结果。
+**返回值类型**：Promise<[SnapshotPage](07-snapshot.md)>，entries 是查询结果。
 
 **示例**：
 
@@ -92,7 +92,7 @@ association 由 WM 只校验形状和大小、保存并返回，不解释业务�
 
 ## 持久化与导出
 
-[memory](14-memory.md) 当前使用内存存储，进程退出后运行态与内存中的快照都会丢失，只有此前成功导出的文件和接入侧记录能留存。
+[memory](01-memory.md) 当前使用内存存储，进程退出后运行态与内存中的快照都会丢失，只有此前成功导出的文件和接入侧记录能留存。
 
 导出失败不使快照创建失败，但会在响应中显式标出。这时快照仍可在本 WM 进程内读取，却没有得到可跨进程留存的文件，快照创建成功不等于数据已持久保存。收到创建成功而导出失败时，应按该快照不可跨进程使用处理。
 
@@ -114,5 +114,5 @@ create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

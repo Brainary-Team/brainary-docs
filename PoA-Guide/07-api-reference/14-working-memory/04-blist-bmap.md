@@ -1,6 +1,6 @@
 # BList 与 BMap
 
-[BList](17-blist-bmap.md) 与 [BMap](17-blist-bmap.md) 分别是一个 list 集合和一个 map 集合的句柄。句柄由 [memory](14-memory.md) 的 list 与 map 访问器取得，下面的示例以 evidenceList 和 retryByStatusCodeMap 指代它们。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](19-wm-errors.md)。
+[BList](04-blist-bmap.md) 与 [BMap](04-blist-bmap.md) 分别是一个 list 集合和一个 map 集合的句柄。句柄由 [memory](01-memory.md) 的 list 与 map 访问器取得，下面的示例以 evidenceList 和 retryByStatusCodeMap 指代它们。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](06-errors.md)。
 
 这两类集合的 value 不用包装类。一个 list 只有一个 item_type，一个 map 只有一个 value_type，没有类别需要区分，写方法直接接收原值；声明为内联标量时，value 就是裸标量本身。
 
@@ -12,7 +12,7 @@
 
 **输入类型**：item_id: string，非空；value: unknown，符合该 list 声明的 item_type。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>，成功时 generated 带出服务端分配的 position。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>，成功时 generated 带出服务端分配的 position。
 
 **示例**：
 
@@ -32,7 +32,7 @@ text(result.generated.position);
 
 **参数约束**：按 item_id 定位，不接收数组下标或 position，也不接收排序字段。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -48,7 +48,7 @@ replace 替换完整 value，item_id 与 position 保持不变。它与先删再
 
 **输入类型**：item_id: string。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -66,7 +66,7 @@ const result = await evidenceList.delete("ev-1");
 
 **参数约束**：target 取 list。structure 由句柄自动注入，不作为业务查询选项传入。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，项是 [BListItem](18-wm-elements.md)。
+**返回值类型**：Promise<[BPage](05-elements.md)>，项是 [BListItem](05-elements.md)。
 
 **示例**：
 
@@ -79,7 +79,7 @@ if (page.items.length > 0) text(page.items[0].value);
 
 ## BList 的项与顺序
 
-list 的每个项有三样东西：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 WM 分配的非负整数 position，字段说明见 [BListItem](18-wm-elements.md)。服务端不生成 item_id。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
+list 的每个项有三样东西：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 WM 分配的非负整数 position，字段说明见 [BListItem](05-elements.md)。服务端不生成 item_id。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
 
 当前只支持末尾追加、按 item_id 替换完整 value、按 item_id 删除。不支持任意位置插入、链表指针、自动去重或隐式重排。
 
@@ -101,7 +101,7 @@ list 侧的目标不存在使用 NOT_FOUND，图与树侧使用 NOT_FOUND_OR_DEN
 
 **参数约束**：三个参数全部必填，mode 必须明确给出。create 只允许新 key，replace 只允许已有 key，upsert 两者都允许。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -109,7 +109,7 @@ list 侧的目标不存在使用 NOT_FOUND，图与树侧使用 NOT_FOUND_OR_DEN
 const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 ~~~
 
-模式不匹配一定报错，不会静默覆盖或静默创建。create 撞上已存在的 key、replace 撞上不存在的 key，都返回 STRUCTURE_CONFLICT；协议层在 details 里回带究竟是哪一种，details 的可用性见 [WmRequestError](19-wm-errors.md)。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
+模式不匹配一定报错，不会静默覆盖或静默创建。create 撞上已存在的 key、replace 撞上不存在的 key，都返回 STRUCTURE_CONFLICT；协议层在 details 里回带究竟是哪一种，details 的可用性见 [WmRequestError](06-errors.md)。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
 
 ### delete(key)
 
@@ -119,7 +119,7 @@ const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 
 **参数约束**：按 key 定位，不需要传入 value 或写入模式。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -127,7 +127,7 @@ const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 const result = await retryByStatusCodeMap.delete(503);
 ~~~
 
-目标不存在时返回 NOT_FOUND。同一批次内重复删同一个 key 的去重规则与 [BGraph](15-bgraph.md) 的 delete_node 相同。
+目标不存在时返回 NOT_FOUND。同一批次内重复删同一个 key 的去重规则与 [BGraph](02-bgraph.md) 的 delete_node 相同。
 
 ### BMap.query(options)
 
@@ -137,7 +137,7 @@ const result = await retryByStatusCodeMap.delete(503);
 
 **参数约束**：target 取 map。structure 由句柄自动注入，不作为业务查询选项传入。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，项是 [BMapItem](18-wm-elements.md)。
+**返回值类型**：Promise<[BPage](05-elements.md)>，项是 [BMapItem](05-elements.md)。
 
 **示例**：
 
@@ -150,7 +150,7 @@ if (page.items.length > 0) text(page.items[0].value);
 
 ## BMap 的 key 与写入
 
-map 的 key 类型由 schema 的 key_type 声明，比较规则与 value 字段说明见 [BMapItem](18-wm-elements.md)。单项读取用 query 按 key 过滤，没有单独的读取方法。
+map 的 key 类型由 schema 的 key_type 声明，比较规则与 value 字段说明见 [BMapItem](05-elements.md)。单项读取用 query 按 key 过滤，没有单独的读取方法。
 
 map 不支持对 value 内字段做局部更新。写入用 put 替换完整 value，删除用 delete，不接受 set 与 unset。替换时须提供完整对象，包括必填字段，不能只传要改的那一个字段；对象值直接传入，不需要包装类。
 
@@ -158,7 +158,7 @@ mode 比对是前置条件，按该操作之前的前缀状态求值，由此确
 
 未指定 sort 时按规范化 key 升序，比较按 key_type 声明的标量类型进行。整数 key 按数值比，9 排在 401 之前，不按字典序。也可以按声明的 value 字段排序，value 是内联标量时按 value 本身，并自动追加规范化 key 为稳定末级排序键。
 
-map 的历史不另建一套接口，对快照使用同样的 query，见 [memory.snapshot](20-wm-snapshot.md)。
+map 的历史不另建一套接口，对快照使用同样的 query，见 [memory.snapshot](07-snapshot.md)。
 
 ## 当前未确定
 
@@ -170,6 +170,6 @@ list 与 map 侧的目标不存在用 NOT_FOUND、图与树侧用 NOT_FOUND_OR_D
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [BListItem 与 BMapItem](18-wm-elements.md)：项类型、提交结果和分页体。
-- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [BListItem 与 BMapItem](05-elements.md)：项类型、提交结果和分页体。
+- [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

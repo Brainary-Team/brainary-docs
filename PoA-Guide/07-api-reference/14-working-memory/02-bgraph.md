@@ -1,14 +1,14 @@
 # BGraph
 
-[BGraph](15-bgraph.md) 是一个 graph 集合的句柄，提供节点与边的读写、一跳邻接和查询。句柄由 [memory](14-memory.md) 的 graph 访问器取得，下面的示例都以 incidentGraph 指代它。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](19-wm-errors.md)。
+[BGraph](02-bgraph.md) 是一个 graph 集合的句柄，提供节点与边的读写、一跳邻接和查询。句柄由 [memory](01-memory.md) 的 graph 访问器取得，下面的示例都以 incidentGraph 指代它。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](06-errors.md)。
 
 ### add_node(node)
 
 **作用**：在当前 graph 中新建一个节点。
 
-**输入类型**：node: [BNode](18-wm-elements.md)。
+**输入类型**：node: [BNode](05-elements.md)。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -24,9 +24,9 @@ const result = await incidentGraph.add_node(
 
 **作用**：在当前 graph 中新建一条边。
 
-**输入类型**：edge: [BEdge](18-wm-elements.md)。
+**输入类型**：edge: [BEdge](05-elements.md)。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -52,7 +52,7 @@ const result = await incidentGraph.add_edge(
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -68,7 +68,7 @@ const result = await incidentGraph.update_node("node-1", { set: { priority: 2 } 
 
 **输入类型**：id: string。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -86,7 +86,7 @@ const result = await incidentGraph.delete_node("node-1");
 
 **参数约束**：set 与 unset 至少一个非空。edge_class、from_id 和 to_id 都不在两者的作用范围内。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -102,7 +102,7 @@ const result = await incidentGraph.update_edge("edge-1", { set: { weight: 3 } })
 
 **输入类型**：id: string。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -118,7 +118,7 @@ const result = await incidentGraph.delete_edge("edge-1");
 
 **参数约束**：direction 取 out、in 或 both。edge_classes 与 node_classes 取当前 graph 内已声明的类别名，它们是查询过滤器而不是 schema 字段，未声明的名字返回 INVALID_ARGUMENT。include 的 nodes 与 edges 默认都是 true。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，items 的元素是 [BNeighborItem](18-wm-elements.md)。
+**返回值类型**：Promise<[BPage](05-elements.md)>，items 的元素是 [BNeighborItem](05-elements.md)。
 
 **示例**：
 
@@ -137,7 +137,7 @@ direction 三者有意义的前提是边恒有向，这由 schema 固定，没�
 
 **参数约束**：target 取 nodes 或 edges。structure 由句柄自动注入，不作为业务查询选项传入。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，target 为 nodes 时项是 [BNode](18-wm-elements.md)，target 为 edges 时项是 [BEdge](18-wm-elements.md)。
+**返回值类型**：Promise<[BPage](05-elements.md)>，target 为 nodes 时项是 [BNode](05-elements.md)，target 为 edges 时项是 [BEdge](05-elements.md)。
 
 **示例**：
 
@@ -179,6 +179,6 @@ update_node、delete_node、update_edge、delete_edge 的参数形状，以及 q
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [BNode、BEdge 与读写返回类型](18-wm-elements.md)：构造类型、提交结果和分页体。
-- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和分页体。
+- [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
