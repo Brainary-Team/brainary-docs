@@ -76,5 +76,5 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
 | API 对象 | 新 SDK 按对象拆分为 IO、global、helper、SkillsManager、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 和 Working Memory 的 memory、BGraph、BTree、BList、BMap、memory.snapshot 及其元素与异常类型；详见 [API 参考](07-api-reference.md) |
 | Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |
-| Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-memory.md) |
-| Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent，与 cell、turn、thread 都不等同。一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态；作用域与实例的完整规则见 [memory](07-api-reference/14-memory.md) |
+| Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
+| Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent，与 cell、turn、thread 都不等同。一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态；作用域与实例的完整规则见 [memory](07-api-reference/14-working-memory/01-memory.md) |

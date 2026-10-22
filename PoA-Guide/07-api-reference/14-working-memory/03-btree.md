@@ -1,14 +1,14 @@
 # BTree
 
-[BTree](16-btree.md) 是一个 tree 集合的句柄，提供树节点的读写、层级查询和改父。句柄由 [memory](14-memory.md) 的 tree 访问器取得，下面的示例都以 taskTree 指代它。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](19-wm-errors.md)。
+[BTree](03-btree.md) 是一个 tree 集合的句柄，提供树节点的读写、层级查询和改父。句柄由 [memory](01-memory.md) 的 tree 访问器取得，下面的示例都以 taskTree 指代它。写方法成功提交时推进一次版本，读方法不推进；失败的分流方式见 [WmError](06-errors.md)。
 
 ### add_root(node)
 
 **作用**：在当前 tree 中新建一个节点并把它设为根。
 
-**输入类型**：node: [BNode](18-wm-elements.md)，不含 parent_id。
+**输入类型**：node: [BNode](05-elements.md)，不含 parent_id。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -24,9 +24,9 @@ const result = await taskTree.add_root(
 
 **作用**：在当前 tree 中新建一个节点并挂到指定父节点下。
 
-**输入类型**：parent_id: string；node: [BNode](18-wm-elements.md)，不含 parent_id。
+**输入类型**：parent_id: string；node: [BNode](05-elements.md)，不含 parent_id。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -47,7 +47,7 @@ const result = await taskTree.add_child(
 
 **参数约束**：三个参数全部必填。node_id 不接受 null；另两个都接受 null。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -65,7 +65,7 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -81,7 +81,7 @@ const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 
 **输入类型**：node_id: string。
 
-**返回值类型**：Promise<[CommitResult](18-wm-elements.md)>。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
 **示例**：
 
@@ -89,7 +89,7 @@ const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 const result = await taskTree.delete("subtask-1");
 ~~~
 
-不级联删除。树侧拒的是最终状态下留下无父的非根节点，返回 CONSTRAINT_VIOLATION。同一批次内重复删同一个目标的去重规则与 [BGraph](15-bgraph.md) 的 delete_node 相同。删一棵子树的做法见下面的删除。
+不级联删除。树侧拒的是最终状态下留下无父的非根节点，返回 CONSTRAINT_VIOLATION。同一批次内重复删同一个目标的去重规则与 [BGraph](02-bgraph.md) 的 delete_node 相同。删一棵子树的做法见下面的删除。
 
 ### get(node_id)
 
@@ -97,7 +97,7 @@ const result = await taskTree.delete("subtask-1");
 
 **输入类型**：node_id: string。
 
-**返回值类型**：Promise<[BNode](18-wm-elements.md) | null>。
+**返回值类型**：Promise<[BNode](05-elements.md) | null>。
 
 **示例**：
 
@@ -112,7 +112,7 @@ if (milestoneNode !== null) text(milestoneNode.properties.title);
 
 **输入类型**：node_id: string。
 
-**返回值类型**：Promise<[BNode](18-wm-elements.md) | null>。
+**返回值类型**：Promise<[BNode](05-elements.md) | null>。
 
 **示例**：
 
@@ -127,7 +127,7 @@ text(parentNode?.id);
 
 **输入类型**：无。
 
-**返回值类型**：Promise<[BNode](18-wm-elements.md) | null>。
+**返回值类型**：Promise<[BNode](05-elements.md) | null>。
 
 **示例**：
 
@@ -142,7 +142,7 @@ text(rootNode?.id);
 
 **输入类型**：node_id: string。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，项是树节点。
+**返回值类型**：Promise<[BPage](05-elements.md)>，项是树节点。
 
 **示例**：
 
@@ -161,7 +161,7 @@ text(childPage.items.map((child) => child.id));
 
 **参数约束**：target 取 tree。无 mode 字段。structure 由句柄自动注入，不作为业务查询选项传入。filter 出现 child_id 时不得同时给 parent_id 或 id。
 
-**返回值类型**：Promise<[BPage](18-wm-elements.md)>，项是树节点，比图节点多一个 parent_id。
+**返回值类型**：Promise<[BPage](05-elements.md)>，项是树节点，比图节点多一个 parent_id。
 
 **示例**：
 
@@ -190,7 +190,7 @@ filter 的可用键是 id、node_class、parent_id、child_id 和已声明的一
 - 深度上限
 - 父子类别相容
 
-顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限由宿主能力声明带出，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里回带究竟是哪一条，details 的可用性见 [WmRequestError](19-wm-errors.md)。
+顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限由宿主能力声明带出，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里回带究竟是哪一条，details 的可用性见 [WmRequestError](06-errors.md)。
 
 单个方法另有自己的检查顺序，只执行该操作适用的检查：字段形状与必填、集合归属、目标状态前提、CAS、空操作、批次级禁令。这六步的作用域是单个方法和它自己的前缀状态，五条判定的作用域是整批和最终状态。两者不是一条流水线，而是分两段：先按书写顺序逐项评估六步，全部通过后再对最终状态整批评估一次五条判定。
 
@@ -218,7 +218,7 @@ get、parent 和 root 是四类集合里唯一的三个单项读方法。它们�
 
 取不到时返回 null，不抛异常，空树的 root 和根节点的 parent 都返回 null。认证或授权失败仍按异常处理，此时的 NOT_FOUND_OR_DENIED 只剩实例不可见、作用域无权这类成因，不含这个节点不存在。
 
-这三个方法不套 [BPage](18-wm-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询，不要求后端声明按版本读取的能力；children 与 query 落入分页定义，要求这项能力。
+这三个方法不套 [BPage](05-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询，不要求后端声明按版本读取的能力；children 与 query 落入分页定义，要求这项能力。
 
 ## 查询与分页
 
@@ -228,7 +228,7 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 
 未指定 sort 时按 id 升序，按原始 Unicode 标量序列比较。指定 sort 时自动追加 id 为稳定末级排序键。可排序字段是 id、node_class 和已声明的一层标量属性，parent_id 不可排序。缺失或显式 null 排在非空值之后，同值再按 id 排。没有稳定末级键的分页结果可能重复或漏项，这与 list 的 position 加 item_id、map 的规范化 key 是同一条规则。
 
-子节点无序。返回顺序由排序规定决定，默认按 id 升序，它是展示顺序，不承载业务含义。需要顺序的层级有两条出路：改用 [BList](17-blist-bmap.md)，或在节点属性上自带一个序号字段由调用方排序。
+子节点无序。返回顺序由排序规定决定，默认按 id 升序，它是展示顺序，不承载业务含义。需要顺序的层级有两条出路：改用 [BList](04-blist-bmap.md)，或在节点属性上自带一个序号字段由调用方排序。
 
 不带 filter 的 query 在单一读版本内返回整棵树的形状，也就是全部节点加全部父指针。它是一次分页读，一次调用拿不完全部节点，大树需要翻完 next_cursor。判叶要看数据性质：叶是 parent_id 未被任何节点引用的节点。它与 child_classes 为空这个类型性质是不同维度，不得混用，一个声明了 child_classes 的节点在数据上仍可能是叶。多次 query 不能用于拼接需要跨版本一致性的路径。
 
@@ -236,7 +236,7 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 
 本页方法不接受 mode，传入时返回 INVALID_ARGUMENT。
 
-当前不提供路径查询、重排、子树删除、根列举、叶列举和移动节点，也没有 neighbors，那是 [BGraph](15-bgraph.md) 专属。祖先链、深度、叶集、子树节点集和子树高度可由调用方从一次不带 filter 的 query 结果计算，SDK 不为它们提供单独的方法。
+当前不提供路径查询、重排、子树删除、根列举、叶列举和移动节点，也没有 neighbors，那是 [BGraph](02-bgraph.md) 专属。祖先链、深度、叶集、子树节点集和子树高度可由调用方从一次不带 filter 的 query 结果计算，SDK 不为它们提供单独的方法。
 
 ## 当前未确定
 
@@ -248,6 +248,6 @@ children 的 cursor 与 limit 传在哪里尚未确定，不能假定它可以�
 
 ## 相关文档
 
-- [memory](14-memory.md)：集合访问、批量提交和 Run 关闭。
-- [BNode、BEdge 与读写返回类型](18-wm-elements.md)：构造类型、提交结果和分页体。
-- [WmError](19-wm-errors.md)：异常类层级、错误码和捕获方式。
+- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和分页体。
+- [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
