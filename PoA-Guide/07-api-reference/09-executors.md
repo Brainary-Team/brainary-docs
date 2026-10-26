@@ -1,6 +1,6 @@
 # Executor
 
-[Executor](09-executors.md) 及其相关类型提供 PoA 访问文件、终端、远程 Agent 和 MCP 的统一边界。每次调用都可以
+[Executor](09-executors.md) 及其相关类型提供 PoA 访问文件、终端、Agent 和 MCP 的统一边界。每次调用都可以
 通过 [ExecutorContext](09-executors.md) 和 [PostExecutorContext](09-executors.md) 交给审计、计时和 hook 处理。
 
 ## 上下文与 hook
@@ -49,7 +49,7 @@ const context = {
 ~~~ts
 interface PostExecutorContext extends ExecutorContext {
   outcome: "completed" | "failed" | "timed_out" |
-    "cancelled" | "denied" | "stubbed";
+    "canceled" | "denied" | "stubbed";
   output?: unknown;
   error?: string;
   duration_ms: number;
@@ -96,9 +96,7 @@ const hooks = {
 
 **类型定义**：
 
-~~~ts
-type PreExecutorHooks = (context: ExecutorContext) => void | Promise<void>;
-~~~
+接收 [ExecutorContext](#executorcontext) 的回调函数。
 
 **示例**：
 
@@ -115,9 +113,7 @@ const hooks = { pre_executor_hooks: [pre_executor_hook] };
 
 **类型定义**：
 
-~~~ts
-type PostExecutorHooks = (context: PostExecutorContext) => void | Promise<void>;
-~~~
+接收 [PostExecutorContext](#postexecutorcontext) 的回调函数。
 
 **示例**：
 
@@ -130,7 +126,7 @@ const hooks = { post_executor_hooks: [post_executor_hook] };
 
 ### Executor
 
-**作用**：聚合各类执行器和可选的 hooks。
+**作用**：聚合各类执行器、工具入口、hooks 和执行上下文。
 
 **类型定义**：
 
@@ -138,9 +134,10 @@ const hooks = { post_executor_hooks: [post_executor_hook] };
 interface Executor {
   fileExecutor: FileExecutor;
   terminalExecutor: TerminalExecutor;
-  remoteAgentExecutor: RemoteAgentExecutor;
-  mcpExecutor: McpExecutor;
+  RemoteAgentExecutor: AgentExecutor;
+  McpExecutor: McpExecutor;
   hooks?: Hooks;
+  tools: Readonly<Record<string, Tool>>;
 }
 ~~~
 
@@ -155,34 +152,36 @@ text(result.output);
 
 文件执行器，通过 executor.fileExecutor 访问，提供以下文件操作方法。
 
-### apply_patch(patch)
+### apply_patch({patch})
 
 **作用**：对工作区应用文件补丁。
 
-**输入类型**：patch: string。
+**输入类型**：命名参数对象，包含 patch: string。
 
 **返回值类型**：Promise<unknown>，宿主补丁结果。
 
 **示例**：
 
 ~~~js
-await executor.fileExecutor.apply_patch(
-  "*** Begin Patch\\n*** Update File: note.md\\n+done\\n*** End Patch",
-);
+await executor.fileExecutor.apply_patch({
+  patch: "*** Begin Patch\n*** Add File: note.md\n+done\n*** End Patch",
+});
 ~~~
 
-### view_image(path, detail?, environment_id?)
+### view_image({path, detail?, environment_id?})
 
 **作用**：读取执行环境中的本地图片。
 
-**输入类型**：path: string；detail?: "high" | "original"；environment_id?: string。
+**输入类型**：命名参数对象，包含 path: string；detail?: "high" | "original"；environment_id?: string。
+
+detail 默认使用 high；传入 original 时保留原始分辨率。参数与底层 view_image tool 一致。
 
 **返回值类型**：Promise<{ detail: "high" | "original"; image_url: string }>。
 
 **示例**：
 
 ~~~js
-const picture = await executor.fileExecutor.view_image("./out.png", "high");
+const picture = await executor.fileExecutor.view_image({ path: "./out.png", detail: "high" });
 image(picture);
 ~~~
 
@@ -206,131 +205,109 @@ const result = await executor.terminalExecutor.exec_command({ cmd: "pwd", workdi
 text(result.output);
 ~~~
 
-### write_stdin(session_id, chars, yield_time_ms, max_output_tokens)
+### write_stdin({session_id, chars, yield_time_ms, max_output_tokens})
 
 **作用**：向已有终端会话写入标准输入，或轮询新增输出。
 
-**输入类型**：session_id: number；chars: string；yield_time_ms: number；max_output_tokens: number。四个参数均必填；轮询时 chars 传入空字符串。
+**输入类型**：命名参数对象，包含 session_id: number；chars: string；yield_time_ms: number；max_output_tokens: number。四个参数均必填；轮询时 chars 传入空字符串。
 
 **返回值类型**：Promise<ExecCommandResult>。
 
 **示例**：
 
 ~~~js
-const result = await executor.terminalExecutor.write_stdin(
+const result = await executor.terminalExecutor.write_stdin({
   session_id,
-  "yes\n",
-  1000,
-  2000,
-);
+  chars: "yes\n",
+  yield_time_ms: 1000,
+  max_output_tokens: 2000,
+});
 text(result.output);
 ~~~
 
-### shelllines(command)
+### shelllines({command})
 
 **作用**：执行命令并把输出按行切分、去除空行和首尾空白。
 
-**输入类型**：command: string。
+**输入类型**：命名参数对象，包含 command: string。
 
 **返回值类型**：Promise<string[]>。
 
 **示例**：
 
 ~~~js
-const names = await executor.terminalExecutor.shelllines("find . -maxdepth 1 -type f");
+const names = await executor.terminalExecutor.shelllines({ command: "find . -maxdepth 1 -type f" });
 text(names);
 ~~~
 
-### wait_environment(environment_id)
+### wait_for_environment({environment_id})
 
-**作用**：等待指定执行环境从 starting 进入可用状态。
+**作用**：等待处于 starting 状态的指定执行环境就绪；环境已经就绪时直接返回。
 
-**输入类型**：environment_id: string。
+**输入类型**：命名参数对象，包含 environment_id: string，必填。参数与底层 wait_for_environment tool 一致。
 
-**返回值类型**：Promise<{ environment_id: string; status: "ready" }>。
-
-**示例**：
-
-~~~js
-await executor.terminalExecutor.wait_environment("env-123");
-~~~
-
-## RemoteAgentExecutor
-
-远程 Agent 执行器，通过 executor.remoteAgentExecutor 访问，提供以下远程输入方法。
-
-### send_input(agent_id, message?, input_items?, output_schema?, timeout?)
-
-**作用**：向远程 Agent 发送输入，并请求一次结构化或文本结果。
-
-**输入类型**：agent_id: string；message?: string；input_items?: IOInput[]；output_schema?: JsonSchema；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
-
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
-
-**返回值类型**：Promise<[AgentResult](03-agent.md)>。
+**返回值类型**：Promise<{ environment_id: string; status: "ready" }>。环境不存在或启动失败时返回错误。
 
 **示例**：
 
 ~~~js
-const result = await executor.remoteAgentExecutor.send_input(
-  remote.agent_id,
-  "分析这个文件",
-  undefined,
-  { type: "object" },
-  timeout,
-);
-text(result.output);
+const result = await executor.terminalExecutor.wait_for_environment({ environment_id: "env-123" });
+text(result.status);
 ~~~
+
+## AgentExecutor
+
+Agent 执行器的消息发送、追加消息、上下文压缩、关闭和状态查询，见 [AgentExecutor](04-agent-executor.md)。
 
 ## McpExecutor
 
-MCP 执行器，通过 executor.mcpExecutor 访问，提供以下资源查询、读取和工具调用方法。
+MCP 执行器，通过 executor.McpExecutor 访问，提供以下资源查询、读取和工具调用方法。
 
-### list_mcp_resources(server?, cursor?)
+### list_mcp_resources({server?, cursor?})
 
 **作用**：列出 MCP server 提供的资源。
 
-**输入类型**：server?: string；cursor?: string。
+**输入类型**：命名参数对象，包含 server?: string；cursor?: string。
 
 **返回值类型**：Promise<{ resources?: unknown[]; nextCursor?: string | null }>。
 
 **示例**：
 
 ~~~js
-const page = await executor.mcpExecutor.list_mcp_resources("docs");
+const page = await executor.McpExecutor.list_mcp_resources({ server: "docs" });
 text(page.resources);
 ~~~
 
-### list_mcp_resource_templates(server?, cursor?)
+### list_mcp_resource_templates({server?, cursor?})
 
 **作用**：列出参数化 MCP 资源模板。
 
-**输入类型**：server?: string；cursor?: string。
+**输入类型**：命名参数对象，包含 server?: string；cursor?: string。
 
 **返回值类型**：Promise<{ resourceTemplates?: unknown[]; nextCursor?: string | null }>。
 
 **示例**：
 
 ~~~js
-const page = await executor.mcpExecutor.list_mcp_resource_templates("docs");
+const page = await executor.McpExecutor.list_mcp_resource_templates({ server: "docs" });
 text(page.resourceTemplates);
 ~~~
 
-### read_mcp_resource(server, uri)
+### read_mcp_resource({server, uri})
 
 **作用**：读取指定 MCP 资源。
 
-**输入类型**：server: string；uri: string。
+**输入类型**：命名参数对象，包含 server: string；uri: string。
 
 **返回值类型**：Promise<ReadResourceResult>。
 
 **示例**：
 
 ~~~js
-const resource = await executor.mcpExecutor.read_mcp_resource(
-  "docs",
-  "file:///README.md",
-);
+const resource = await executor.McpExecutor.read_mcp_resource({
+  server: "docs",
+  uri: "file:///README.md",
+});
 text(resource);
 ~~~
 
@@ -354,7 +331,7 @@ interface CallToolResult {
 **示例**：
 
 ~~~js
-const result = await tools["mcp__echo__echo"]({ message: "hello" });
+const result = await executor.McpExecutor["mcp__echo__echo"]({ message: "hello" });
 if (result.isError) throw new Error("echo failed");
 text(result.structuredContent ?? result.content);
 ~~~
@@ -362,3 +339,15 @@ text(result.structuredContent ?? result.content);
 MCP server 的 manifest 配置、生命周期和失败边界见
 [MCP tool 配置](10-mcp-tool-config.md)。声明的 server 启动失败时，PoA 初始化失败；server
 不会静默降级为不可用工具。
+
+## 执行器的 tools 入口
+
+**作用**：枚举执行器提供的工具。Executor.tools 汇总其各执行器的工具，FileExecutor、TerminalExecutor、AgentExecutor 和 McpExecutor 的 tools 分别枚举各自提供的工具。每个枚举成员的值都是字符串。
+
+**类型定义**：Readonly<Record<string, [Tool](13-tools-manager.md#tools)>>。
+
+**示例**：
+
+~~~js
+text(executor.fileExecutor.tools.view_image);
+~~~

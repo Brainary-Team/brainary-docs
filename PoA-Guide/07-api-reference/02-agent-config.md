@@ -1,4 +1,4 @@
-# AgentConfig、Capabilities、ModelSpec、RuntimeSpec、ResourceShareSpace 与 SecureConfig
+# AgentConfig、Capabilities、ModelSpec、RuntimeSpec、AgentGroup、ResourceShareSpace 与 SecureConfig
 
 本页描述 [Agent](03-agent.md) 的静态配置类型。配置在 Agent 创建时确定，执行时由运行时转换为对应的模型、
 能力和环境设置。
@@ -31,7 +31,7 @@ const model = {
 
 ### Capabilities
 
-**作用**：声明 Agent 可以访问的 Brainary tool、MCP server 和 PoA 能力。
+**作用**：声明 Agent 可以访问的 Brainary tool、MCP server、PoA 和 skills 能力。
 
 **类型定义**：
 
@@ -40,6 +40,7 @@ interface Capabilities {
   brainary_tool?: string[];
   mcp?: string[];
   poa?: string[];
+  skills?: string[];
 }
 ~~~
 
@@ -50,6 +51,7 @@ const capabilities = {
   brainary_tool: ["exec_command", "multi_agent"],
   mcp: ["github_server/*"],
   poa: ["review-package"],
+  skills: ["code-review"],
 };
 ~~~
 
@@ -76,7 +78,7 @@ const sandbox = "workspace_write";
 **类型定义**：
 
 ~~~ts
-type ApprovalPolicy = "auto_review" | "deny_all | manual_review";
+type ApprovalPolicy = "auto_review" | "deny_all" | "manual_review";
 ~~~
 
 **示例**：
@@ -109,16 +111,52 @@ const runtime = {
 };
 ~~~
 
-### ResourceShareSpace
+### AgentGroup
 
-**作用**：指定 Agent 的资源共享空间，目前仅包含可选的 wm_share_space 属性。
+**作用**：把本地 Agent 与远程 Agent 组合为一组，供 subagents 和 peer_agents 配置使用。
 
 **类型定义**：
 
 ~~~ts
-interface ResourceShareSpace {
-  wm_share_space?: string[];
+interface AgentGroup {
+  agents: Agent[];
+  remote_agents: RemoteAgent[];
 }
+~~~
+
+Agent 与 RemoteAgent 分别见 [Agent](03-agent.md) 和 [RemoteAgent](01-agent-orchestration.md#remoteagent)。
+
+**示例**：
+
+~~~js
+const group = {
+  agents: [reviewer],
+  remote_agents: [analyst],
+};
+~~~
+
+### ResourceShareSpace
+
+**作用**：指定 Agent 的资源共享空间、上下文分叉设置和资源预算。
+
+**类型定义**：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `wm_share_space?` | `string[]` | 可选的资源共享空间列表。 |
+| `fork_context` | `boolean` | 是否分叉上下文。 |
+| `token_budget` | `number` | token 预算。 |
+| `runtime_budget_ms` | `number` | 运行时长预算，单位为毫秒。 |
+
+**示例**：
+
+~~~js
+const resourceShareSpace = {
+  wm_share_space: ["shared-space"],
+  fork_context: false,
+  token_budget,
+  runtime_budget_ms,
+};
 ~~~
 
 ### SecureConfig
@@ -130,15 +168,19 @@ interface ResourceShareSpace {
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `allow_unstrusted_tools?` | `Set<string>` | 允许使用的不可信工具集合。 |
-| `block_on_violation?` | `boolean` | 是否在违规时阻止执行。 |
+| `block_on_violation?` | `boolean` | 是否在违规时阻塞。 |
 | `apprroval_on_violation?` | `boolean` | 是否在违规时请求审批。 |
 | `pending_approval_ttl?` | `timedelta` | 待审批请求的有效期。 |
 
-字段名沿用图中定义；timedelta 为图中使用的时长类型。
+**示例**：
+
+~~~js
+const secureConfig = { block_on_violation: true };
+~~~
 
 ### AgentConfig
 
-**作用**：组合 Agent 的模型、系统提示、能力、运行时和可派发的 Agent。
+**作用**：组合 Agent 的模型、系统提示、能力、运行时、子 Agent 组和同级 Agent 组。
 
 **类型定义**：
 
@@ -148,17 +190,14 @@ interface AgentConfig {
   system_prompt?: string;
   capabilities?: Capabilities;
   runtime?: RuntimeSpec;
-  subagents?: Agent[];
-  remote_agents?: RemoteAgent[];
+  subagents?: AgentGroup;
+  peer_agents?: AgentGroup;
   handof?: Handof[];
   resource_share_space?: ResourceShareSpace;
   max_agent_depth: number;
-  secure_config: SecureConfig;
+  secure_config?: SecureConfig;
 }
 ~~~
-
-创建 Agent 后，配置以只读方式暴露。
-
 
 **示例**：
 
@@ -172,7 +211,9 @@ const config = {
   system_prompt: "只输出可执行的审查结论",
   capabilities: { brainary_tool: ["exec_command"] },
   runtime: { sandbox: "read_only" },
-  resource_share_space: { wm_share_space: ["shared-space"] },
+  subagents: { agents: [reviewer], remote_agents: [] },
+  peer_agents: { agents: [], remote_agents: [analyst] },
+  resource_share_space: resourceShareSpace,
   max_agent_depth: 3,
   secure_config: { block_on_violation: true },
 };

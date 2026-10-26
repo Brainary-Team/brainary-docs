@@ -154,6 +154,6 @@ type PoaInputValidationFailure = {
 ## SDK 使用边界
 
 - `input_schema.ts` 只在打包阶段执行编译，不会在 V8 中作为 JavaScript 运行。
-- `POA_INPUT` 是一次调用的业务输入；`store`/`load` 是当前 code-mode 会话状态，不能互相替代。
+- `POA_INPUT` 是一次调用的业务输入。
 - schema 必须描述对象，根级数组、字符串或数字输入不受此包格式支持。
 - 输入通过校验后才会启动 PoA 和它声明的 MCP server；校验失败不会执行 `main.js`。

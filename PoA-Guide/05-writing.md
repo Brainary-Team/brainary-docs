@@ -423,7 +423,7 @@ entry = "main.js"
 
 ### 12.1 使用 prelude
 
-`main.js` 的顺序是：首行 pragma → [Prelude API](07-api-reference/01-agent-orchestration.md) 全文 → 下面这段。
+本节沿用早期 prelude 示例，`main.js` 的顺序是：首行 pragma → 配套的 prelude 源码 → 下面这段。当前 [AgentOrchestration API](07-api-reference/01-agent-orchestration.md) 描述对象接口，不再提供这段源码。
 
 ```js
 // @exec: {"yield_time_ms": 900000, "max_output_tokens": 30000}

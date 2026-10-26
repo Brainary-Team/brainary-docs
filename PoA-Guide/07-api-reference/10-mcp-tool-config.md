@@ -64,8 +64,8 @@ server.tool(
 
 ## 工具发现与动态名称
 
-宿主启动声明的 stdio server，调用 MCP `tools/list`，然后把工具放入当前 PoA 的 `tools`
-对象。默认名称通常是：
+宿主启动声明的 stdio server，调用 MCP `tools/list`，将工具名加入当前 PoA 的全局 `tools` 和
+`executor.McpExecutor.tools` 枚举，并通过 `executor.McpExecutor` 提供对应调用方法。默认名称通常是：
 
 ```text
 mcp__<server_name>__<tool_name>
@@ -79,7 +79,7 @@ const candidates = ALL_TOOLS.filter((item) => item.name.endsWith("__echo"));
 if (candidates.length !== 1) throw new Error("echo tool must have one matching name");
 const echo = candidates[0];
 
-const result = await tools[echo.name]({
+const result = await executor.McpExecutor[echo.name]({
   message: "你好",
   times: 2,
 });
@@ -87,7 +87,8 @@ text(result.structuredContent ?? result.content);
 ```
 
 `ALL_TOOLS` 是全局工具列表，类型为 `Array<{ name: string; description: string }>`。
-`tools[tool_name]` 是工具调用函数，其输入和返回 schema 取决于 MCP server 的声明。
+`tools[tool_name]` 和 `executor.McpExecutor.tools[tool_name]` 是字符串枚举值。
+`executor.McpExecutor[tool_name]` 是工具调用函数，其输入和返回 schema 取决于 MCP server 的声明。
 后缀匹配仅适用于工具名未被截断或追加哈希的场景；无法匹配时，应检查
 `ALL_TOOLS` 中的实际名称与说明，并使用该名称调用。
 
@@ -107,7 +108,7 @@ type CallToolResult<TStructured = Record<string, unknown>> = {
 调用示例：
 
 ```js
-const result = await tools[echo.name]({ message: "hello", times: 2 });
+const result = await executor.McpExecutor[echo.name]({ message: "hello", times: 2 });
 if (result.isError) {
   throw new Error("MCP echo failed");
 }

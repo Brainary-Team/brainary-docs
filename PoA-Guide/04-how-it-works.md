@@ -191,7 +191,7 @@ v1 那 5 个子 agent 工具的默认状态就是这一档。
 
 这不妨碍程序在运行时检查形状：无论是 ordinary CodeMode 还是 CodeModeOnly，`ALL_TOOLS` 中每个条目的 `description` 都内嵌完整的 per-tool exec TypeScript 声明，包括该工具的入参、必填性与返回声明。
 
-普通工具的声明可独立阅读。MCP 工具的返回声明会引用 `CallToolResult`、`ContentBlock`、`MetaObject` 等共享别名；CodeModeOnly 的 `exec` 说明会附一次共享类型块，ordinary CodeMode 不会，因此后者需查 [MCP 资源工具](07-api-reference/09-executors.md) 的离线定义。
+普通工具的声明可独立阅读。MCP 工具的返回声明会引用 `CallToolResult`、`ContentBlock`、`MetaObject` 等共享别名；CodeModeOnly 的 `exec` 说明会附一次共享类型块，ordinary CodeMode 不会，因此后者需查 [MCP 工具返回类型](07-api-reference/10-mcp-tool-config.md#calltoolresult) 的简化定义。
 
 ### `ALL_TOOLS` 的 `description` 带完整声明
 
@@ -236,6 +236,6 @@ if (!has.has("web__run")) { /* 走降级路径 */ }
 | 一次提交 = 一个 cell = 一次跑完 | 整个流程写在同一段代码里；未 `await` 的活会消失 |
 | 工具调用往返宿主，失败表现为异常 | 可以 `try/catch` 兜住单点失败 |
 | 等待调用默认串行 | "全派出去 → 一次 join"，不要设计成流水线 |
-| `ALL_TOOLS` 的 `description` 内嵌完整 per-tool 声明 | 可在运行时查参数与返回；MCP 共享别名从 CodeModeOnly 的 `exec` 共享块或 [MCP 资源工具](07-api-reference/09-executors.md) 查；仍要探测工具是否存在 |
+| `ALL_TOOLS` 的 `description` 内嵌完整 per-tool 声明 | 可在运行时查参数与返回；MCP 共享别名从 CodeModeOnly 的 `exec` 共享块或 [MCP 工具返回类型](07-api-reference/10-mcp-tool-config.md#calltoolresult) 查；仍要探测工具是否存在 |
 | 只有 `text()` 可靠 | 进度信息攒成数组，最后一次性交出去 |
 | 没有续跑手段 | 长任务靠调大 `yield_time_ms`，不靠 yield |
