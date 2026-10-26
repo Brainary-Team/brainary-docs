@@ -1,6 +1,6 @@
 # AgentController
 
-[AgentController](05-agent-controller.md) 负责对已经创建的 [Agent](03agent.md) 做生命周期和上下文控制。
+[AgentController](05-agent-controller.md) 负责对已经创建的 [Agent](03-agent.md) 做生命周期和上下文控制。
 
 ### compact(agent_id, compact_template?)
 

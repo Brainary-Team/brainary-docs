@@ -267,7 +267,7 @@ await executor.terminalExecutor.wait_environment("env-123");
 
 **参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
 
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
+**返回值类型**：Promise<[AgentResult](03-agent.md)>。
 
 **示例**：
 

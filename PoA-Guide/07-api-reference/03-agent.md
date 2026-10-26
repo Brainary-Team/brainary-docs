@@ -1,6 +1,6 @@
 # Agent
 
-[Agent](03agent.md) 表示一个可重复运行、可暂停和可恢复的独立会话。
+[Agent](03-agent.md) 表示一个可重复运行、可暂停和可恢复的独立会话。
 
 ### Agent 对象
 
@@ -37,7 +37,7 @@ const agent = orchestration.create_agent("reviewer", "代码审查", {
 
 **参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
 
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
+**返回值类型**：Promise<[AgentResult](03-agent.md)>。
 
 **示例**：
 
@@ -57,7 +57,7 @@ text(result.output);
 
 **参数约束**：message 和 input_items 必须且只能传入一个；仅传入 input_items 时，message 使用 undefined 占位。
 
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
+**返回值类型**：Promise<[AgentResult](03-agent.md)>。
 
 **示例**：
 
@@ -157,7 +157,7 @@ interface AgentResult {
 }
 ~~~
 
-output 在传入 output_schema 时是校验后的对象，否则是最终文本；text 始终保留原始最终回复。详见 [AgentResult](03agent.md)。
+output 在传入 output_schema 时是校验后的对象，否则是最终文本；text 始终保留原始最终回复。详见 [AgentResult](03-agent.md)。
 
 agent_state 表示本次运行返回时的 Agent 状态，类型为 [AgentState](04-agent-monitor.md#agentstate)。
 

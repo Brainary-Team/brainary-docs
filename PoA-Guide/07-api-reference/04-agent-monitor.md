@@ -1,6 +1,6 @@
 # AgentMonitor
 
-[AgentMonitor](04-agent-monitor.md) 提供 [Agent](03agent.md) 的状态、token 用量和上下文用量快照。
+[AgentMonitor](04-agent-monitor.md) 提供 [Agent](03-agent.md) 的状态、token 用量和上下文用量快照。
 
 ### AgentState
 

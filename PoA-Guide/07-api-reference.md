@@ -15,7 +15,7 @@
 | [Tools](07-api-reference/13-tools-manager.md) | tools 能力枚举 |
 | [AgentController](07-api-reference/05-agent-controller.md) | compact、close、steer |
 | [AgentMonitor](07-api-reference/04-agent-monitor.md) | AgentState、TokenUsage、ContextUsage 和监控方法 |
-| [Agent](07-api-reference/03agent.md) | Agent 生命周期、运行方法 |
+| [Agent](07-api-reference/03-agent.md) | Agent 生命周期、运行方法 |
 | [AgentOrchestration](07-api-reference/01-agent-orchestration.md) | Agent 创建、任务派发、批量等待、Handle 和 RemoteAgent |
 | [Executor](07-api-reference/09-executors.md) | 执行器上下文、Hooks、PreExecutorHooks、PostExecutorHooks、文件、终端、远程 Agent、MCP 调用 |
 | [AgentConfig](07-api-reference/02-agent-config.md) | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec、ResourceShareSpace、SecureConfig 和 AgentConfig |
@@ -34,6 +34,10 @@
 | [Working Memory 异常](07-api-reference/14-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
 | [memory.snapshot](07-api-reference/14-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 
+### Episodic Memory（设计预览）
+
+[Episodic Memory](07-api-reference/15-episodic-memory.md) 介绍情景记录与 Working Memory 快照的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
+
 ### 输入、交互与工具配置
 
 | 文件 | 内容 |
@@ -50,8 +54,8 @@
 | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec、AgentConfig | [Agent 配置类型](07-api-reference/02-agent-config.md) |
 | ResourceShareSpace | [资源共享空间配置](07-api-reference/02-agent-config.md#resourcesharespace) |
 | SecureConfig | [安全配置](07-api-reference/02-agent-config.md#secureconfig) |
-| Agent | [Agent](07-api-reference/03agent.md) |
-| AgentResult | [运行结果（含 agent_state）](07-api-reference/03agent.md#agentresult) |
+| Agent | [Agent](07-api-reference/03-agent.md) |
+| AgentResult | [运行结果（含 agent_state）](07-api-reference/03-agent.md#agentresult) |
 | AgentState | [Agent 状态枚举](07-api-reference/04-agent-monitor.md#agentstate) |
 | AgentMonitor、TokenUsage、ContextUsage | [AgentMonitor](07-api-reference/04-agent-monitor.md) |
 | AgentController | [AgentController](07-api-reference/05-agent-controller.md) |
