@@ -51,6 +51,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 与 Working Memory（memory、BGraph、BTree、BList、BMap、memory.snapshot，以及元素与异常类型） |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
+| 10 | PoA 项目开发流程：从模板创建到打包运行 | [10-template-workflow.md](10-template-workflow.md) | 获取模板 → 安装依赖 → 编写代码 → 检查和测试 → 构建打包 → CLI / TUI 运行 |
 
 ---
 

@@ -2,6 +2,10 @@
 
 本篇讲把一段能跑的 JS 打包成一个可分发的 `.poa` 包。
 
+使用 TypeScript / JavaScript 模板开发项目时，可以按[PoA 项目开发流程：从模板创建到打包运行](10-template-workflow.md)
+完成安装、检查、测试、构建和打包；模板的 `pnpm package` 自带 Node 打包逻辑，不调用
+Brainary 二进制。
+
 ---
 
 ## 1. 代码是怎么进到沙箱里的
