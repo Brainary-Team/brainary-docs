@@ -116,3 +116,4 @@ create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字
 
 - [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
+- [Episodic Memory（设计预览）](../../11-episodic-memory.md)：WM 快照与未来情景记录的关系，以及尚未确定的接入方式。
