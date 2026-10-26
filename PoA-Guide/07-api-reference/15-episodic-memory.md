@@ -8,7 +8,7 @@ Episodic Memory 计划记录 Agent 在任务中的观察、行动和结果，供
 
 假设 Agent 排查一次登录失败：先重试，仍然失败；随后发现凭证过期，更新凭证后成功。只保存最后的“登录成功”，下一次遇到同类问题时就不知道此前的重试为什么没用。情景记录要保留这段经历中的观察、行动、反馈和状态变化，以及各步之间的先后与关联。
 
-Working Memory 保存当前 Run 的结构化状态；[memory.snapshot](07-api-reference/14-working-memory/07-snapshot.md) 描述如何捕获已提交状态。按当前规划，Episodic Memory 要把多次 WM 快照组织成经历的状态序列。情景记录还需要观察、行动和反馈等信息。快照是否包含这些信息，取决于此前写入 WM 的内容。
+Working Memory 保存当前 Run 的结构化状态；[memory.snapshot](14-working-memory/07-snapshot.md) 描述如何捕获已提交状态。按当前规划，Episodic Memory 要把多次 WM 快照组织成经历的状态序列。情景记录还需要观察、行动和反馈等信息。快照是否包含这些信息，取决于此前写入 WM 的内容。
 
 ---
 

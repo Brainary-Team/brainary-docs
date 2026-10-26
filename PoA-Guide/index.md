@@ -48,11 +48,10 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 与 Working Memory（memory、BGraph、BTree、BList、BMap、memory.snapshot，以及元素与异常类型） |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | PoA SDK 对象、Working Memory，以及 Episodic Memory 设计预览 |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 | 10 | PoA 项目开发流程：从模板创建到打包运行 | [10-template-workflow.md](10-template-workflow.md) | 获取模板 → 安装依赖 → 编写代码 → 检查和测试 → 构建打包 → CLI / TUI 运行 |
-| 11 | Episodic Memory（设计预览） | [11-episodic-memory.md](11-episodic-memory.md) | 情景记忆要保存什么、七个 operator 各做什么、WM 快照的作用及尚未定义的接入方式 |
 
 ---
 
@@ -79,5 +78,5 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 和 Working Memory 的 memory、BGraph、BTree、BList、BMap、memory.snapshot 及其元素与异常类型；详见 [API 参考](07-api-reference.md) |
 | Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |
 | Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
-| Episodic Memory | 规划中的经历组织与检索能力；七个 operator 当前只有设计职责，没有可调用的 PoA API。详见 [设计预览](11-episodic-memory.md) |
+| Episodic Memory | 规划中的经历组织与检索能力；七个 operator 当前只有设计职责，没有可调用的 PoA API。详见 [设计预览](07-api-reference/15-episodic-memory.md) |
 | Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent，与 cell、turn、thread 都不等同。一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态；作用域与实例的完整规则见 [memory](07-api-reference/14-working-memory/01-memory.md) |
