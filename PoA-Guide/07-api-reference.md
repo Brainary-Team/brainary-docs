@@ -20,6 +20,20 @@ SDK 方法通过单个对象传入命名参数，可选字段直接省略。IO �
 | [Executor](07-api-reference/09-executors.md) | 执行器上下文、Hooks、PreExecutorHooks、PostExecutorHooks、文件、终端、Agent、MCP 和 tools 入口 |
 | [AgentConfig](07-api-reference/02-agent-config.md) | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec、AgentGroup、ResourceShareSpace、SecureConfig 和 AgentConfig |
 
+### Working Memory
+
+这一组共七篇，另有一个入口页 [Working Memory](07-api-reference/14-working-memory.md) 汇总它们的共同约定。
+
+| 文件 | 内容 |
+| --- | --- |
+| [memory](07-api-reference/14-working-memory/01-memory.md) | 集合访问器、batch、close_run_memory，以及 Working Memory 的作用域与版本规则 |
+| [BGraph](07-api-reference/14-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
+| [BTree](07-api-reference/14-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
+| [BList 与 BMap](07-api-reference/14-working-memory/04-blist-bmap.md) | 有序项追加与键值读写 |
+| [Working Memory 元素与返回类型](07-api-reference/14-working-memory/05-elements.md) | BNode、BEdge、BatchBuilder 与批次专用句柄、CommitResult、BPage 和三个项类型 |
+| [Working Memory 异常](07-api-reference/14-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
+| [memory.snapshot](07-api-reference/14-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
+
 ### Episodic Memory（设计预览）
 
 [Episodic Memory](07-api-reference/15-episodic-memory.md) 介绍情景记录与 Working Memory 快照的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
@@ -59,3 +73,10 @@ SDK 方法通过单个对象传入命名参数，可选字段直接省略。IO �
 | CallToolResult | [MCP 工具返回类型](07-api-reference/10-mcp-tool-config.md#calltoolresult) |
 | global、helper | [global](07-api-reference/11-global.md)、[helper](07-api-reference/12-helper.md) |
 | Tool（tools 能力枚举） | [Tools](07-api-reference/13-tools-manager.md#tools) |
+| memory | [memory](07-api-reference/14-working-memory/01-memory.md) |
+| BGraph | [BGraph](07-api-reference/14-working-memory/02-bgraph.md) |
+| BTree | [BTree](07-api-reference/14-working-memory/03-btree.md) |
+| BList、BMap | [BList 与 BMap](07-api-reference/14-working-memory/04-blist-bmap.md) |
+| BNode、BEdge、BatchBuilder、BatchGraph、BatchTree、BatchList、BatchMap、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](07-api-reference/14-working-memory/05-elements.md) |
+| WmError、WmUsageError、WmRequestError、WmErrorCode | [Working Memory 异常](07-api-reference/14-working-memory/06-errors.md) |
+| SnapshotPage | [memory.snapshot](07-api-reference/14-working-memory/07-snapshot.md) |

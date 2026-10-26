@@ -53,6 +53,8 @@ cell 单列成一个词，是因为它决定了以下几件事：
 
 后续各篇的示例默认已经抄了这一层。看到 `runBatch` / `shellLines` / `parseJsonReply` 就是它，看到 `tools.` 开头的就是内置。
 
+上面那张表按来源分的两类**不是穷举**，这两条线索也只是正向识别：`memory.` 开头的那一组两类都不属于。它由 brainary 侧按包声明和运行条件注入，既不随 codex 本体无条件存在，也抄不进 `main.js`；在 §3 的注入清单里单列一行，接口见 [memory](07-api-reference/14-working-memory/01-memory.md)。
+
 ### prelude 为什么存在
 
 codex 的多 agent 工具有两代，形状完全不同，且各有局限。
@@ -88,6 +90,7 @@ codex 的多 agent 工具有两代，形状完全不同，且各有局限。
 | `yield_control()` | 先把已攒的输出交出去，程序继续跑。PoA 下约等于提前结束 |
 | `exit()` | 顶层提前 return |
 | `setTimeout` / `clearTimeout` | 沙箱里全部的定时器能力就这两个 |
+| `memory` / `BNode` / `BEdge` | Working Memory 句柄与它的两个构造类。这一组与上面各项的来源不同——它由 brainary 侧按包声明和运行条件注入，不是沙箱起来就在；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
 
 当前 SDK 的输入输出、定时器和辅助函数分别见 [IO](07-api-reference/06-io.md)、[global](07-api-reference/11-global.md) 和 [helper](07-api-reference/12-helper.md)。
 
