@@ -47,14 +47,11 @@ cell 单列成一个词，是因为它决定了以下几件事：
 | 类别 | 有哪些 | 来源 |
 | --- | --- | --- |
 | codex 内置的 | 全局对象 `tools`，外加 `ALL_TOOLS`、`text`、`notify`、`exit`、`store`、`load`、`setTimeout` 等 12 个全局 primitive | codex 本体，沙箱起来时就在 |
-| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 一层普通 JS 封装，全文在 [Prelude API](07-api-reference/01-agent-orchestration.md) |
+| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 早期示例使用的普通 JS 封装；当前对象接口见 [AgentOrchestration](07-api-reference/01-agent-orchestration.md) |
 
-包的 `entry` 是**原样提交**的，前面不会被拼入任何内容。要用第二类那 16 个名字，就把
-[Prelude API](07-api-reference/01-agent-orchestration.md) 整段抄进 `main.js`，抄在首行 pragma 之后——`// @exec:` 只在第 1 行生效，且不在第 1 行时不报错。另一种做法是只用内置那一档，《05-writing.md》§12.2 的范例即如此。
+包的 `entry` 是**原样提交**的，前面不会被拼入任何内容。早期示例依赖 prelude 源码，使用时放在首行 pragma 之后——`// @exec:` 只在第 1 行生效，且不在第 1 行时不报错。当前 [API 参考](07-api-reference.md) 描述对象接口，不再提供这段 prelude 源码。只用内置那一档的写法见《05-writing.md》§12.2。
 
 后续各篇的示例默认已经抄了这一层。看到 `runBatch` / `shellLines` / `parseJsonReply` 就是它，看到 `tools.` 开头的就是内置。
-
-上面那张表按来源分的两类**不是穷举**，这两条线索也只是正向识别：`memory.` 开头的那一组两类都不属于。它由 brainary 侧按包声明和运行条件注入，既不随 codex 本体无条件存在，也抄不进 `main.js`；在 §3 的注入清单里单列一行，接口见 [memory](07-api-reference/14-working-memory/01-memory.md)。
 
 ### prelude 为什么存在
 
@@ -91,9 +88,8 @@ codex 的多 agent 工具有两代，形状完全不同，且各有局限。
 | `yield_control()` | 先把已攒的输出交出去，程序继续跑。PoA 下约等于提前结束 |
 | `exit()` | 顶层提前 return |
 | `setTimeout` / `clearTimeout` | 沙箱里全部的定时器能力就这两个 |
-| `memory` / `BNode` / `BEdge` | Working Memory 句柄与它的两个构造类。这一组与上面各项的来源不同——它由 brainary 侧按包声明和运行条件注入，不是沙箱起来就在；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
 
-各 primitive 的完整语义见《07-api-reference.md》§1。
+当前 SDK 的输入输出、定时器和辅助函数分别见 [IO](07-api-reference/06-io.md)、[global](07-api-reference/11-global.md) 和 [helper](07-api-reference/12-helper.md)。
 
 JS 本身没有网络和文件系统，但 `tools.exec_command` 提供了一个真 shell。沙箱管的是 JS 引擎，不是能力边界；能力边界仍然是 codex 原本那套审批与沙箱策略。
 

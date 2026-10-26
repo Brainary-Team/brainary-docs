@@ -1,6 +1,6 @@
 # Agent
 
-[Agent](03agent.md) 表示一个可重复运行、可暂停和可恢复的独立会话。
+[Agent](03-agent.md) 表示一个可重复运行、可关闭和可恢复的独立会话。
 
 ### Agent 对象
 
@@ -20,108 +20,103 @@ interface Agent {
 **示例**：
 
 ~~~js
-const agent = orchestration.create_agent("reviewer", "代码审查", {
-  model: {
-    model_id: "gpt-6-sol",
-    provider: "openAI",
-    reasoningEffort: "high",
+const agent = orchestration.create_agent({
+  name: "reviewer",
+  description: "代码审查",
+  agent_config: {
+    model: {
+      model_id: "gpt-6-sol",
+      provider: "openAI",
+      reasoningEffort: "high",
+    },
+    max_agent_depth: 3,
+    secure_config: { block_on_violation: true },
   },
 });
 ~~~
 
-### run(message?, input_items?, output_schema?, timeout?)
+### run({message?, items?, output_schema?, timeout_ms?})
 
 **作用**：执行一次完整 Agent 任务并等待最终结果。
 
-**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
+**输入类型**：命名参数对象，包含 message?: string；items?: [MessageItem](05-message-item.md)[]；output_schema?: JsonSchema；timeout_ms?: number，等待返回的超时时间，单位为毫秒（ms）。
 
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 output_schema 或 timeout 时，省略的前置可选参数使用 undefined 占位。
+**参数约束**：message 和 items 至少传入一项。
 
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
-
-**示例**：
-
-~~~js
-const result = await agent.run("检查 README", undefined, {
-  type: "object",
-  properties: { issues: { type: "array" } },
-}, timeout);
-text(result.output);
-~~~
-
-### wait_run(message?, input_items?, output_schema?)
-
-**作用**：提交任务并等待 Agent 运行完成。
-
-**输入类型**：message?: string；input_items?: IOInput[]；output_schema?: JsonSchema。
-
-**参数约束**：message 和 input_items 必须且只能传入一个；仅传入 input_items 时，message 使用 undefined 占位。
-
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
+**返回值类型**：Promise<[AgentResult](#agentresult)>。
 
 **示例**：
 
 ~~~js
-const result = await agent.wait_run("汇总检查结果");
-text(result.text);
+const result = await agent.run({
+  message: "检查 README",
+  output_schema: {
+    type: "object",
+    properties: { issues: { type: "array" } },
+  },
+  timeout_ms: 60000,
+});
+text(result.schema_result);
 ~~~
 
-### send_input(message?, input_items?, interrupt?, timeout?)
+### append_message({message?, message_items?, Immediately})
 
-**作用**：向 Agent 发送后续输入；interrupt=true 时请求打断当前运行。
+**作用**：向 Agent 追加消息，并返回任务句柄；Immediately 用于指定是否立即处理。
 
-**输入类型**：message?: string；input_items?: IOInput[]；interrupt?: boolean；timeout?: number，等待返回的超时时间，单位为毫秒（ms）。
+**输入类型**：命名参数对象，包含 message?: string；message_items?: [MessageItem](05-message-item.md)[]；Immediately: boolean，必填，默认取值为 false。
 
-**参数约束**：message 和 input_items 必须且只能传入一个；传入 interrupt 或 timeout 时，省略的前置可选参数使用 undefined 占位。
+**参数约束**：message 和 message_items 至少传入一项。
 
-**返回值类型**：Promise<void>。
+**返回值类型**：Promise<[Handle](01-agent-orchestration.md#handle)>。
 
 **示例**：
 
 ~~~js
-await agent.send_input("优先检查认证逻辑", undefined, true, timeout);
+const handle = await agent.append_message({ message: "优先检查认证逻辑", Immediately: true });
+const result = await orchestration.acquire_agent_result({ agent_id: handle.agent_id, timeoutMs: 60000 });
+text(result.result);
 ~~~
 
-### compact(compact_template?)
+### context_compact({compact_template?})
 
 **作用**：压缩 Agent 上下文，减少后续运行的上下文占用。
 
-**输入类型**：compact_template?: string。
+**输入类型**：命名参数对象，包含 compact_template?: string。
 
 **返回值类型**：Promise<void>。
 
 **示例**：
 
 ~~~js
-await agent.compact("只保留结论和待办");
+await agent.context_compact({ compact_template: "只保留结论和待办" });
 ~~~
 
 ### close()
 
-**作用**：关闭 Agent 和仍在运行的资源。
+**作用**：关闭 Agent 和仍在运行的资源，并返回 Agent 状态。
 
 **输入类型**：无。
 
-**返回值类型**：Promise<void>。
+**返回值类型**：Promise<[AgentState](04-agent-executor.md#agentstate)>。
 
 **示例**：
 
 ~~~js
-await agent.close();
+text(await agent.close());
 ~~~
 
 ### resume()
 
-**作用**：恢复已关闭的 Agent，使其可以继续接收任务。
+**作用**：恢复已关闭的 Agent，使其可以继续接收任务，并返回 Agent 状态。
 
 **输入类型**：无。
 
-**返回值类型**：Promise<void>。
+**返回值类型**：Promise<[AgentState](04-agent-executor.md#agentstate)>。
 
 **示例**：
 
 ~~~js
-await agent.resume();
+text(await agent.resume());
 ~~~
 
 ### state()、token_usage()、context_usage()
@@ -130,7 +125,7 @@ await agent.resume();
 
 **输入类型**：无。
 
-**返回值类型**：分别为 [AgentState](04-agent-monitor.md)、[TokenUsage](04-agent-monitor.md)、[ContextUsage](04-agent-monitor.md)。
+**返回值类型**：分别为 [AgentState](04-agent-executor.md#agentstate)、[TokenUsage](04-agent-executor.md#tokenusage)、[ContextUsage](04-agent-executor.md#contextusage)。
 
 **示例**：
 
@@ -151,19 +146,20 @@ text({
 ~~~ts
 interface AgentResult {
   agent_id: string;
-  output: unknown;
-  text: string;
+  schema_result: Record<string, unknown>;
+  result: string;
   agent_state: AgentState;
 }
 ~~~
 
-output 在传入 output_schema 时是校验后的对象，否则是最终文本；text 始终保留原始最终回复。详见 [AgentResult](03agent.md)。
+schema_result 是将 Agent 输出文本转换得到的 JSON 对象；传入 output_schema 时，转换后的对象按 schema 校验。
+result 始终保留 Agent 的原始最终回复文本。
 
-agent_state 表示本次运行返回时的 Agent 状态，类型为 [AgentState](04-agent-monitor.md#agentstate)。
+agent_state 表示本次运行返回时的 Agent 状态，类型为 [AgentState](04-agent-executor.md#agentstate)。
 
 **示例**：
 
 ~~~js
-const result = await agent.run("返回状态", undefined, { type: "object" });
-text({ structured: result.output, raw: result.text, state: result.agent_state });
+const result = await agent.run({ message: "返回状态", output_schema: { type: "object" } });
+text({ structured: result.schema_result, raw: result.result, state: result.agent_state });
 ~~~

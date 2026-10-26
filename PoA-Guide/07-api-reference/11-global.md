@@ -2,21 +2,21 @@
 
 global 提供定时器、耗时统计和流程控制函数。
 
-### set_timeout(callback, delay_ms)
+### setTimeout(callback, delayMs)
 
 **作用**：安排一次延迟回调。
 
-**输入类型**：callback: () => void；delay_ms: number，单位为毫秒。两个参数均必填。
+**输入类型**：callback: () => void；delayMs: number，单位为毫秒。两个参数均必填。
 
 **返回值类型**：number，定时器 ID。
 
 **示例**：
 
 ~~~js
-const timeout_id = set_timeout(() => text("done"), 100);
+const timeout_id = setTimeout(() => text("done"), 100);
 ~~~
 
-### clear_timeout(timeout_id)
+### clearTimeout(timeout_id)
 
 **作用**：取消尚未执行的定时器。
 
@@ -27,21 +27,21 @@ const timeout_id = set_timeout(() => text("done"), 100);
 **示例**：
 
 ~~~js
-clear_timeout(timeout_id);
+clearTimeout(timeout_id);
 ~~~
 
-### timed(fn)
+### timed({fn})
 
 **作用**：执行函数、捕获异常并记录耗时。
 
-**输入类型**：fn: () => T | Promise<T>。
+**输入类型**：命名参数对象，包含 fn: () => T | Promise<T>。
 
 **返回值类型**：Promise<{ ok: boolean; value?: T; error?: string; ms: number }>。
 
 **示例**：
 
 ~~~js
-const result = await timed(() => tools.clock_sleep({ duration_ms: 10 }));
+const result = await timed({ fn: () => executor.terminalExecutor.exec_command({ cmd: "pwd" }) });
 text(result.ms);
 ~~~
 

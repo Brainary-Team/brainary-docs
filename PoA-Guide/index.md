@@ -9,32 +9,30 @@ PoA 把这个关系倒过来：调度、分发、汇总、判定全部写在程�
 于是编排逻辑变成确定的：`for` 就是循环，`Promise.all` 就是并发，`if` 就是分支。这段编排不消耗任何模型调用，每次运行行为一致。
 
 > **只想跑通第一个**：[02 快速开始](02-quickstart.md) →
-> [Prelude API](07-api-reference/01-agent-orchestration.md)（按需复制）→
+> [AgentOrchestration API](07-api-reference/01-agent-orchestration.md) →
 > [05 编写指南 §12](05-writing.md#12-完整范例)。其余按需查。
 
-下面只画程序的结构，**是伪代码，不能直接运行**：其中三个 helper 来自 prelude。
+下面只画程序的结构，**是伪代码，不能直接运行**：其中 reviewer 是已配置的 Agent。
 
 ```js
-// 结构示意（伪代码）：先复制《07-api-reference/01-agent-orchestration.md》中的 helper 才能使用这些函数
 // 列出目录 → 每个派一个 agent → 收齐 → 汇总
-const prompt = (folder) => `分析 ./${folder}，只回一行 JSON：{"purpose":"..."}`;
-
-const folders = await shellLines("ls -d */ | sed 's#/$##'", {
-  validate: (line) => SAFE_NAME.test(line),
+const folders = await executor.terminalExecutor.shelllines({ command: "ls -d */" });
+const batch = await mapLimit({
+  items: folders,
+  limit: 3,
+  fn: async (folder) => {
+    const handle = await orchestration.spawn_agent({
+      message: `分析 ${folder}，只回一行 JSON：{"purpose":"..."}`,
+      agent_name: "reviewer",
+    });
+    const reply = await orchestration.acquire_agent_result({ agent_id: handle.agent_id, timeoutMs: 300000 });
+    return { folder, summary: parseJsonReply({ raw: reply.result }).value };
+  },
 });
-
-const batch = await runBatch(
-  folders.map((folder, i) => ({ message: prompt(folder), name: `scan_${i}`, meta: { folder } })),
-  { concurrency: 3 },
-);
-
-text(JSON.stringify(batch.map(({ handle, reply }) => ({
-  folder: handle.meta.folder,
-  summary: parseJsonReply(reply).value,
-}))));
+text(batch);
 ```
 
-第一段可直接运行的代码从 [《02 快速开始》](02-quickstart.md)§2 的探针开始。`shellLines` / `runBatch` / `parseJsonReply` 的来源与复制规则以 [《03 核心概念》](03-concepts.md)§2 为准；不抄的等价写法见 [《05 编写指南》](05-writing.md)§12.2。
+对象和方法见 [API 参考](07-api-reference.md)；早期工具面与 prelude 示例的背景见 [《03 核心概念》](03-concepts.md)§2。
 
 ---
 
@@ -48,7 +46,7 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 与 Working Memory（memory、BGraph、BTree、BList、BMap、memory.snapshot，以及元素与异常类型） |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentExecutor、Agent、AgentOrchestration、Executor 与 AgentConfig（含 SpawnSpec、AgentGroup、资源共享与预算配置） |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
 
@@ -68,13 +66,11 @@ text(JSON.stringify(batch.map(({ handle, reply }) => ({
 | cell | 一次提交的那整段 JS 的一次运行。一次提交 = 一个 cell = 一次跑完 |
 | 宿主 | 跑这段程序的那个 codex 运行时，即 `brainary exec --poa` 或 `brainary app-server` 那个进程。它持有工具注册表与分发链路、审批与沙箱策略、子 agent 的注册表与名额，并拉起 `codex-code-mode-host` 那个独立进程来承载 V8。文中"宿主侧""宿主配置的"指的都是它，与开发者自己的进程相对 |
 | code mode | ordinary CodeMode 给模型直接工具 + `exec`；CodeModeOnly 把 nested tools 折叠进 `exec`，但 `wait` / `DirectModelOnly` 工具仍独立可见。详见 [04 工作原理](04-how-it-works.md) |
-| 工具面 | 一次运行中 `tools.` 上实际挂着的那批工具。它在 cell 起跑前一次性捕获，运行过程中不变 |
+| 工具面 | 一次运行中可用的工具集合。新 SDK 的全局 `tools` 汇总各执行器的工具枚举，每个枚举成员的值都是字符串；通过执行器方法调用工具 |
 | 曝光度 | 决定工具对模型和 cell 是否可见。`DirectModelOnly` 不进 cell；`Deferred` 可在 cell 调用但不展开进 CodeModeOnly 的 `exec` 正文。运行时声明见 [拆分后的 API 参考](07-api-reference.md) |
 | 子 agent | 被 PoA 程序派出去的独立 AI 会话，有自己的上下文和工具 |
-| handle | 派出一个子 agent 后拿到的句柄，后续等待、追问、关闭都靠它 |
+| handle | 派出 Agent 后拿到的句柄，包含 agent_id、agent_name、可选 meta 和 agent_state；获取结果时使用 agent_id |
 | 并行派发（扇出 / fan-out） | 一次派出 N 个子 agent 并行执行的形状 |
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
-| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentController、AgentMonitor、Agent、AgentOrchestration、Executor、AgentConfig 和 Working Memory 的 memory、BGraph、BTree、BList、BMap、memory.snapshot 及其元素与异常类型；详见 [API 参考](07-api-reference.md) |
-| Agent 编排 | AgentOrchestration 负责创建、派发、等待和收口，AgentController 负责生命周期控制 |
-| Working Memory | PoA 程序侧的结构化状态容器，按 schema 声明的集合存放数据。全局 `memory` 由宿主注入，不走 `tools.` 分发路径；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
-| Run | Working Memory 的作用域单位：由一个 cell 发起，覆盖该 cell 沿派发链派出的全部子 agent，与 cell、turn、thread 都不等同。一个 thread 可以参与多个 Run，多个 Run 并发活跃是预期状态；作用域与实例的完整规则见 [memory](07-api-reference/14-working-memory/01-memory.md) |
+| API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentExecutor、Agent、AgentOrchestration、Executor 与 AgentConfig；详见 [API 参考](07-api-reference.md) |
+| Agent 编排 | AgentOrchestration 负责创建、按 SpawnSpec 派发和获取结果；AgentExecutor 负责消息发送、上下文控制和状态查询 |

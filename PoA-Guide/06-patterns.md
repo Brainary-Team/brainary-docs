@@ -209,7 +209,7 @@ const builtOnOwnAnswer = Boolean(
 
 `builtOnOwnAnswer` 检查的是：它挑的那个名字是否确实出自它自己上一轮列的名单。如果它重读文件重新生成，列出的名字未必与上一轮一致，这条断言即不成立。
 
-`sendAndWait` 负责两代后端的状态衔接；恢复条件与两段超时预算见 [Prelude API](07-api-reference/01-agent-orchestration.md)。
+`sendAndWait` 是早期 prelude 中负责两代后端状态衔接的封装。当前 SDK 使用 [Agent.append_message](07-api-reference/03-agent.md) 追加消息，再用 [acquire_agent_result](07-api-reference/01-agent-orchestration.md#acquire_agent_resultagent_id-timeoutms) 获取结果。
 
 **实际价值**：文件读一遍进上下文，之后每次追问不再花 token 重读。
 
@@ -220,8 +220,7 @@ const builtOnOwnAnswer = Boolean(
 让它通读这个 crate，之后逐个模块追问设计意图。
 ```
 
-**只用内置时**：需要自行实现追问与状态轮询；参考实现见
-[Prelude API](07-api-reference/01-agent-orchestration.md)。
+**只用内置时**：需要自行实现追问与状态轮询；当前 SDK 的状态查询入口见 [AgentExecutor](07-api-reference/04-agent-executor.md)。
 
 ---
 
