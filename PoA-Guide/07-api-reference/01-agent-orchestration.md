@@ -1,6 +1,6 @@
 # AgentOrchestration
 
-[AgentOrchestration](01-agent-orchestration.md) 负责创建 [Agent](03agent.md)、派发任务、等待结果和批量收口。每个 Agent 通过自己的
+[AgentOrchestration](01-agent-orchestration.md) 负责创建 [Agent](03-agent.md)、派发任务、等待结果和批量收口。每个 Agent 通过自己的
 [AgentConfig](02-agent-config.md) 定义模型、能力和运行时。
 
 ## 类型
@@ -28,7 +28,7 @@ text(handle.agent_id);
 
 ### RemoteAgent
 
-**作用**：描述可通过远程协议调用的 [Agent](03agent.md)。
+**作用**：描述可通过远程协议调用的 [Agent](03-agent.md)。
 
 **类型定义**：
 
@@ -62,7 +62,7 @@ text(remote.name);
 
 name 和 agent_config 必填；
 
-**返回值类型**：[Agent](03agent.md)。
+**返回值类型**：[Agent](03-agent.md)。
 
 **示例**：
 
@@ -145,7 +145,7 @@ const handles = await orchestration.spawn_many(
 
 **参数约束**：message 和 input_items 必须且只能传入一个；仅传入 input_items 时，message 使用 undefined 占位。
 
-**返回值类型**：Promise<[AgentResult](03agent.md)>。
+**返回值类型**：Promise<[AgentResult](03-agent.md)>。
 
 **示例**：
 

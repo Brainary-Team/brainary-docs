@@ -1,6 +1,6 @@
 # AgentConfig、Capabilities、ModelSpec、RuntimeSpec、ResourceShareSpace 与 SecureConfig
 
-本页描述 [Agent](03agent.md) 的静态配置类型。配置在 Agent 创建时确定，执行时由运行时转换为对应的模型、
+本页描述 [Agent](03-agent.md) 的静态配置类型。配置在 Agent 创建时确定，执行时由运行时转换为对应的模型、
 能力和环境设置。
 
 ### ModelSpec

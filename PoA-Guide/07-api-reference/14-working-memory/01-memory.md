@@ -109,7 +109,7 @@ Run 是 Working Memory 的作用域单位，由一个 PoA cell 发起，覆盖�
 
 包资源校验、schema 注入与 WM 连接都在业务 JS 执行前做完。当前只有 app-server 的 thread/codeMode/exec 启动的 PoA cell 有 memory；注册为 poa 工具的程序、普通 turn 和子 agent 当前没有 memory 入口。
 
-可选工具组 memories 和 [tools](../13-skills-manager.md) 枚举里的 memory 工具类别是模型可见的工具，本页的 memory 是只有程序能调的沙箱全局，两者同名不同物。
+可选工具组 memories 和 [tools](../13-tools-manager.md) 枚举里的 memory 工具类别是模型可见的工具，本页的 memory 是只有程序能调的沙箱全局，两者同名不同物。
 
 WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不同：后者注册为 poa 工具时成为对模型可见的参数说明，WM schema 对模型不可见。缺这份声明时，四个访问器在第一次调用处同步抛 WmUsageError。
 
