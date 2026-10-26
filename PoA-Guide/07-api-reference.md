@@ -20,6 +20,10 @@ SDK 方法通过单个对象传入命名参数，可选字段直接省略。IO �
 | [Executor](07-api-reference/09-executors.md) | 执行器上下文、Hooks、PreExecutorHooks、PostExecutorHooks、文件、终端、Agent、MCP 和 tools 入口 |
 | [AgentConfig](07-api-reference/02-agent-config.md) | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec、AgentGroup、ResourceShareSpace、SecureConfig 和 AgentConfig |
 
+### Episodic Memory（设计预览）
+
+[Episodic Memory](07-api-reference/15-episodic-memory.md) 介绍情景记录与 Working Memory 快照的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
+
 ### 输入、交互与工具配置
 
 | 文件 | 内容 |

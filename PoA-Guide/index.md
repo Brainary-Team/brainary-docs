@@ -46,9 +46,10 @@ text(batch);
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
 | 05 | 编写指南 | [05-writing.md](05-writing.md) | 主体文档。从空文件到能跑的完整动线，含四处必写的容错与调试习惯、prelude 与纯内置两版范例 |
 | 06 | 模式库 | [06-patterns.md](06-patterns.md) | 四种可复用形状 + 一个边界指针 + 八条反模式 |
-| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentExecutor、Agent、AgentOrchestration、Executor 与 AgentConfig（含 SpawnSpec、AgentGroup、资源共享与预算配置） |
+| 07 | API 参考（按对象拆分） | [07-api-reference.md](07-api-reference.md) | IO、global、helper、Tools、AgentExecutor、Agent、AgentOrchestration、Executor 与 AgentConfig（含 SpawnSpec、AgentGroup、资源共享与预算配置），以及 Episodic Memory 设计预览 |
 | 08 | 打包与分发 | [08-packaging.md](08-packaging.md) | 提交链路、`.poa` 包格式、自带 MCP、打包发给别人 |
 | 09 | PoA input 编写说明 | [09-input.md](09-input.md) | 先看小型 TypeScript 示例，再了解打包、`POA_INPUT` 与校验，末尾为完整字段列表 |
+| 10 | PoA 项目开发流程：从模板创建到打包运行 | [10-template-workflow.md](10-template-workflow.md) | 获取模板 → 安装依赖 → 编写代码 → 检查和测试 → 构建打包 → CLI / TUI 运行 |
 
 ---
 
@@ -74,3 +75,4 @@ text(batch);
 | 收口（fan-in） | 把派出去的结果收齐、解析、合并的那一步 |
 | API 对象 | 新 SDK 按对象拆分为 IO、global、helper、Tools、AgentExecutor、Agent、AgentOrchestration、Executor 与 AgentConfig；详见 [API 参考](07-api-reference.md) |
 | Agent 编排 | AgentOrchestration 负责创建、按 SpawnSpec 派发和获取结果；AgentExecutor 负责消息发送、上下文控制和状态查询 |
+| Episodic Memory | 规划中的经历组织与检索能力；七个 operator 当前只有设计职责，没有可调用的 PoA API。详见 [设计预览](07-api-reference/15-episodic-memory.md) |
