@@ -1,0 +1,43 @@
+name: sync-poa-guide
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "**"
+
+jobs:
+  sync-docs:
+    runs-on:
+      group: ucloud
+    steps:
+      - name: publish PoA-Guide
+        env:
+          SYNC_URL: ${{ secrets.SYNC_URL }}
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+        run: |
+          set -euo pipefail
+          body=$(curl -sS -X POST "$SYNC_URL/v1/sync" \
+            -H "Authorization: Bearer $SYNC_TOKEN" \
+            -H "X-Git-Token: $GIT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"repo_url\":\"${{ github.server_url }}/${{ github.repository }}.git\",\"git_ref\":\"${{ github.ref_type == 'tag' && github.ref_name || 'main' }}\",\"docs_path\":\"PoA-Guide\",\"target_folder_token\":\"$FOLDER_TOKEN\"}")
+          job_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$body")
+          for _ in $(seq 1 60); do
+            status_body=$(curl -sS "$SYNC_URL/v1/sync/$job_id" -H "Authorization: Bearer $SYNC_TOKEN")
+            status=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])' <<<"$status_body")
+            if [ "$status" = "succeeded" ]; then
+              exit 0
+            fi
+            if [ "$status" = "failed" ]; then
+              echo "$status_body"
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "sync timed out"
+          exit 1
