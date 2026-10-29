@@ -2,6 +2,11 @@ name: sync-poa-guide
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "**"
 
 jobs:
   sync-docs:
@@ -20,7 +25,7 @@ jobs:
             -H "Authorization: Bearer $SYNC_TOKEN" \
             -H "X-Git-Token: $GIT_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"repo_url\":\"${{ github.server_url }}/${{ github.repository }}.git\",\"git_ref\":\"main\",\"docs_path\":\"PoA-Guide\",\"target_folder_token\":\"$FOLDER_TOKEN\"}")
+            -d "{\"repo_url\":\"${{ github.server_url }}/${{ github.repository }}.git\",\"git_ref\":\"${{ github.ref_type == 'tag' && github.ref_name || 'main' }}\",\"docs_path\":\"PoA-Guide\",\"target_folder_token\":\"$FOLDER_TOKEN\"}")
           job_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$body")
           for _ in $(seq 1 60); do
             status_body=$(curl -sS "$SYNC_URL/v1/sync/$job_id" -H "Authorization: Bearer $SYNC_TOKEN")
