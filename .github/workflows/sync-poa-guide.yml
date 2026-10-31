@@ -18,7 +18,7 @@ jobs:
           SYNC_URL: ${{ secrets.SYNC_URL }}
           SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          FOLDER_TOKEN: https://ncn30t7bl7ly.feishu.cn/wiki/OPZrwd0LziLFTukNlthckxFtnPD
           DOCS_PATH: PoA-Guide
         run: |
           set -euo pipefail
