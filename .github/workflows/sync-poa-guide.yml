@@ -19,13 +19,14 @@ jobs:
           SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FOLDER_TOKEN: ${{ secrets.FEISHU_FOLDER_TOKEN }}
+          DOCS_PATH: PoA-Guide
         run: |
           set -euo pipefail
           body=$(curl -sS -X POST "$SYNC_URL/v1/sync" \
             -H "Authorization: Bearer $SYNC_TOKEN" \
             -H "X-Git-Token: $GIT_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"repo_url\":\"${{ github.server_url }}/${{ github.repository }}.git\",\"git_ref\":\"${{ github.ref_type == 'tag' && github.ref_name || 'main' }}\",\"docs_path\":\"PoA-Guide\",\"target_folder_token\":\"$FOLDER_TOKEN\"}")
+            -d "{\"repo_url\":\"${{ github.server_url }}/${{ github.repository }}.git\",\"git_ref\":\"${{ github.ref_type == 'tag' && github.ref_name || 'main' }}\",\"docs_path\":\"$DOCS_PATH\",\"target_folder_token\":\"$FOLDER_TOKEN\"}")
           job_id=$(python3 -c 'import json,sys; print(json.load(sys.stdin)["job_id"])' <<<"$body")
           for _ in $(seq 1 60); do
             status_body=$(curl -sS "$SYNC_URL/v1/sync/$job_id" -H "Authorization: Bearer $SYNC_TOKEN")
