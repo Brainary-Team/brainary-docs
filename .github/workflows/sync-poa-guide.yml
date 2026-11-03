@@ -11,7 +11,7 @@ on:
 jobs:
   sync-docs:
     runs-on:
-      group: ucloud
+      group: ci
     steps:
       - name: publish PoA-Guide
         env:
