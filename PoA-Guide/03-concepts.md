@@ -25,7 +25,7 @@ graph TD
 
 - **PoA 程序**：一段 JS，一次提交、一次跑完。
 - **工具**：沙箱里有个全局对象 `tools`，上面挂着可调用的函数。`tools.exec_command` 提供一个真正的 shell。
-- **子 agent**：一个独立的 AI 会话，有自己的上下文和工具。它接收一段任务文字，自己决定读哪些文件、怎么读，最后交回一段回答。它是异步的，派出去先拿到一个 handle，何时去等由程序决定。它在自己的 thread 上取得工具面，不保证与 root 完全相同；尤其是 `.poa` 包自带的 MCP 只注册到 root thread，子 agent 拿不到。交互式 PoA 派出的子 agent 可以在自己的 thread/turn 调用 `request_user_input`，模式由 PoA 运行继承；详见 [`ask()` 交互](07-api-reference/08-ask.md#子-agent-自主提问)。
+- **子 agent**：一个独立的 AI 会话，有自己的上下文和工具。它接收一段任务文字，自己决定读哪些文件、怎么读，最后交回一段回答。它是异步的，派出去先拿到一个 handle，何时去等由程序决定。它在自己的 thread 上取得工具面，不保证与 root 完全相同；尤其是 `.poa` 包自带的 MCP 只注册到 root thread，子 agent 拿不到。交互式 PoA 派出的子 agent 可以在自己的 thread/turn 调用 `request_user_input`，模式由 PoA 运行继承；详见 [`ask()` 交互](07-api-reference/10-ask.md#子-agent-自主提问)。
 - **cell**：一次提交的那整段 JS 的一次运行。一次提交 = 一个 cell = 一次跑完。
 
 cell 单列成一个词，是因为它决定了以下几件事：
@@ -47,7 +47,7 @@ cell 单列成一个词，是因为它决定了以下几件事：
 | 类别 | 有哪些 | 来源 |
 | --- | --- | --- |
 | codex 内置的 | 全局对象 `tools`，外加 `ALL_TOOLS`、`text`、`notify`、`exit`、`store`、`load`、`setTimeout` 等 12 个全局 primitive | codex 本体，沙箱起来时就在 |
-| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 早期示例使用的普通 JS 封装；当前对象接口见 [AgentOrchestration](07-api-reference/01-agent-orchestration.md) |
+| prelude 提供的 | `AGENT_BACKEND`、`requireAgents`、`mapLimit`、`spawnAgent`、`spawnMany`、`collectAll`、`runBatch`、`sendAndWait`、`closeAll`、`parseJsonReply`、`shellLines`、`SAFE_NAME`、`hasTool`、`callTool`、`shapeOf`、`timed` | 早期示例使用的普通 JS 封装；当前对象接口见 [AgentExecutor](07-api-reference/03-agent-executor.md) |
 
 包的 `entry` 是**原样提交**的，前面不会被拼入任何内容。早期示例依赖 prelude 源码，使用时放在首行 pragma 之后——`// @exec:` 只在第 1 行生效，且不在第 1 行时不报错。当前 [API 参考](07-api-reference.md) 描述对象接口，不再提供这段 prelude 源码。只用内置那一档的写法见《05-writing.md》§12.2。
 
@@ -92,7 +92,7 @@ codex 的多 agent 工具有两代，形状完全不同，且各有局限。
 | `setTimeout` / `clearTimeout` | 沙箱里全部的定时器能力就这两个 |
 | `memory` / `BNode` / `BEdge` | Working Memory 句柄与它的两个构造类。这一组与上面各项的来源不同——它由 brainary 侧按包声明和运行条件注入，不是沙箱起来就在；详见 [memory](07-api-reference/14-working-memory/01-memory.md) |
 
-当前 SDK 的输入输出、定时器和辅助函数分别见 [IO](07-api-reference/06-io.md)、[global](07-api-reference/11-global.md) 和 [helper](07-api-reference/12-helper.md)。
+当前 SDK 的输入输出、定时器和辅助函数分别见 [IO](07-api-reference/08-io.md)、[global](07-api-reference/11-global.md) 和 [helper](07-api-reference/12-helper.md)。
 
 JS 本身没有网络和文件系统，但 `tools.exec_command` 提供了一个真 shell。沙箱管的是 JS 引擎，不是能力边界；能力边界仍然是 codex 原本那套审批与沙箱策略。
 

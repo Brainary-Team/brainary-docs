@@ -6,6 +6,8 @@
 declare function ask(request: AskRequest): Promise<AskResult>;
 ```
 
+SDK 从 `@brainary/poa-sdk/io` 和根入口导出 `ask` 及下列类型。
+
 `request` 必须是对象并包含 `questions` 数组。数组长度为 1–3；单个问题不能使用
 `question` 简写。
 
@@ -13,7 +15,7 @@ declare function ask(request: AskRequest): Promise<AskResult>;
 type AskQuestionOption = { label: string; description: string };
 type AskQuestion = {
   question: string;
-  options?: AskQuestionOption[];
+  options?: AskQuestionOption[] | null;
 };
 type AskRequest = { questions: AskQuestion[] };
 ```
@@ -21,7 +23,7 @@ type AskRequest = { questions: AskQuestion[] };
 ### 问题规则
 
 - `question` 不能是空白字符串。
-- 省略 `options` 表示自由文本。
+- 省略 `options` 或传入 `null` 表示自由文本。
 - 提供 `options` 时必须有 2–3 项；空数组不是自由文本的别名。
 - option 的 `label` 不能重复，不能以 `user_note: ` 开头，也不能使用 `None of the above`。
 - 单字段最多 4 KiB，整个请求序列化后最多 8 KiB。
@@ -51,7 +53,7 @@ type AskResult =
 
 | 模式 | `ask` 是否存在 | 行为 |
 | --- | --- | --- |
-| `disabled` | 否 | 不注入 `ask`；默认模式 |
+| `disabled` | 否 | 不注入 `ask`，通过 SDK 调用时同步抛出 `ReferenceError`；默认模式 |
 | `interactive` | 是 | 发出用户输入事件，由客户端回答或由客户端自动提交空答案 |
 | `unavailable` | 是 | 不联系用户，立即返回 `unavailable` |
 
@@ -82,6 +84,8 @@ app-server 客户端在发送 `interactive` 或 `unavailable` 前，应检查 `i
 ## 示例
 
 ```js
+import { ask, text } from "@brainary/poa-sdk/io";
+
 const result = await ask({
   questions: [
     {

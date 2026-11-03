@@ -13,6 +13,7 @@ echo-demo/
 ```
 
 `input_schema.ts` 是打包时的源文件；运行时实际读取包内的 `input_schema.json`。
+使用 SDK 时，`main.js` 由入口源码与 SDK 一起打包生成。
 `manifest.toml` 最小示例：
 
 ```toml
@@ -30,6 +31,10 @@ entry = "main.js"
 在包根目录声明名为 `InputParams` 的 interface 或 type。根类型必须解析为 JSON Schema
 对象。必填属性直接声明，可选属性使用 `?`；普通 TypeScript 类型和注释约束会转换为
 JSON Schema 约束。
+
+该文件支持声明式 TypeScript 子集：`interface`、`type`、可选属性、数组、字面量与联合类型、
+命名类型引用、对象交叉类型，以及 JSDoc 校验约束；不支持 `import`、可执行代码、泛型声明或
+`interface extends`。对象默认拒绝额外字段。文件名必须准确，否则不会被识别为 schema。
 
 ```ts
 export interface InputParams {
@@ -89,18 +94,32 @@ JSON Schema Draft 2020-12。
 `JSON.parse`。有 schema 的包在启动 JavaScript 前校验输入；没有 schema 的包只接受空对象，
 此时 `POA_INPUT` 的值是空对象 `{}`。
 
-全局常量类型：
+SDK 从 `@brainary/poa-sdk/io` 和根入口导出该值，类型为：
 
 ```ts
-declare const POA_INPUT: InputParams;
+const POA_INPUT: JsonValue | undefined;
 ```
 
-程序直接读取该常量获取业务 JSON：
+程序直接读取该值获取业务 JSON：
 
 ```js
+import { POA_INPUT, text } from "@brainary/poa-sdk/io";
+
 const { message, repeat = 1 } = POA_INPUT;
 text({ message, repeat });
 ```
+
+TypeScript 入口可以复用 `input_schema.ts` 中的类型；断言只提供类型，不做校验：
+
+```ts
+import { POA_INPUT, text } from "@brainary/poa-sdk/io";
+import type { InputParams } from "./input_schema";
+
+const { message, repeat = 1 } = POA_INPUT as unknown as InputParams;
+text({ message, repeat });
+```
+
+`import type` 在打包时被移除，`input_schema.ts` 须另行保留在包根目录，不能只分发 `main.js`。
 
 调用方传入：
 

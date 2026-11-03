@@ -2,25 +2,33 @@
 
 global 提供定时器、耗时统计和流程控制函数。
 
-### setTimeout(callback, delayMs)
+以下示例假定已从 `/global` 入口导入，这些函数也可从根入口 `@brainary/poa-sdk` 导入：
 
-**作用**：安排一次延迟回调。
+~~~js
+import { clearTimeout, exit, setTimeout, timed } from "@brainary/poa-sdk/global";
+import { POA_INPUT, text } from "@brainary/poa-sdk/io";
+~~~
 
-**输入类型**：callback: () => void；delayMs: number，单位为毫秒。两个参数均必填。
+### setTimeout(callback, delayMs?)
 
-**返回值类型**：number，定时器 ID。
+**作用**：安排一次延迟回调。需要等待回调执行时，应 await 一个 Promise。
+
+**输入类型**：callback: () => void，必填；delayMs?: number，单位为毫秒。
+
+**返回值类型**：TimeoutId，即 number 类型的定时器 ID。
 
 **示例**：
 
 ~~~js
 const timeout_id = setTimeout(() => text("done"), 100);
+await new Promise((resolve) => setTimeout(resolve, 200));
 ~~~
 
-### clearTimeout(timeout_id)
+### clearTimeout(timeout_id?)
 
 **作用**：取消尚未执行的定时器。
 
-**输入类型**：timeout_id: number，必填。
+**输入类型**：timeout_id?: TimeoutId | null，可以省略或传入 null。
 
 **返回值类型**：void。
 
@@ -30,19 +38,21 @@ const timeout_id = setTimeout(() => text("done"), 100);
 clearTimeout(timeout_id);
 ~~~
 
-### timed({fn})
+### timed(fn)
 
-**作用**：执行函数、捕获异常并记录耗时。
+**作用**：执行同步或异步函数并记录耗时。
 
-**输入类型**：命名参数对象，包含 fn: () => T | Promise<T>。
+**输入类型**：fn: () => T | PromiseLike<T>，必填。
 
-**返回值类型**：Promise<{ ok: boolean; value?: T; error?: string; ms: number }>。
+**返回值类型**：Promise<TimedResult<T>>，即 { value: T; ms: number }，ms 为耗时毫秒数。fn 抛出的异常会继续抛出。
 
 **示例**：
 
 ~~~js
-const result = await timed({ fn: () => executor.terminalExecutor.exec_command({ cmd: "pwd" }) });
-text(result.ms);
+import { TerminalExecutor } from "@brainary/poa-sdk/executor";
+
+const { value, ms } = await timed(() => new TerminalExecutor().exec_command("pwd"));
+text({ output: value.output, ms });
 ~~~
 
 ### exit()

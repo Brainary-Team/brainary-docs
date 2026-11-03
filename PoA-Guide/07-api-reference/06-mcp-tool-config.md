@@ -64,60 +64,74 @@ server.tool(
 
 ## 工具发现与动态名称
 
-宿主启动声明的 stdio server，调用 MCP `tools/list`，将工具名加入当前 PoA 的全局 `tools` 和
-`executor.McpExecutor.tools` 枚举，并通过 `executor.McpExecutor` 提供对应调用方法。默认名称通常是：
+宿主启动声明的 stdio server，调用 MCP `tools/list`，把每个工具提供给当前 PoA，并加入全局 `ALL_TOOLS`。
+工具在宿主中的名称通常是：
 
 ```text
 mcp__<server_name>__<tool_name>
 ```
 
-例如上面的 server 和工具都叫 `echo` 时通常为 `mcp__echo__echo`。名称清洗、长度限制或
-哈希可能改变最终名称，因此生产代码应从 `ALL_TOOLS` 发现，而不是硬编码：
+例如上面的 server 和工具都叫 `echo` 时为 `mcp__echo__echo`。SDK 的
+[McpExecutor.call_mcp_tool](05-executors.md#call_mcp_toolserver-tool-args) 直接使用 server 名和工具名调用，无需拼接工具名：
 
 ```js
-const candidates = ALL_TOOLS.filter((item) => item.name.endsWith("__echo"));
-if (candidates.length !== 1) throw new Error("echo tool must have one matching name");
-const echo = candidates[0];
+import { McpExecutor } from "@brainary/poa-sdk/executor";
+import { text } from "@brainary/poa-sdk/io";
 
-const result = await executor.McpExecutor[echo.name]({
+const result = await new McpExecutor().call_mcp_tool("echo", "echo", {
   message: "你好",
   times: 2,
 });
 text(result.structuredContent ?? result.content);
 ```
 
-`ALL_TOOLS` 是全局工具列表，类型为 `Array<{ name: string; description: string }>`。
-`tools[tool_name]` 和 `executor.McpExecutor.tools[tool_name]` 是字符串枚举值。
-`executor.McpExecutor[tool_name]` 是工具调用函数，其输入和返回 schema 取决于 MCP server 的声明。
-后缀匹配仅适用于工具名未被截断或追加哈希的场景；无法匹配时，应检查
-`ALL_TOOLS` 中的实际名称与说明，并使用该名称调用。
+`ALL_TOOLS` 是全局工具列表，类型为 `Array<{ name: string; description: string }>`，可用于查看当前可用的工具及其说明。
+工具的输入和返回 schema 取决于 MCP server 的声明。
 
 ## `CallToolResult`
 
-MCP 工具通常返回如下结构：
+MCP 工具的返回结构在宿主声明中写作 `CallToolResult`，SDK 中对应类型为 `McpToolResult`：
 
 ```ts
-type CallToolResult<TStructured = Record<string, unknown>> = {
-  content: Array<unknown>;
+interface McpToolResult<S = Record<string, unknown>> {
+  content: McpContentBlock[];
   isError?: boolean;
-  structuredContent?: TStructured;
-  [key: string]: unknown;
-};
+  structuredContent?: S;
+}
+
+type McpContentBlock =
+  | { type: "text"; text: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | { type: "image"; data: string; mimeType: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | { type: "audio"; data: string; mimeType: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | {
+    type: "resource_link";
+    uri: string;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+    size?: number;
+    icons?: unknown;
+    annotations?: unknown;
+    _meta?: Record<string, unknown>;
+  }
+  | { type: "resource"; resource: McpResourceContents; annotations?: unknown; _meta?: Record<string, unknown> };
 ```
+
+`McpResourceContents` 见 [read_mcp_resource](05-executors.md#read_mcp_resourceserver-uri)。
 
 调用示例：
 
 ```js
-const result = await executor.McpExecutor[echo.name]({ message: "hello", times: 2 });
+const result = await new McpExecutor().call_mcp_tool("echo", "echo", { message: "hello", times: 2 });
 if (result.isError) {
   throw new Error("MCP echo failed");
 }
 text(result.structuredContent ?? result.content);
 ```
 
-输入参数结构由具体工具的 input schema 决定；`content` 是 MCP 内容块数组，成功工具可以
-同时提供 `structuredContent`；`isError: true` 表示工具执行失败。未知扩展字段应保留，
-不要假设所有 server 都只返回上述三个字段。
+`content` 是 MCP 内容块数组，image 块可直接交给 [image](08-io.md) 输出；成功的工具可以同时提供 `structuredContent`。
+工具调用失败时 `isError` 为 `true`，不抛出异常。
 
 ## 生命周期、失败和边界
 
@@ -126,5 +140,6 @@ text(result.structuredContent ?? result.content);
 - 当前实现只支持 `stdio`，server 是宿主启动的直接子进程。
 - 声明的 server 属于必需能力；启动失败或在约 30 秒内未完成初始化时，本次 PoA 运行失败，
   不会悄悄删去该 server 的工具。
+- 未声明 `readOnlyHint: true` 的工具在调用前需要审批；审批被拒绝时返回 `isError: true` 的结果。
 - 一个 server 可以声明多个工具；工具的参数、返回值和并行能力以运行时 `ALL_TOOLS` 与
   MCP `tools/list` 的 schema 为准。
