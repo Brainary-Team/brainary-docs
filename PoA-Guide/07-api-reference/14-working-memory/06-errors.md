@@ -1,6 +1,6 @@
-# WmError、WmUsageError、WmRequestError 与 WmErrorCode
+# WmError、WmUsageError、WmRequestError、WmTransportError 与 WmErrorCode
 
-本页描述 Working Memory 的异常类层级、错误码和捕获方式。[memory](01-memory.md) 及四类集合句柄的失败主要分成两类：请求尚未发出的本地使用错误，和请求已发出、由后端拒绝的请求错误。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](05-elements.md) 与 [BEdge](05-elements.md)。
+本页描述 Working Memory 的异常类层级、错误码和捕获方式。[memory](01-memory.md) 及四类集合句柄的失败分成三类：请求尚未发出的本地使用错误，请求已发出、由后端拒绝的请求错误，以及请求已发出之后的传输与帧失败。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](05-elements.md) 与 [BEdge](05-elements.md)。
 
 ### WmError
 
@@ -14,7 +14,7 @@ interface WmError extends Error {
 }
 ~~~
 
-它只用于把两个子类归到同一个 catch 分支。三个异常类当前不作为沙箱全局暴露，分流时按 code 是否存在和 message 的内容判断，不要写 instanceof。
+它只用于把三个子类归到同一个 catch 分支。四个异常类当前不作为沙箱全局暴露，分流时按 code 是否存在和 message 的内容判断，不要写 instanceof。
 
 **示例**：
 
@@ -75,6 +75,32 @@ try {
 }
 ~~~
 
+### WmTransportError
+
+**作用**：表示请求已经发出之后的传输或帧失败。
+
+**类型定义**：
+
+~~~ts
+interface WmTransportError extends WmError {
+  message: string;
+}
+~~~
+
+它不表示 WM 的业务拒绝，那是 WmRequestError；也不表示本地预检失败，那是 WmUsageError。因为没有后端业务判定参与，它没有错误码，catch 到的对象上没有 code 字段。三类成因：超出 IPC 帧上限（当前约为 64 MiB）、连接断开、信封不可解析。它以 Promise 拒绝的形式交付；在 batch 回调里发生时 batch 本身同样拒绝。
+
+请求发出之前命中的任何一道预检不走这个类。SDK 本地预检与发出前的最终字节检查都抛 WmUsageError，判据是请求根本没上线。
+
+**示例**：
+
+~~~js
+try {
+  await incidentGraph.add_node(node);
+} catch (error) {
+  if (error.code === undefined) text("本地拒绝或传输失败");
+}
+~~~
+
 ### WmErrorCode
 
 **作用**：标识 WmRequestError 的后端拒绝原因。
@@ -97,16 +123,14 @@ type WmErrorCode =
   | "STALE_OWNER"
   | "WM_BUSY"
   | "RESOURCE_EXHAUSTED"
-  | "BACKEND_UNAVAILABLE"
-  | "INSTANCE_UNRECOVERABLE"
+  | "PAGINATION_EXPIRED"
   | "INTERNAL_ERROR"
   | "UNSUPPORTED_ACTION"
-  | "UNSUPPORTED_CAPABILITY"
   | "UNSUPPORTED_FEATURE"
   | "UNSUPPORTED_VERSION";
 ~~~
 
-这是协议当前已定名的全集，逐码含义见下面的错误码。
+这十九个是协议当前的全集，逐码含义见下面的错误码。另有两个码不在这个集合里但在规范面有效：UNSUPPORTED_CAPABILITY 与 INSTANCE_UNRECOVERABLE 随后续阶段恢复，当前阶段没有可达输入，因此不列入上面的类型。除这两个之外协议没有集合外的错误码，收到未列出的 code 应按未知值记录，不要写进分支。
 
 **示例**：
 
@@ -115,11 +139,11 @@ const result = await incidentGraph.add_node(node);
 if (!result.ok) text({ conflict_at: result.revision });
 ~~~
 
-## 两类失败的分流
+## 失败的分流
 
 本地使用错误没有 code 字段，请求错误有。版本冲突既不走本地也不走异常，它经 CommitResult 返回。
 
-还有一类落在这三者之外：超出传输帧上限时表现为传输层错误，它不带后端错误码，见 [memory](01-memory.md) 的批次。
+还有一类落在这三者之外：请求发出之后的传输与帧失败抛 WmTransportError，它同样不带后端错误码，成因见上面该类的条目与 [memory](01-memory.md) 的批次。没有 code 字段这一点本地使用错误与它相同，要进一步分辨得看请求有没有发出。
 
 code 与 details 怎么跨传输边界传到 JS 面尚未确定，两者都还不能作为已可用的能力依赖，也不能提前写成稳定的分支条件。调用方应优先按 message 记录错误，并保留原始异常和请求上下文。
 
@@ -149,25 +173,31 @@ batch 回调内的任何异常都会丢弃整批登记内容，不会部分提�
 
 存在性与授权一类不区分不存在和无权，以免被用来探测：
 
-- NOT_FOUND：已授权 list 的项或 map 的 key 不存在。
-- NOT_FOUND_OR_DENIED 与 FORBIDDEN：目标不存在或当前调用方无权访问。不得利用两者的错误差异探测未授权对象。
+- NOT_FOUND：已授权集合内的元素不存在，四类集合统一用这个码，覆盖 graph 的节点与边、tree 的节点、list 的 item_id、map 的 key，也含 put 以 replace 模式撞上不存在的 key。它只用于「目标必须存在」这一类前置条件，也就是写入与 set_parent；读路径取不到一律是合法空结果，返回空页或 null，不取这个码。
+- NOT_FOUND_OR_DENIED 与 FORBIDDEN：作用域、实例、集合或可见性层面的找不到与无权访问。元素级的「目标不存在」不在这两个码里，一律取 NOT_FOUND。不得利用两者的错误差异探测未授权对象。
 - UNAUTHENTICATED：可信认证上下文缺失、过期或无法验证，由宿主刷新。
 - STALE_OWNER：请求携带的运行代际已失效。应停止旧执行，不能继续用旧句柄重试。
 
 资源与能力一类由请求规模或部署形态决定，重试同一个请求不会变好：
 
-- RESOURCE_EXHAUSTED：批次、查询或存储资源达到上限，应缩小请求。
-- UNSUPPORTED_CAPABILITY：当前后端未声明所需能力，例如分页依赖保留历史读版本、list 与 map 的写入依赖原子操作。具体部署是否可能返回此码，由绑定时要求的后端能力决定。
-- UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 与 UNSUPPORTED_VERSION：动作、特性或协议版本不受当前后端支持，属于部署与版本协商问题。
+- RESOURCE_EXHAUSTED：批次、查询或存储资源达到上限，应缩小请求。details 回带 reason 与 metric 两样，前者说撞了哪一类资源，后者说撞了哪一个上限。
+- PAGINATION_EXPIRED：读句柄不能继续用。details 的 reason 取两个值之一，compacted 表示句柄所钉的读版本已被压实、那段历史不再存在，ttl_expired 表示句柄到期而读版本可能仍在。两种成因都要停止使用旧句柄，详见下面的分页游标失效。
+- UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 与 UNSUPPORTED_VERSION：动作未知、字段取值当前不受理、或声明格式与方言的版本不受支持，属于请求与声明本身的问题，改客户端或改声明。
 
 后端与实例一类是运行期故障，程序侧一般只需记录并把失败如实上报：
 
 - WM_BUSY：实例当前无法受理请求。
-- BACKEND_UNAVAILABLE：后端不可达。
-- INSTANCE_UNRECOVERABLE：实例已不可恢复，旧句柄不应继续使用。
-- INTERNAL_ERROR：未归类的内部失败。
+- INTERNAL_ERROR：未归类的内部失败。结果未知时按下面的确认流程处理。
 
 类别定位用集合名和类别名共同完成。类别未在所选集合声明返回 INVALID_ARGUMENT，其他集合存在同名类别也不回退。不可见对象先按授权规则返回 NOT_FOUND_OR_DENIED，不通过归属错误泄漏其存在性。普通查询的 filter 只在所选集合内筛选，未命中仍返回合法空结果，不改报集合归属错误。
+
+## 分页游标失效
+
+读句柄不能继续用时返回 PAGINATION_EXPIRED，它与 REVISION_CONFLICT 是两件事：后者说你的期望版本过期了、重读即可，前者说这个分页句柄本身作废了。details 的 reason 取两个值，必须分开处理。compacted 表示句柄所钉的读版本已被压实，那段历史确实拿不回来了。ttl_expired 表示句柄到期而读版本可能仍在，它只说明旧句柄作废，不保证重新发起首次读仍然返回原内容或原版本。
+
+两种成因下都要停止使用旧句柄。要重建一致的分页结果，做法是重新发起首次读，并且只组合同一个新读版本上的页，不得把新页拼到旧页上。旧页可以留作明确标识的过期展示缓存，不能当成已经恢复的一致视图。details 至少回带实例标识、原读版本，以及当前仍可用的最旧版本，也就是保留窗口的下界。
+
+另有两类分页失败不走这个码：查询条件或作用域与句柄不匹配返回 INVALID_ARGUMENT，授权上下文失效返回 UNAUTHENTICATED 或 FORBIDDEN。SDK 不自动重试、也不改写句柄，恢复动作一律由调用方发起。
 
 ## 提交结果未知时的确认流程
 
@@ -179,11 +209,7 @@ SDK 不提供幂等键，也不会自动重试或自动合并变更，快照创�
 
 ## 当前未确定
 
-INVALID_SCHEMA、SCHEMA_CONFLICT、WM_BUSY、BACKEND_UNAVAILABLE、INSTANCE_UNRECOVERABLE、INTERNAL_ERROR、UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 和 UNSUPPORTED_VERSION 九个码的精确触发条件本指南尚未覆盖，上面给出的是它们所属的类别和调用方的处理方式。
-
-分页游标因读版本被压实而失效时另有一个错误码，它还没有定名，不在上面的清单里，见 [BPage](05-elements.md)。
-
-list 与 map 侧的目标不存在用 NOT_FOUND、图与树侧用 NOT_FOUND_OR_DENIED，两者要不要统一尚未确定，调用方按具体方法分别处理。
+INVALID_SCHEMA、SCHEMA_CONFLICT、WM_BUSY、INTERNAL_ERROR、UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 和 UNSUPPORTED_VERSION 七个码的精确触发条件本指南尚未覆盖，上面给出的是它们所属的类别和调用方的处理方式。
 
 ## 相关文档
 

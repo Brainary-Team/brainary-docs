@@ -89,7 +89,7 @@ position 分配是生成器，按书写顺序递增，取每个 list 的单调�
 
 未指定 sort 时按 position 升序。可排序字段是 item_type 已声明的一层标量字段，加上系统字段 position 和 item_id，并自动追加 item_id 为稳定末级排序键。字段值按声明类型比较，整数按数值，字符串按原始 Unicode 标量序列。缺失或显式 null 排在非空值之后，同值再按 item_id 排序。item_type 是内联标量时该 list 没有字段名，此时可排序的是 value 本身。排序只是读取视图，不改变 position，也不产生新版本。服务端可以按能力拒绝代价过高的排序。
 
-list 侧的目标不存在使用 NOT_FOUND，图与树侧使用 NOT_FOUND_OR_DENIED，调用方按具体方法分别处理。
+元素级的「目标不存在」四类集合统一使用 NOT_FOUND，图的节点与边、树的节点、list 的 item_id、map 的 key 都走这个码。
 
 ## BMap
 
@@ -165,8 +165,6 @@ map 的历史不另建一套接口，对快照使用同样的 query，见 [memor
 BList 的 replace 与 delete、BMap 的 delete，以及两个 query 的选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名。
 
 一个批次包含多个 append 时 generated 如何对应各项尚未确定，批次里的 append 当前不能依赖这个字段。
-
-list 与 map 侧的目标不存在用 NOT_FOUND、图与树侧用 NOT_FOUND_OR_DENIED，两者要不要统一尚未确定。
 
 ## 相关文档
 

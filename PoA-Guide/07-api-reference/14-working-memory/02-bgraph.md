@@ -60,7 +60,7 @@ const result = await incidentGraph.add_edge(
 const result = await incidentGraph.update_node("node-1", { set: { priority: 2 } });
 ~~~
 
-字段缺失不表示删除，移除属性要写进 unset。粒度是 props 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND_OR_DENIED。
+字段缺失不表示删除，移除属性要写进 unset。粒度是 props 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND。
 
 ### delete_node(id)
 
@@ -167,7 +167,7 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 
 不支持多重边，同一边类别下同一个有序节点对至多一条边。这一条也按最终状态判：同一批次先删旧边再加一条同类别同端点的新边允许，同一批次新增两条同类别同端点的边不允许。
 
-同一批次内重复删同一个目标按去重处理，不返回 NOT_FOUND_OR_DENIED，删除在最终状态语义下幂等；单次删除一个不存在的目标仍然报错。delete_edge 与 delete_node 的去重规则相同。
+同一批次内重复删同一个目标按去重处理，不返回 NOT_FOUND，删除在最终状态语义下幂等；单次删除一个不存在的目标仍然报错。delete_edge 与 delete_node 的去重规则相同。
 
 已有元素不能在同一批次内通过删除再创建更换类别。更换类别需要分别提交删除与新建，并处理关联边和两个提交之间的中间状态。
 
