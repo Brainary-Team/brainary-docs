@@ -14,7 +14,7 @@
 
 ~~~js
 const result = await taskTree.add_root(
-  new BNode({ id: "plan-1", node_class: "Plan", properties: { title: "排查移动端 401" } }),
+  new BNode({ id: "plan-1", node_class: "Plan", props: { title: "排查移动端 401" } }),
 );
 ~~~
 
@@ -33,7 +33,7 @@ const result = await taskTree.add_root(
 ~~~js
 const result = await taskTree.add_child(
   "plan-1",
-  new BNode({ id: "ms-1", node_class: "Milestone", properties: { title: "收集证据" } }),
+  new BNode({ id: "ms-1", node_class: "Milestone", props: { title: "收集证据" } }),
 );
 ~~~
 
@@ -57,11 +57,11 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 
 移动作用于整棵子树，调用方不需要列出后代节点。expected_parent_id 核对的是节点在当前操作之前的父节点，与实际当前父不符时返回 STRUCTURE_CONFLICT 并回带实际父节点。两个 null 参数各有自己的含义，见下面的改父。
 
-### update(node_id, update)
+### update(node_id, changes)
 
 **作用**：更新一个树节点的属性。
 
-**输入类型**：node_id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：node_id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。参数名取 node_id 而不是 id，与 BTree 自己的 get、parent、children 和 set_parent 一致。
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
@@ -73,7 +73,7 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 ~~~
 
-更新粒度与图节点相同，是 properties 的一层字段。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
+更新粒度与图节点相同，是 props 的一层字段。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
 
 ### delete(node_id)
 
@@ -103,7 +103,7 @@ const result = await taskTree.delete("subtask-1");
 
 ~~~js
 const milestoneNode = await taskTree.get("ms-2");
-if (milestoneNode !== null) text(milestoneNode.properties.title);
+if (milestoneNode !== null) text(milestoneNode.props.title);
 ~~~
 
 ### parent(node_id)
@@ -136,11 +136,11 @@ const rootNode = await taskTree.root();
 text(rootNode?.id);
 ~~~
 
-### children(node_id)
+### children(node_id, options?)
 
 **作用**：读取一个节点的直接子节点。
 
-**输入类型**：node_id: string。
+**输入类型**：node_id: string；options?: object，可含 sort、cursor 和 limit。
 
 **返回值类型**：Promise<[BPage](05-elements.md)>，项是树节点。
 
@@ -190,9 +190,13 @@ filter 的可用键是 id、node_class、parent_id、child_id 和已声明的一
 - 深度上限
 - 父子类别相容
 
-顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限由宿主能力声明带出，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里回带究竟是哪一条，details 的可用性见 [WmRequestError](06-errors.md)。
+顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限由宿主能力声明带出，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里回带究竟是哪一条，details 的可用性见 [WmRequestError](06-errors.md)。但回带它的位有两个，对应上面那条分层：四条写入期谓词各在 reason 的取值集合里占一个值，引用完整性作为内置强制项刻意不进那个集合，由 details 的约束标识回带。
+
+两条判别规则跟着这个顺序一起读。成环与深度超限是两种不同的违规，不是同一种的两种程度：父链上溯正常终止于根、只是步数超过上限的那种输入属深度违规，不报成环；深度超限时 details 另回带上限、实测深度和最深那个节点的 id —— 违规的节点可能不是任何一次调用的目标，没有它就定位不到。自环按成环处理，不另算一种。
 
 单个方法另有自己的检查顺序，只执行该操作适用的检查：字段形状与必填、集合归属、目标状态前提、CAS、空操作、批次级禁令。这六步的作用域是单个方法和它自己的前缀状态，五条判定的作用域是整批和最终状态。两者不是一条流水线，而是分两段：先按书写顺序逐项评估六步，全部通过后再对最终状态整批评估一次五条判定。
+
+这六步之前还有一步，它在本页描述的 owner 路径上空转，但次序是语义的一部分而不是实现细节：对持有集合可见集的调用方，先判所选集合在不在可见集内，不在就返回 NOT_FOUND_OR_DENIED 并就此结束，不再往下走任何一步。它必须排在最前，否则「元素级不存在统一用 NOT_FOUND」这条规定会造出一个探测面 —— 不可见集合里的不存在元素回 NOT_FOUND、存在元素回 NOT_FOUND_OR_DENIED，两者可区分。宿主注入给 PoA 程序的是 owner 侧句柄，可见集是全集，所以本页其余各处不再重复这一步。
 
 把 add_child 的 parent_id 传成新节点自己的 id，一个调用就能同时造出自环和零根两种违规，按固定顺序只返回一个码。在空树上这么做，最终状态是自环且零根，单根先判，回的是零根那一条。要单独撞到成环，得在非空树上这么做，此时根还在、单根通过，无环才会命中。
 
@@ -210,6 +214,8 @@ expected_parent_id 与版本基线的作用不同。SDK 用期望版本检查提
 
 删一个叶节点可以单独提交。删一棵有子节点的子树，把该子树全部节点的删除放进同一批次即可，谓词按最终状态求值、顺序无关，不必先删叶再删根。这需要先用一次不带 filter 的 query 翻完全部分页算出后代集，漏掉后代会在删除其父时触发引用完整性失败。
 
+顺序无关这一条只在单个批次内成立，拆批时必须严格自底向上。子树太大而撞上批次上限或帧上限时只能分批删，而批次之间不是原子的，引用完整性是每个批次各自按最终状态求值的，于是任何一个「含某个父而不含它全部后代」的子批次都会被拒。按 id 升序切片尤其危险 —— 那正是 query 的默认顺序，而它几乎必然把父切进前一批、子切进后一批，确定性失败。唯一可行的拆法是先删全部叶，再删新成为叶的那一层，依此类推。
+
 删中间节点并把子节点提升给祖父没有专门动作，一个批次可以原子完成：提交若干个 set_parent 改挂祖父，加一个 delete。
 
 ## 单项读方法
@@ -218,7 +224,7 @@ get、parent 和 root 是四类集合里唯一的三个单项读方法。它们�
 
 取不到时返回 null，不抛异常，空树的 root 和根节点的 parent 都返回 null。认证或授权失败仍按异常处理，此时的 NOT_FOUND_OR_DENIED 只剩实例不可见、作用域无权这类成因，不含这个节点不存在。
 
-这三个方法不套 [BPage](05-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询，不要求后端声明按版本读取的能力；children 与 query 落入分页定义，要求这项能力。
+这三个方法不套 [BPage](05-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询；children 与 query 落入分页定义。这个分界只管要不要翻页，不管要不要读版本：所有读都在一个读版本上求值，按版本读取是后端无条件必备的能力，不按查询形状分档，不存在某一类读可以不要它的分支。
 
 ## 查询与分页
 
@@ -240,9 +246,9 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 
 ## 当前未确定
 
-update 与 delete 的参数形状、children 的分页参数、以及 query 的查询选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名。
+上面十个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。
 
-children 的 cursor 与 limit 传在哪里尚未确定，不能假定它可以读取后续页；需要明确表达分页时改用 query 按 parent_id 过滤并传入 cursor。
+children 的 options 里能不能再给 filter 尚未确定：协议层它展开成一次按 parent_id 过滤的 query，调用方自带的 filter 与那个自动注入的条件如何合并没有规定。要在子节点上再加筛选条件时改用 query，自己给 parent_id。
 
 深度上限的具体数值待实测。
 

@@ -6,7 +6,7 @@
 
 **作用**：取得一个 graph 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BGraph](02-bgraph.md)。
 
@@ -20,7 +20,7 @@ const incidentGraph = memory.graph("incident_graph");
 
 **作用**：取得一个 tree 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BTree](03-btree.md)。
 
@@ -34,7 +34,7 @@ const taskTree = memory.tree("task_tree");
 
 **作用**：取得一个 list 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BList](04-blist-bmap.md)。
 
@@ -48,7 +48,7 @@ const evidenceList = memory.list("evidence_list");
 
 **作用**：取得一个 map 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BMap](04-blist-bmap.md)。
 
@@ -58,7 +58,7 @@ const evidenceList = memory.list("evidence_list");
 const retryByStatusCodeMap = memory.map("retry_by_status_code");
 ~~~
 
-四个访问器都是同步的，不发请求，只查本地已校验的 schema，返回操作该集合的句柄而不是集合内容。名字未在 collections 下声明、或名字存在但种类不符，在调用集合方法之前就同步抛 [WmUsageError](06-errors.md)。同一个 Run 内对同一个名字多次取句柄返回同一个对象。没有列出全部集合名的方法。
+四个访问器都是同步的，不发请求，只查本地已校验的 schema，返回操作该集合的句柄而不是集合内容。名字未在顶层 properties 下声明、或名字存在但种类不符，在调用集合方法之前就同步抛 [WmUsageError](06-errors.md)。同一个 Run 内对同一个名字多次取句柄返回同一个对象。没有列出全部集合名的方法。
 
 ### batch(fn)
 
@@ -107,7 +107,7 @@ Run 是 Working Memory 的作用域单位，由一个 PoA cell 发起，覆盖�
 
 ## 注入与可用范围
 
-包资源校验、schema 注入与 WM 连接都在业务 JS 执行前做完。当前只有 app-server 的 thread/codeMode/exec 启动的 PoA cell 有 memory；注册为 poa 工具的程序、普通 turn 和子 agent 当前没有 memory 入口。
+包资源校验、schema 注入与 WM 连接都在业务 JS 执行前做完。本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。执行 PoA 另有一条路径 —— 注册为 poa 工具后由模型在普通 turn 里执行一个完整程序 —— 它的作用域锚点与身份派生都与本页这条不同，当前单独待裁，本页不覆盖它，也不要默认两条同构。子 agent 的 memory 入口同样单独待裁。这几处都不要读成「确定没有入口」，它们是尚未裁定，不是已有结论。
 
 可选工具组 memories 和 [tools](../13-tools-manager.md) 枚举里的 memory 工具类别是模型可见的工具，本页的 memory 是只有程序能调的沙箱全局，两者同名不同物。
 
@@ -123,7 +123,7 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 集合名
 
-集合名取 schema 的 collections 下的声明名。四类集合共用一个命名空间，不得重名。集合名允许非 ASCII，含连字符、空格或中文都可用，调用时写 schema 中的原始名称。本文档对函数和方法的 snake_case 约定不约束集合名。
+集合名取 schema 顶层 properties 下的声明名。四类集合共用一个命名空间，不得重名。集合名允许非 ASCII，含连字符、空格或中文都可用，调用时写 schema 中的原始名称。本文档对函数和方法的 snake_case 约定不约束集合名。
 
 ## 批次
 
@@ -133,7 +133,7 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 每次立即提交都是一次跨进程往返，并推进一次版本。写 20 个节点，立即提交要 20 次往返；batch 只要 1 次，整批原子，成功时只推进一次版本。
 
-提交须同时满足批次大小限制和传输帧大小限制，这是两道独立的闸门。批次上限由宿主能力声明提供，超出时返回 RESOURCE_EXHAUSTED。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB；超出帧上限是传输层失败，不在 [WmErrorCode](06-errors.md) 的清单里，SDK 错误码不保证可用。SDK 不自动拆批，自动拆分会破坏整批原子性；需要拆分时由调用方处理，拆分后的批次之间不保证原子性。不含任何变更的批次在后端返回 INVALID_ARGUMENT，不推进版本。
+提交须同时满足三道独立的闸门，三者的失败形态各不相同。批次上限（条目数、单项与属性大小）由宿主能力声明提供，超出时返回 INVALID_ARGUMENT —— 它是请求自身形状的问题，换个资源状况也不会成功，因此不取 RESOURCE_EXHAUSTED。请求文本另有一个独立的 UTF-8 字节上限，它不等于帧上限、也不由帧上限反推代替，按即将发送的那一份文本的实际编码字节数计；SDK 在发出前命中时同步抛 [WmUsageError](06-errors.md)，请求根本没上线。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB；超出帧上限是请求发出之后的传输层失败，抛 [WmTransportError](06-errors.md)，不在 [WmErrorCode](06-errors.md) 的清单里。SDK 不自动拆批，自动拆分会破坏整批原子性；需要拆分时由调用方处理，拆分后的批次之间不保证原子性，树上拆批另有一条必须遵守的次序，见 [BTree](03-btree.md) 的删除。不含任何变更的批次在后端返回 INVALID_ARGUMENT，不推进版本。
 
 批次中三类判定的求值时点不同：
 
@@ -154,7 +154,7 @@ const evidenceList = memory.list("evidence_list");
 const node = new BNode({
   id: "node-1",
   node_class: "Task",
-  properties: { title: "排查移动端 401" },
+  props: { title: "排查移动端 401" },
 });
 const changes = (b) => {
   b.graph("incident_graph").add_node(node);
@@ -185,7 +185,7 @@ WM schema 怎么写、它在包里声明在哪，本指南尚未覆盖，当前�
 
 批次上限的具体字段名尚未确定。close_run_memory 的完整返回形状、重复关闭的结果、以及不受理时返回什么都尚未确定，不要围绕某个特定异常或错误码写兜底分支。
 
-上面示例里 query 的 filter 与 sort 形状同样尚未确定，见 [BGraph](02-bgraph.md)，应把这几处集中封装在一处。
+四类集合的方法签名已经冻结，query 统一取单个 options 对象，可含 filter、sort、cursor 和 limit。filter 是按 id、key、类别名或已声明属性的精确匹配条件，sort 的可用字段随集合种类而定，见各集合页。四类集合未指定 sort 时的默认顺序都已确定：graph 按元素 id 升序、tree 按 id 升序、list 按 position 升序、map 按规范化 key 升序。
 
 ## 相关文档
 
