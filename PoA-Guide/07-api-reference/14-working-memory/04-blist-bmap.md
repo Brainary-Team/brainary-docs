@@ -89,7 +89,7 @@ position 分配是生成器，按书写顺序递增，取每个 list 的单调�
 
 三条前置条件都按该操作之前的前缀状态求值，由此确定三种批次组合的结果：同一批次两次追加同一个 item_id 被拒绝，并指向第二项；先删再追加通过，该项拿到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id，而图与树对批次开始时已有的元素 id 不允许在同一批次中删除后重新创建。
 
-未指定 sort 时按 position 升序。可排序字段是 item_type 已声明的一层标量字段，加上系统字段 position 和 item_id，并自动追加 item_id 为稳定末级排序键。字段值按声明类型比较，整数按数值，字符串按原始 Unicode 标量序列。缺失或显式 null 排在非空值之后，同值再按 item_id 排序。item_type 是内联标量时该 list 没有字段名，此时可排序的是 value 本身。排序只是读取视图，不改变 position，也不产生新版本。服务端可以按能力拒绝代价过高的排序。
+未指定 sort 时按 position 升序。可排序字段是 item_type 已声明的一层标量字段，加上系统字段 position 和 item_id，并自动追加 item_id 为稳定末级排序键。字段值按声明类型比较，整数按数值，字符串按原始 Unicode 标量序列。缺失或显式 null 排在非空值之后，同值再按 item_id 排序。item_type 是内联标量时该 list 没有字段名，此时可排序的是 value 本身。排序只是读取视图，不改变 position，也不产生新版本，也不需要事先在声明里开启。凡声明允许的排序，服务端一律受理，不会以代价过高为由拒绝 —— 「这次排序代价高不高」是调用方事先查不出来的，而能力要么可查询、要么不该做成一道撞上才知道的门；排序的代价由查询规模上限和 RESOURCE_EXHAUSTED 兜住，那是「资源耗尽」，不是「我不想算」。
 
 元素级的「目标不存在」四类集合统一使用 NOT_FOUND，图的节点与边、树的节点、list 的 item_id、map 的 key 都走这个码。
 
@@ -111,7 +111,7 @@ position 分配是生成器，按书写顺序递增，取每个 list 的单调�
 const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 ~~~
 
-模式不匹配一定报错，不会静默覆盖或静默创建。create 撞上已存在的 key、replace 撞上不存在的 key，都返回 STRUCTURE_CONFLICT；协议层在 details 里回带究竟是哪一种，details 的可用性见 [WmRequestError](06-errors.md)。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
+模式不匹配一定报错，不会静默覆盖或静默创建。两支取的不是同一个码：create 撞上已存在的 key 返回 STRUCTURE_CONFLICT，语义是「已经有了」；replace 撞上不存在的 key 返回 NOT_FOUND，语义是「目标不存在」，与 replace、delete 这类要求目标存在的操作同口径。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
 
 ### delete(key)
 

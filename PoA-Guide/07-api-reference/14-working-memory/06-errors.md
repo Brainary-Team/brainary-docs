@@ -63,7 +63,9 @@ interface WmRequestError extends WmError {
 }
 ~~~
 
-约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.props.title，list 与 map 形如 changes 下的 value.title。
+约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。这条例外的射程只到返回 CommitResult 的那些方法：[快照创建](07-snapshot.md)的返回体不是 CommitResult，它的版本冲突仍然抛这个类。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.props.title，list 与 map 形如 changes 下的 value.title。
+
+details 的整体形状不作为调用依据，可据以分支的只是协议明文规定必返的那几项，它是一份白名单而不是「凡 details 里有的都能读」。当前在册的是：REVISION_CONFLICT 的当前版本、PAGINATION_EXPIRED 的 reason、CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、RESOURCE_EXHAUSTED 的 reason 与 metric、以及字段级的定位路径。本页各处写「协议层在 details 里回带究竟是哪一条」时说的都是这几项，不是允许按别的键写分支。这条限制与下面那条「产出信封的那一侧还没有落地」是两件事：后者说当前连 code 都还拿不到，前者说即使拿到了也只有白名单内的项可依赖。
 
 **示例**：
 
@@ -163,13 +165,13 @@ batch 回调内的任何异常都会丢弃整批登记内容，不会部分提�
 
 版本一类只有一个码：
 
-- REVISION_CONFLICT：写入、快照或 schema 切换的期望版本过期。处理方式是重新读取、重算变更再提交。它经 CommitResult 返回，不抛异常。
+- REVISION_CONFLICT：写入、快照或 schema 切换的期望版本过期。处理方式是重新读取、重算变更再提交。它在返回 CommitResult 的那些方法上经 ok 为 false 返回、不抛异常；快照创建不在其中 —— 那个方法的返回体不是 CommitResult、没有 ok 这一位，版本过期时抛 WmRequestError。
 
 输入与状态断言一类判的是请求内容和它对状态的假设：
 
-- INVALID_ARGUMENT：请求字段缺失、类型不符、参数组合非法，或类别未在所选集合声明。
-- INVALID_STRUCTURE：集合不存在、集合种类与操作不符，已授权的写入目标、边端点、树父节点或邻接起点属于另一集合，以及 list 的 value 不符声明的 item_type、map 的 key 或 value 不符声明的类型。
-- STRUCTURE_CONFLICT：对前缀状态的断言不成立，包括元素或条目的 id 已存在、put 的写入模式与 key 的存在性不匹配、set_parent 的期望父节点与实际当前父不符。
+- INVALID_ARGUMENT：请求字段缺失、类型不符、参数组合非法，或类别未在所选集合声明。批次的条目数、单项或属性大小超过声明上限也取这个码，请求文本超过字节上限同样如此 —— 那是请求自身形状的问题，换个资源状况也不会成功。
+- INVALID_STRUCTURE：集合不存在、集合种类与操作不符，已授权的写入目标、边端点、树父节点或邻接起点属于另一集合，以及 list 的 value 不符声明的 item_type、map 的 key 或 value 不符声明的类型、按未声明的字段排序。item_id 不在这一类里 —— 它不由 item_type 约束，它的类型错判给 INVALID_ARGUMENT。
+- STRUCTURE_CONFLICT：断言「目标不存在」而它实际存在，按前缀状态求值，包括元素或条目的 id 已存在、put 以 create 模式撞上已存在的 key、set_parent 的期望父节点与实际当前父不符。反方向的那一支不在这里：put 以 replace 模式撞上不存在的 key 是「目标不存在」，取 NOT_FOUND。
 - CONSTRAINT_VIOLATION：图、树或 schema 约束在最终状态下不满足。
 - INVALID_SCHEMA 与 SCHEMA_CONFLICT：与 schema 声明本身和 schema 切换有关，不由单次集合读写的参数触发。
 
@@ -182,7 +184,7 @@ batch 回调内的任何异常都会丢弃整批登记内容，不会部分提�
 
 资源与能力一类由请求规模或部署形态决定，重试同一个请求不会变好：
 
-- RESOURCE_EXHAUSTED：批次、查询或存储资源达到上限，应缩小请求。details 回带 reason 与 metric 两样，前者说撞了哪一类资源，后者说撞了哪一个上限。
+- RESOURCE_EXHAUSTED：只用于「同一个请求在资源恢复后可能成功」的那一类，三种成因是单实例的内存驻留上限、进程名额或进程预算用尽、读版本名额或读工作预算不足。批次与请求大小超限不在这里，那三道闸都是请求自身的形状问题，取 INVALID_ARGUMENT 或走传输层失败，见 [memory](01-memory.md) 的批次。details 回带 reason 与 metric 两样，前者说撞了哪一类资源，后者说撞了哪一个上限；重试条件按 metric 分，不是一概可以重试。
 - PAGINATION_EXPIRED：读句柄不能继续用。details 的 reason 取两个值之一，compacted 表示句柄所钉的读版本已被压实、那段历史不再存在，ttl_expired 表示句柄到期而读版本可能仍在。两种成因都要停止使用旧句柄，详见下面的分页游标失效。
 - UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 与 UNSUPPORTED_VERSION：动作未知、字段取值当前不受理、或声明格式与方言的版本不受支持，属于请求与声明本身的问题，改客户端或改声明。
 
