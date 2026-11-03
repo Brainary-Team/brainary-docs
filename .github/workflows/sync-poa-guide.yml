@@ -10,8 +10,7 @@ on:
 
 jobs:
   sync-docs:
-    runs-on:
-      group: ucloud
+    runs-on: ubuntu-latest
     steps:
       - name: publish PoA-Guide
         env:
