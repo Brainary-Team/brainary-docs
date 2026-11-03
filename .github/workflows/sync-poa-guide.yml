@@ -11,7 +11,7 @@ on:
 jobs:
   sync-docs:
     runs-on:
-      group: ubuntu-latest
+      group: "Ubuntu 26"
     steps:
       - name: publish PoA-Guide
         env:
