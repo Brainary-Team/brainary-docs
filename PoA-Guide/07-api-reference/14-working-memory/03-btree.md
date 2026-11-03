@@ -57,11 +57,11 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 
 移动作用于整棵子树，调用方不需要列出后代节点。expected_parent_id 核对的是节点在当前操作之前的父节点，与实际当前父不符时返回 STRUCTURE_CONFLICT 并回带实际父节点。两个 null 参数各有自己的含义，见下面的改父。
 
-### update(node_id, update)
+### update(node_id, changes)
 
 **作用**：更新一个树节点的属性。
 
-**输入类型**：node_id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：node_id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。参数名取 node_id 而不是 id，与 BTree 自己的 get、parent、children 和 set_parent 一致。
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
@@ -136,11 +136,11 @@ const rootNode = await taskTree.root();
 text(rootNode?.id);
 ~~~
 
-### children(node_id)
+### children(node_id, options?)
 
 **作用**：读取一个节点的直接子节点。
 
-**输入类型**：node_id: string。
+**输入类型**：node_id: string；options?: object，可含 sort、cursor 和 limit。
 
 **返回值类型**：Promise<[BPage](05-elements.md)>，项是树节点。
 
@@ -240,9 +240,9 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 
 ## 当前未确定
 
-update 与 delete 的参数形状、children 的分页参数、以及 query 的查询选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名。
+上面十个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。
 
-children 的 cursor 与 limit 传在哪里尚未确定，不能假定它可以读取后续页；需要明确表达分页时改用 query 按 parent_id 过滤并传入 cursor。
+children 的 options 里能不能再给 filter 尚未确定：协议层它展开成一次按 parent_id 过滤的 query，调用方自带的 filter 与那个自动注入的条件如何合并没有规定。要在子节点上再加筛选条件时改用 query，自己给 parent_id。
 
 深度上限的具体数值待实测。
 

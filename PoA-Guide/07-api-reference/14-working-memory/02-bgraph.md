@@ -44,11 +44,11 @@ const result = await incidentGraph.add_edge(
 
 端点节点必须存在，端点类别必须正好是该边类别声明的 from_class 与 to_class，端点在最终状态中不存在时返回 CONSTRAINT_VIOLATION。端点属于另一个 graph 或 tree 时返回 INVALID_STRUCTURE。这两项与多重边唯一性都按最终状态校验，规则见下面的提交与约束。
 
-### update_node(id, update)
+### update_node(id, changes)
 
 **作用**：更新一个节点的属性。
 
-**输入类型**：id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
@@ -78,11 +78,11 @@ const result = await incidentGraph.delete_node("node-1");
 
 不级联删边。删除后仍留下关联边时返回 CONSTRAINT_VIOLATION；悬空边这一条按最终状态校验，同一批次同时删边删点是允许的。
 
-### update_edge(id, update)
+### update_edge(id, changes)
 
 **作用**：更新一条边的属性。
 
-**输入类型**：id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。
 
 **参数约束**：set 与 unset 至少一个非空。edge_class、from_id 和 to_id 都不在两者的作用范围内。
 
@@ -173,9 +173,9 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 
 ## 当前未确定
 
-update_node、delete_node、update_edge、delete_edge 的参数形状，以及 query 与 neighbors 的查询选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名，写业务代码时应把这几处集中封装在一处。
+上面八个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。graph 侧未指定 sort 时的默认顺序也仍未固定，需要稳定顺序时显式传入 sort。
 
-更复杂的删除序列的结果尚未确定。对批次开始时就不存在的目标，以及删除、重建后再次删除这类组合，都不能按上面的去重规则推导结果。
+更复杂的删除序列不按上面的去重规则推导，管它们的是另外两条规则。一条是批次级禁令：同一批次里不得重用「批次开始时就已存在、而在本批次中被删除」的元素 id，也就是先 delete_node(X) 再 add_node(X) 返回 INVALID_ARGUMENT。它堵的是改类别的唯一旁路 —— node_class 不在 update 的作用范围内，而删了重建会让既有边的端点类别校验静默失效。两种情形不禁：反方向的先建后删，以及该 id 本来就是在这一批次里新建的。另一条是目标必须存在这个前置条件：删一个批次开始时就不存在的目标返回 NOT_FOUND，批次开始时已存在的 id 被一个裸 add_node 撞上则返回 STRUCTURE_CONFLICT。要换一个元素的类别，得分两个批次提交，并自行处理关联边与中间状态。
 
 ## 相关文档
 

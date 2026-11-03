@@ -101,6 +101,13 @@ interface CommitResult {
 
 ok 表示本次提交是否落地，接受一次调用不等于提交成功。revision 在成功时是提交后的新版本，在版本冲突时是服务端的当前版本。generated 只出现在 [BList](04-blist-bmap.md) 的 append 上，带出服务端分配的 position，其余方法没有这一位，不是空对象。
 
+generated 有两种形状，按本次提交里 append 的个数判别：
+
+- 一次单独的 append，或一个批次里只有一个 append，回 `generated.position`，没有 positions 这一位。
+- 同一个批次里有两个或更多 append，回 `generated.positions` 数组，每项至少含 change_index、item_id 和 position。change_index 指向原始变更序列的下标，供调用方与自己登记的那一项交叉核对；不能只靠 item_id 关联，因为不同 list 可以用相同的 item_id。非 append 的变更项不占位，所以数组长度等于本批次 append 的个数，不等于变更项总数。
+
+判别方式就是看有没有 positions 这一位。提交失败时不返回部分 generated，版本冲突走 ok 为 false 并且不带生成结果。
+
 **示例**：
 
 ~~~js
@@ -255,11 +262,11 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 
 ## 当前未确定
 
-一个批次包含多个 append 时 generated 如何对应各项尚未确定，当前批次里的 append 不能依赖这个字段。
+generated 的两种形状及其判别方式见上面的 CommitResult。
 
 游标失效走 PAGINATION_EXPIRED，它在 [WmErrorCode](06-errors.md) 的清单里。游标的有效期与保留预算两个数值仍未确定，在拿到数之前分页会不会中断只能定性，不能定量。
 
-BNeighborItem 的字段全集尚未确定，未列出的字段不能作为调用依据。
+BNeighborItem 的类名与字段名都已冻结，可以写进自己的函数签名；未列出的字段不能作为调用依据。未定的是 node 这一位到底算不算可选：协议把每项描述成「相邻节点加可选边」一对，读起来 node 必有，而 include 的 nodes 允许传 false、那时返回项里就没有 node。本页按后者把两位都标成可选，这一处以协议的后续澄清为准。
 
 ## 相关文档
 

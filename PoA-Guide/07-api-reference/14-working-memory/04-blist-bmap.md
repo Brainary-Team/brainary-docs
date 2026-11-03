@@ -22,7 +22,9 @@ if (!result.ok) throw new Error("追加未提交，需重读后重新计算");
 text(result.generated.position);
 ~~~
 
-这是四类集合里唯一会带 generated 的方法，position 由服务端分配，不能自行指定。版本冲突时未分配位置，整个 generated 都缺省，读它前必须像上面那样先判 ok；冲突路径上直接读会拿到一个 TypeError，不是一个可处理的失败。item_id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
+这是四类集合里唯一会带 generated 的方法，position 由服务端分配，不能自行指定。版本冲突时未分配位置，整个 generated 都缺省，读它前必须像上面那样先判 ok；冲突路径上直接读会拿到一个 TypeError，不是一个可处理的失败。
+
+把两个或更多 append 放进同一个批次时 generated 换另一种形状：回的是 positions 数组而不是单个 position，每项至少含 change_index、item_id 和 position。判别方式是看有没有 positions 这一位，两种形状的完整说明见 [CommitResult](05-elements.md)。item_id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
 
 ### replace(item_id, value)
 
@@ -162,9 +164,9 @@ map 的历史不另建一套接口，对快照使用同样的 query，见 [memor
 
 ## 当前未确定
 
-BList 的 replace 与 delete、BMap 的 delete，以及两个 query 的选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名。
+上面七个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。replace 与 append 逐字同形，这是刻意的。
 
-一个批次包含多个 append 时 generated 如何对应各项尚未确定，批次里的 append 当前不能依赖这个字段。
+generated 的两种形状及其判别方式见 [CommitResult](05-elements.md)，上面 append 的条目也有一段说明。
 
 ## 相关文档
 

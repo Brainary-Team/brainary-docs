@@ -145,7 +145,9 @@ if (!result.ok) text({ conflict_at: result.revision });
 
 还有一类落在这三者之外：请求发出之后的传输与帧失败抛 WmTransportError，它同样不带后端错误码，成因见上面该类的条目与 [memory](01-memory.md) 的批次。没有 code 字段这一点本地使用错误与它相同，要进一步分辨得看请求有没有发出。
 
-code 与 details 怎么跨传输边界传到 JS 面尚未确定，两者都还不能作为已可用的能力依赖，也不能提前写成稳定的分支条件。调用方应优先按 message 记录错误，并保留原始异常和请求上下文。
+code 与 details 怎么跨传输边界传到 JS 面已经定下来，但产出这个信封的那一侧还没有落地，所以两者当前仍不能作为已可用的能力依赖，也不要提前写成稳定的分支条件。调用方应优先按 message 记录错误，并保留原始异常和请求上下文。
+
+约定的形状是一个裸字符串，固定前缀 `WMERR/1:` 加一段紧凑 JSON，内含 code、message 和 details。SDK 只解析带这个前缀的字符串，宿主自己抛的普通字符串原样当作普通 JS 异常，不会靠「看起来像 JSON」去猜。前缀在而 JSON 解析不了时抛 WmRequestError、code 取 INTERNAL_ERROR、details.cause 标 malformed_error_envelope，语义是请求结果未知；SDK 不自动重试，是否重发由调用方按上面的确认流程决定。
 
 各方法条目列出的是该方法的主要特定失败，不是完整错误码全集。任何副作用请求还可能因运行代际失效返回 STALE_OWNER，或遇到资源与后端故障；STALE_OWNER 不出现在任何方法条目里。
 

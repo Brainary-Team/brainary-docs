@@ -185,7 +185,7 @@ WM schema 怎么写、它在包里声明在哪，本指南尚未覆盖，当前�
 
 批次上限的具体字段名尚未确定。close_run_memory 的完整返回形状、重复关闭的结果、以及不受理时返回什么都尚未确定，不要围绕某个特定异常或错误码写兜底分支。
 
-上面示例里 query 的 filter 与 sort 形状同样尚未确定，见 [BGraph](02-bgraph.md)，应把这几处集中封装在一处。
+四类集合的方法签名已经冻结，query 统一取单个 options 对象，可含 filter、sort、cursor 和 limit。filter 是按 id、key、类别名或已声明属性的精确匹配条件，sort 的可用字段与默认顺序随集合种类而定，见各集合页；graph 侧未指定 sort 时的默认顺序仍未固定。
 
 ## 相关文档
 
