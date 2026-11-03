@@ -65,7 +65,9 @@ interface WmRequestError extends WmError {
 
 约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。这条例外的射程只到返回 CommitResult 的那些方法：[快照创建](07-snapshot.md)的返回体不是 CommitResult，它的版本冲突仍然抛这个类。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.props.title，list 与 map 形如 changes 下的 value.title。
 
-details 的整体形状不作为调用依据，可据以分支的只是协议明文规定必返的那几项，它是一份白名单而不是「凡 details 里有的都能读」。当前在册的是：REVISION_CONFLICT 的当前版本、PAGINATION_EXPIRED 的 reason、CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、RESOURCE_EXHAUSTED 的 reason 与 metric、以及字段级的定位路径。本页各处写「协议层在 details 里回带究竟是哪一条」时说的都是这几项，不是允许按别的键写分支。这条限制与下面那条「产出信封的那一侧还没有落地」是两件事：后者说当前连 code 都还拿不到，前者说即使拿到了也只有白名单内的项可依赖。
+details 的整体形状不作为调用依据，可据以分支的只是协议明文规定必返的那几项，它是一份白名单而不是「凡 details 里有的都能读」。当前在册的是：REVISION_CONFLICT 的当前版本、PAGINATION_EXPIRED 的 reason、CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、CONSTRAINT_VIOLATION 在三条内置检查上的约束标识、RESOURCE_EXHAUSTED 的 reason 与 metric、以及字段级的定位路径。本页各处写「协议层在 details 里回带究竟是哪一条」时说的都是这几项，不是允许按别的键写分支。这条限制与下面那条「产出信封的那一侧还没有落地」是两件事：后者说当前连 code 都还拿不到，前者说即使拿到了也只有白名单内的项可依赖。
+
+CONSTRAINT_VIOLATION 的两个位各管一批约束，这不是冗余。reason 管由 schema 声明带来的那批，约束标识管三条不带参数的内置检查 —— 边的端点必须存在、删节点不留悬空边、树节点的父节点必须存在。这三条刻意不进 reason 的取值集合，所以在它们身上约束标识是唯一的判别手段，缺它就只能看到一个 CONSTRAINT_VIOLATION 而分不出是哪一条；反过来，声明带来的那批不占约束标识的位。调用方要分辨同一个码下的不同原因，先看清自己面对的是哪一批，再读对应的那个位。
 
 **示例**：
 

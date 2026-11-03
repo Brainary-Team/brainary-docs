@@ -44,6 +44,8 @@ const result = await incidentGraph.add_edge(
 
 端点节点必须存在，端点类别必须正好是该边类别声明的 from_class 与 to_class，端点在最终状态中不存在时返回 CONSTRAINT_VIOLATION。端点属于另一个 graph 或 tree 时返回 INVALID_STRUCTURE。这两项与多重边唯一性都按最终状态校验，规则见下面的提交与约束。
 
+端点不存在与端点类别不符取同一个错误码，区分它们要看 details 的不同位。两者都返回 CONSTRAINT_VIOLATION，但端点不存在是一条内置检查，它不进 reason 的取值集合、而由 details 的约束标识回带一个保留标识来判别；端点类别不符的来源是 schema 的声明，它在 reason 的取值集合里占一个值。所以调用方要分辨这两种失败，读的是 details 里两个不同的位，不是同一个位的两个取值。两个位都是协议规定必返的，见 [WmError](06-errors.md) 的 details 白名单。
+
 ### update_node(id, changes)
 
 **作用**：更新一个节点的属性。
