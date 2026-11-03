@@ -107,7 +107,7 @@ Run 是 Working Memory 的作用域单位，由一个 PoA cell 发起，覆盖�
 
 ## 注入与可用范围
 
-包资源校验、schema 注入与 WM 连接都在业务 JS 执行前做完。当前只有 app-server 的 thread/codeMode/exec 启动的 PoA cell 有 memory；注册为 poa 工具的程序、普通 turn 和子 agent 当前没有 memory 入口。
+包资源校验、schema 注入与 WM 连接都在业务 JS 执行前做完。本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。执行 PoA 另有一条路径 —— 注册为 poa 工具后由模型在普通 turn 里执行一个完整程序 —— 它的作用域锚点与身份派生都与本页这条不同，当前单独待裁，本页不覆盖它，也不要默认两条同构。子 agent 的 memory 入口同样单独待裁。这几处都不要读成「确定没有入口」，它们是尚未裁定，不是已有结论。
 
 可选工具组 memories 和 [tools](../13-tools-manager.md) 枚举里的 memory 工具类别是模型可见的工具，本页的 memory 是只有程序能调的沙箱全局，两者同名不同物。
 
