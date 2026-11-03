@@ -14,11 +14,11 @@
 
 ~~~js
 const result = await incidentGraph.add_node(
-  new BNode({ id: "node-1", node_class: "Task", properties: { title: "排查移动端 401" } }),
+  new BNode({ id: "node-1", node_class: "Task", props: { title: "排查移动端 401" } }),
 );
 ~~~
 
-新增不会覆盖已有节点。id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、properties 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT；违反 schema 声明的 unique_property 返回 CONSTRAINT_VIOLATION。
+新增不会覆盖已有节点。id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、props 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT；违反 schema 声明的 unique_property 返回 CONSTRAINT_VIOLATION。
 
 ### add_edge(edge)
 
@@ -37,7 +37,7 @@ const result = await incidentGraph.add_edge(
     edge_class: "has_evidence",
     from_id: "node-1",
     to_id: "node-2",
-    properties: {},
+    props: {},
   }),
 );
 ~~~
@@ -60,7 +60,7 @@ const result = await incidentGraph.add_edge(
 const result = await incidentGraph.update_node("node-1", { set: { priority: 2 } });
 ~~~
 
-字段缺失不表示删除，移除属性要写进 unset。粒度是 properties 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND_OR_DENIED。
+字段缺失不表示删除，移除属性要写进 unset。粒度是 props 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND_OR_DENIED。
 
 ### delete_node(id)
 

@@ -14,7 +14,7 @@
 
 ~~~js
 const result = await taskTree.add_root(
-  new BNode({ id: "plan-1", node_class: "Plan", properties: { title: "排查移动端 401" } }),
+  new BNode({ id: "plan-1", node_class: "Plan", props: { title: "排查移动端 401" } }),
 );
 ~~~
 
@@ -33,7 +33,7 @@ const result = await taskTree.add_root(
 ~~~js
 const result = await taskTree.add_child(
   "plan-1",
-  new BNode({ id: "ms-1", node_class: "Milestone", properties: { title: "收集证据" } }),
+  new BNode({ id: "ms-1", node_class: "Milestone", props: { title: "收集证据" } }),
 );
 ~~~
 
@@ -73,7 +73,7 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 ~~~
 
-更新粒度与图节点相同，是 properties 的一层字段。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
+更新粒度与图节点相同，是 props 的一层字段。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
 
 ### delete(node_id)
 
@@ -103,7 +103,7 @@ const result = await taskTree.delete("subtask-1");
 
 ~~~js
 const milestoneNode = await taskTree.get("ms-2");
-if (milestoneNode !== null) text(milestoneNode.properties.title);
+if (milestoneNode !== null) text(milestoneNode.props.title);
 ~~~
 
 ### parent(node_id)
@@ -218,7 +218,7 @@ get、parent 和 root 是四类集合里唯一的三个单项读方法。它们�
 
 取不到时返回 null，不抛异常，空树的 root 和根节点的 parent 都返回 null。认证或授权失败仍按异常处理，此时的 NOT_FOUND_OR_DENIED 只剩实例不可见、作用域无权这类成因，不含这个节点不存在。
 
-这三个方法不套 [BPage](05-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询，不要求后端声明按版本读取的能力；children 与 query 落入分页定义，要求这项能力。
+这三个方法不套 [BPage](05-elements.md)，不返回读版本，需要版本信息时用 query。多次独立读取不保证观察到同一个版本，需要一致的树结构时应使用全树分页读取。它们的结果上界是 1，不算分页查询；children 与 query 落入分页定义。这个分界只管要不要翻页，不管要不要读版本：所有读都在一个读版本上求值，按版本读取是后端无条件必备的能力，不按查询形状分档，不存在某一类读可以不要它的分支。
 
 ## 查询与分页
 

@@ -38,7 +38,7 @@ interface WmUsageError extends WmError {
 }
 ~~~
 
-它没有后端错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。四处本地失败抛这个类：取集合句柄时集合名未在 schema 的 collections 下声明、或声明成了别的种类；在 batch 回调窗口内误用 memory 上的普通集合句柄；在回调窗口内调用 memory 的 snapshot 方法、close_run_memory 或嵌套 batch；构造 [BEdge](05-elements.md) 时缺少端点。
+它没有后端错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。四处本地失败抛这个类：取集合句柄时集合名未在 schema 顶层 properties 下声明、或声明成了别的种类；在 batch 回调窗口内误用 memory 上的普通集合句柄；在回调窗口内调用 memory 的 snapshot 方法、close_run_memory 或嵌套 batch；构造 [BEdge](05-elements.md) 时缺少端点。
 
 **示例**：
 
@@ -63,7 +63,7 @@ interface WmRequestError extends WmError {
 }
 ~~~
 
-约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.properties.title，list 与 map 形如 changes 下的 value.title。
+约束失败一律抛这个类。唯一的例外是 REVISION_CONFLICT，它作为 [CommitResult](05-elements.md) 返回且 ok 为 false，不作为异常抛出。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.props.title，list 与 map 形如 changes 下的 value.title。
 
 **示例**：
 

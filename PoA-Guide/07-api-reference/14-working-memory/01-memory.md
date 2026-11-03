@@ -6,7 +6,7 @@
 
 **作用**：取得一个 graph 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BGraph](02-bgraph.md)。
 
@@ -20,7 +20,7 @@ const incidentGraph = memory.graph("incident_graph");
 
 **作用**：取得一个 tree 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BTree](03-btree.md)。
 
@@ -34,7 +34,7 @@ const taskTree = memory.tree("task_tree");
 
 **作用**：取得一个 list 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BList](04-blist-bmap.md)。
 
@@ -48,7 +48,7 @@ const evidenceList = memory.list("evidence_list");
 
 **作用**：取得一个 map 集合的句柄。
 
-**输入类型**：name: string，取 schema 的 collections 下的声明名。
+**输入类型**：name: string，取 schema 顶层 properties 下的声明名。
 
 **返回值类型**：[BMap](04-blist-bmap.md)。
 
@@ -58,7 +58,7 @@ const evidenceList = memory.list("evidence_list");
 const retryByStatusCodeMap = memory.map("retry_by_status_code");
 ~~~
 
-四个访问器都是同步的，不发请求，只查本地已校验的 schema，返回操作该集合的句柄而不是集合内容。名字未在 collections 下声明、或名字存在但种类不符，在调用集合方法之前就同步抛 [WmUsageError](06-errors.md)。同一个 Run 内对同一个名字多次取句柄返回同一个对象。没有列出全部集合名的方法。
+四个访问器都是同步的，不发请求，只查本地已校验的 schema，返回操作该集合的句柄而不是集合内容。名字未在顶层 properties 下声明、或名字存在但种类不符，在调用集合方法之前就同步抛 [WmUsageError](06-errors.md)。同一个 Run 内对同一个名字多次取句柄返回同一个对象。没有列出全部集合名的方法。
 
 ### batch(fn)
 
@@ -123,7 +123,7 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 集合名
 
-集合名取 schema 的 collections 下的声明名。四类集合共用一个命名空间，不得重名。集合名允许非 ASCII，含连字符、空格或中文都可用，调用时写 schema 中的原始名称。本文档对函数和方法的 snake_case 约定不约束集合名。
+集合名取 schema 顶层 properties 下的声明名。四类集合共用一个命名空间，不得重名。集合名允许非 ASCII，含连字符、空格或中文都可用，调用时写 schema 中的原始名称。本文档对函数和方法的 snake_case 约定不约束集合名。
 
 ## 批次
 
@@ -154,7 +154,7 @@ const evidenceList = memory.list("evidence_list");
 const node = new BNode({
   id: "node-1",
   node_class: "Task",
-  properties: { title: "排查移动端 401" },
+  props: { title: "排查移动端 401" },
 });
 const changes = (b) => {
   b.graph("incident_graph").add_node(node);

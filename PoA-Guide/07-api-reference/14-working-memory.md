@@ -19,5 +19,5 @@ Working Memory 是 PoA 程序侧的结构化状态容器。全局 `memory` 由�
 | [memory.snapshot](14-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 
 四类集合的句柄都由 [memory](14-working-memory/01-memory.md) 上的同名访问器取得，
-集合名取 schema 的 collections 下的声明名。写方法成功提交时推进一次版本，读方法不推进；
+集合名取 schema 顶层 properties 下的声明名。写方法成功提交时推进一次版本，读方法不推进；
 失败分成请求尚未发出的本地使用错误和后端拒绝的请求错误两类，分流方式见 [异常](14-working-memory/06-errors.md)。

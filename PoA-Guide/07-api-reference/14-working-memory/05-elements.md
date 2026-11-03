@@ -13,11 +13,11 @@ interface BNode {
   id: string;
   node_class: string;
   parent_id?: string | null;
-  properties: object;
+  props: object;
 }
 ~~~
 
-实例由 new BNode({ id, node_class, properties }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。properties 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 WM 维护，不在构造器参数内。
+实例由 new BNode({ id, node_class, props }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。props 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 WM 维护，不在构造器参数内。
 
 **示例**：
 
@@ -25,7 +25,7 @@ interface BNode {
 const node = new BNode({
   id: "node-1",
   node_class: "Task",
-  properties: { title: "排查移动端 401" },
+  props: { title: "排查移动端 401" },
 });
 ~~~
 
@@ -41,11 +41,11 @@ interface BEdge {
   edge_class: string;
   from_id: string;
   to_id: string;
-  properties?: object;
+  props?: object;
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, properties }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 properties 必填，未声明时必须是空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 props 必填，未声明时必须是空对象或省略。
 
 **示例**：
 
@@ -55,7 +55,7 @@ const edge = new BEdge({
   edge_class: "has_evidence",
   from_id: "node-1",
   to_id: "node-2",
-  properties: {},
+  props: {},
 });
 ~~~
 
@@ -206,7 +206,7 @@ id 由调用方提供，必须是非空字符串，在整个实例内唯一。�
 
 类别由集合名和类别名共同定位，别的集合里存在同名类别不会使本次写入有效。两个不同类别可以引用同一个值类型。缺端点这类构造期失败在构造处就抛出，不等到写入期。
 
-properties 的更新粒度是一层字段，嵌套对象与数组只能整体替换，需要逐项更新的数据应声明为 list。edge_class、from_id 和 to_id 都不在 update_edge 的 set 与 unset 范围内，改类别或改端点需要删除后重建。
+props 的更新粒度是一层字段，嵌套对象与数组只能整体替换，需要逐项更新的数据应声明为 list。edge_class、from_id 和 to_id 都不在 update_edge 的 set 与 unset 范围内，改类别或改端点需要删除后重建。
 
 边的两个端点必须属于所选 graph。端点存在与端点类别相容按一个批次的最终状态校验，批次内部允许先登记边再登记端点。
 
