@@ -36,7 +36,7 @@ SDK 方法通过单个对象传入命名参数，可选字段直接省略。IO �
 
 ### Working Memory 声明与接入（设计预览）
 
-[Working Memory 声明与接入](07-api-reference/16-working-memory-authoring.md) 介绍一种新的接入方式：schema 由程序代码声明并在运行时注册，不再随包携带 JSON 文件。目前没有可调用的 PoA API；上面那一组描述的是现行方式。
+[Working Memory 声明与接入](07-api-reference/16-working-memory-authoring.md) 说明怎么在程序里声明要用的集合、把声明导出成 schema，以及注册和灌入初始数据这两步。目前没有可调用的 PoA API。
 
 ### Episodic Memory（设计预览）
 
