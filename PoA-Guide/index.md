@@ -30,5 +30,5 @@ text(rows);
 | [快速开始](01-quickstart.md) | 安装 Brainary 和 SDK，编写、打包并运行第一个程序 |
 | [配置文件](02-configuration.md) | `config.toml`：多个 provider、默认沙箱、agent 层级和数量；`manifest.toml`：包信息和随包携带的 MCP server |
 | [输入与输出](03-input-output.md) | 接收业务输入、输出结果、向用户提问，以及 CLI、TUI 和 Python SDK 三种运行方式 |
-| [示例](04-examples.md) | 完整程序：并行扫描、先分后总、交叉评审、随包携带 MCP 工具 |
+| [示例](04-examples.md) | 完整程序：代码审查（业务输入 + `create_agent`）、随包携带 MCP 工具 |
 | [API 参考](05-api-reference.md) | 全部对象、方法和类型 |

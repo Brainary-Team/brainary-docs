@@ -42,7 +42,7 @@ export interface InputParams {
 import { POA_INPUT, text } from "@brainary/poa-sdk";
 import type { InputParams } from "../input_schema";
 
-const { root, concurrency = 3 } = POA_INPUT as InputParams;
+const { root, concurrency = 3 } = POA_INPUT as unknown as InputParams;
 text({ root, concurrency });
 ```
 

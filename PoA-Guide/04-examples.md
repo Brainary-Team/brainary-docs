@@ -1,149 +1,100 @@
 # 示例
 
-四个完整程序：并行处理、先分后总、交叉评审，以及随包携带 MCP 工具。前三个程序都可以直接作为 `src/main.ts`，按 [快速开始](01-quickstart.md) 打包运行。
+两个完整程序：代码审查展示业务输入和 `create_agent` 的用法，随包携带 MCP 工具展示如何把 MCP server 和程序打进同一个包。
 
-## 并行扫描目录
+## 代码审查
 
-为当前目录的每个子目录派出一个 agent，最多 4 个同时运行，最后汇成一张表。单个目录失败不影响其他目录。
+调用方传入要审查的文件和审查重点。程序用 `create_agent` 创建一个审查 agent，逐个文件审查，再让它在同一段对话里挑出最需要先修的问题。
+
+```text
+code-review/
+├── input_schema.ts    业务输入
+├── src/main.ts        程序入口
+├── manifest.toml
+└── package.json
+```
+
+`input_schema.ts` 声明调用方要传入的内容：
 
 ```ts
-import { AgentExecutor, TerminalExecutor, map_limit, notify, parse_json_reply, text } from "@brainary/poa-sdk";
+export interface InputParams {
+  /**
+   * 要审查的文件路径
+   * @minItems 1
+   */
+  files: string[];
+  /** 审查重点，例如“错误处理” */
+  focus?: string;
+}
+```
 
-type Summary = { purpose: string; entry: string };
+`manifest.toml`：
 
-const terminal = new TerminalExecutor();
+```toml
+[poa]
+namespace = "demo"
+name = "code_review"
+version = "0.1.0"
+description = "审查指定文件，并指出最需要先修的问题"
+runtime = "codex-v8"
+poa_api_version = 1
+entry = "src/main.ts"
+```
+
+`src/main.ts`：
+
+```ts
+import { AgentExecutor, BrainaryTool, POA_INPUT, Sandbox, text } from "@brainary/poa-sdk";
+import type { InputParams } from "../input_schema";
+
+// 1. 读取输入，没传 focus 时使用默认值
+const { files, focus = "错误处理" } = POA_INPUT as unknown as InputParams;
+
+// 2. 创建审查 agent：指定模型和系统提示，只能执行命令，在只读沙箱中运行
 const agents = new AgentExecutor();
-
-// 1. 程序列出要处理的目录
-const folders = await terminal.shell_lines("ls -d */ | sed 's#/$##'");
-
-// 2. 每个目录派一个 agent，取得结果后关闭
-let done = 0;
-const rows = await map_limit(folders, 4, async (folder) => {
-  const handle = await agents.spawn_agent({
-    message: [
-      `分析目录 ./${folder}，只读这个目录里的文件。`,
-      "先用 ls 查看结构，再打开入口文件和一个主要源文件。",
-      '只回复一行 JSON：{"purpose": "一句话说明用途", "entry": "入口文件路径"}',
-    ].join("\n"),
-  });
-  const reply = await agents.acquire_agent_result(handle.agent_id, 600_000);
-  await agents.close(handle.agent_id);
-  notify({ done: ++done, total: folders.length });
-
-  const parsed = parse_json_reply<Summary>(reply.result);
-  if (parsed.error !== null) return { folder, purpose: `失败：${reply.error ?? parsed.error}`, entry: "" };
-  return { folder, ...parsed.value };
+const reviewer = await agents.create_agent({
+  name: "reviewer",
+  description: "审查代码",
+  agent_config: {
+    model: { model_id: "gpt-5.6-luna", provider: "vendor" },
+    system_prompt: "你是代码审查员，只报告能在代码中找到依据的问题。",
+    capabilities: { brainary_tool: [BrainaryTool.exec_command, BrainaryTool.write_stdin] },
+    runtime: { sandbox: Sandbox.read_only },
+  },
 });
 
-// 3. 程序汇总成表格
-text([
-  "| 目录 | 用途 | 入口 |",
-  "| --- | --- | --- |",
-  ...rows.map((row) => `| ${row.folder} | ${row.purpose} | ${row.entry} |`),
-].join("\n"));
-```
-
-- 列目录、汇总表格由程序完成，只有"这个目录是做什么的"交给 agent。
-- 任务文字写清范围、步骤和回复格式；需要程序处理的回复规定为 JSON，用 `parse_json_reply` 解析。
-- 解析失败时保留错误信息，表格照常输出。
-
-## 先分后总
-
-找出 `docs/` 下反复出现、仍未解决的问题。第一轮每个 agent 读 5 个文档并提取问题；第二轮只把提取结果交给一个汇总 agent，由它找出跨文档重复的问题。
-
-```ts
-import { AgentExecutor, TerminalExecutor, map_limit, parse_json_reply, text } from "@brainary/poa-sdk";
-
-type Issues = { issues: { title: string; file: string }[] };
-type Report = { repeated: { title: string; files: string[] }[] };
-
-const terminal = new TerminalExecutor();
-const agents = new AgentExecutor();
-
-async function run_agent(message: string): Promise<string | null> {
-  const handle = await agents.spawn_agent({ message });
-  const reply = await agents.acquire_agent_result(handle.agent_id, 600_000);
-  await agents.close(handle.agent_id);
-  return reply.result;
+// 3. 逐个文件审查，每次审查都在同一段对话中进行
+for (const file of files) {
+  const review = await reviewer.run(`审查 ${file}，重点关注${focus}。用不超过三条要点列出问题。`, undefined, undefined, 600_000);
+  text(`## ${file}\n${review.result}`);
 }
 
-// 1. 每 5 个文档分成一批
-const files = await terminal.shell_lines("find docs -name '*.md' | sort");
-const batches: string[][] = [];
-for (let i = 0; i < files.length; i += 5) batches.push(files.slice(i, i + 5));
+// 4. 让它综合前面的审查结果
+const top = await reviewer.run("综合前面所有文件的审查结果，只指出最需要先修的一个问题，并说明原因。", undefined, undefined, 600_000);
+text(`## 优先修复\n${top.result}`);
 
-// 2. 每批交给一个 agent 提取问题
-const extracted = await map_limit(batches, 3, async (batch) => {
-  const reply = await run_agent([
-    `阅读这几个文档：${batch.join("、")}`,
-    "列出其中提到但还没有解决的问题。",
-    '只回复一行 JSON：{"issues": [{"title": "问题", "file": "所在文件"}]}',
-  ].join("\n"));
-  return parse_json_reply<Issues>(reply).value?.issues ?? [];
-});
-
-// 3. 汇总 agent 只根据提取结果回答
-const reply = await run_agent([
-  "下面是从多个文档中提取的未解决问题。不要读取任何文件，只根据这些数据回答。",
-  JSON.stringify(extracted.flat()),
-  "找出在 2 个以上文档中出现的问题，合并说法相近的条目。",
-  '只回复一行 JSON：{"repeated": [{"title": "问题", "files": ["文件"]}]}',
-].join("\n"));
-
-text(parse_json_reply<Report>(reply).value ?? { raw: reply });
+await reviewer.close();
 ```
 
-- 汇总 agent 被要求"不读取任何文件"，它的结论只能来自第一轮的结果，程序决定了每个 agent 能看到什么。
-- 跨文档比对是单个提取 agent 做不到的，第二轮才产生新的信息。
+- `create_agent` 创建的 agent 保留对话历史，第 4 步不必重复各文件的审查内容。
+- `capabilities` 只授予执行命令的工具，`runtime.sandbox` 设为只读，审查过程不会修改文件。
+- `model.provider` 是 `config.toml` 中 provider 的 id，见 [配置 provider](02-configuration.md#配置-provider)。
 
-## 交叉评审
+用 `brainary poa pack` 打包后，通过 Python SDK 传入输入运行：
 
-一个 agent 回答问题，三个 agent 从不同角度独立检查这个回答，程序按多数票裁决。
+```python
+from brainary import Brainary, BrainaryConfig, Poa, PoaPackage
 
-```ts
-import { AgentExecutor, parse_json_reply, text } from "@brainary/poa-sdk";
+package = PoaPackage.load("code_review.poa")
 
-type Verdict = { refuted: boolean; reason: string };
-
-const agents = new AgentExecutor();
-const QUESTION = "这个仓库的用户登录流程在哪里实现？给出文件路径和关键函数名。";
-
-async function run_agent(message: string): Promise<string | null> {
-  const handle = await agents.spawn_agent({ message });
-  const reply = await agents.acquire_agent_result(handle.agent_id, 600_000);
-  await agents.close(handle.agent_id);
-  return reply.result;
-}
-
-// 1. 一个 agent 给出回答
-const answer = await run_agent(QUESTION);
-
-// 2. 三个 agent 从不同角度尝试推翻它，彼此看不到对方的结论
-const LENSES = [
-  "回答中提到的文件和函数真的存在吗？逐一检查。",
-  "代码的实际行为和回答描述的一致吗？",
-  "回答是否遗漏了其他实现登录的位置？",
-];
-const verdicts = await Promise.all(LENSES.map(async (lens) => {
-  const reply = await run_agent([
-    `问题：${QUESTION}`,
-    `回答：${answer}`,
-    lens,
-    "证据不足时，判定为被推翻。",
-    '只回复一行 JSON：{"refuted": true 或 false, "reason": "一句话理由"}',
-  ].join("\n"));
-  return parse_json_reply<Verdict>(reply).value;
-}));
-
-// 3. 程序裁决：无法解析的评审按推翻计，多数推翻即不通过
-const refuted = verdicts.filter((verdict) => verdict?.refuted !== false).length;
-text({ answer, passed: refuted < 2, verdicts });
+with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as brainary:
+    thread = brainary.thread_start(
+        cwd="/path/to/repo",
+        config={"features": {"code_mode": {"enabled": True}}},
+    )
+    result = Poa(thread, package).run(input={"files": ["src/auth.ts", "src/db.ts"], "focus": "错误处理"})
+    print(result)
 ```
-
-- 三个评审角度各不相同，能发现不同类型的错误。
-- 模型倾向于同意，所以默认判定为"被推翻"。
-- 裁决写在程序里，结果可复现；评审之间相互隔离，也只有程序能保证。
 
 ## 随包携带 MCP 工具
 
