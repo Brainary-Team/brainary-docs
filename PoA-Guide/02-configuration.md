@@ -18,9 +18,6 @@ model_provider = "vendor"
 sandbox_mode = "workspace-write"
 suppress_unstable_features_warning = true
 
-[features]
-code_mode = true
-
 #你可以配置多个provider，从而在create_agent()时，灵活选择，需要注意的是model spec中的provider匹配的是下列的vendor/deepseek
 [model_providers.vendor]
 name = "主模型服务"
@@ -47,7 +44,6 @@ max_concurrent_threads_per_session = 8
 | `model_provider` | 默认 provider 的 id，即 `[model_providers.<id>]` 中的 `<id>` |
 | `sandbox_mode` | 默认沙箱，见 [沙箱](#沙箱) |
 | `suppress_unstable_features_warning` | 不显示实验功能提示 |
-| `[features] code_mode` | 运行 PoA 必须设为 `true` |
 
 ### 配置 provider
 

@@ -35,9 +35,6 @@ base_url = "https://api.example.com/v1"
 env_key = "VENDOR_API_KEY"
 wire_api = "responses"
 requires_openai_auth = false
-
-[features]
-code_mode = true
 ```
 
 在运行 Brainary 的终端设置 API Key：
