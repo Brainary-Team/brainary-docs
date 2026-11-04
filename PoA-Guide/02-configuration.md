@@ -12,6 +12,7 @@ PoA 用到两个配置文件：
 `config.toml` 位于 `~/.brainary/`；设置了 `BRAINARY_HOME` 环境变量时，位于该变量指定的目录。下面是一份完整示例，各部分的说明见后文：
 
 ```toml
+#默认模型配置
 model = "gpt-5.6-luna"
 model_provider = "vendor"
 sandbox_mode = "workspace-write"
@@ -20,6 +21,7 @@ suppress_unstable_features_warning = true
 [features]
 code_mode = true
 
+#你可以配置多个provider，从而在create_agent()时，灵活选择，需要注意的是model spec中的provider匹配的是下列的vendor/deepseek
 [model_providers.vendor]
 name = "主模型服务"
 base_url = "https://api.example.com/v1"
@@ -96,7 +98,7 @@ text(final.result);
 | --- | --- |
 | `read-only` | 默认值。只能读取文件 |
 | `workspace-write` | 可以修改工作目录内的文件；agent 需要写文件时使用 |
-| `danger-full-access` | 不做限制，只在隔离环境中使用 |
+| `danger-full-access` | 不做限制 |
 
 `workspace-write` 默认不能访问网络。agent 需要联网时，例如安装依赖，加上：
 

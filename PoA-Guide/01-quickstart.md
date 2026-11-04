@@ -76,7 +76,7 @@ const reply = await agents.acquire_agent_result(handle.agent_id, 300_000);
 text(reply.result);
 ```
 
-- `spawn_agent` 派出一个 agent，立即返回它的句柄。
+- `spawn_agent` 派出一个 agent，立即返回它的句柄，它的配置来源于配置文件中，默认模型的配置。
 - `acquire_agent_result` 等待 agent 完成，返回它的最终回复。
 - `text` 把内容输出给运行方。
 
