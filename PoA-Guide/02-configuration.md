@@ -191,4 +191,4 @@ description = "回显消息"
 | `shell` | 启动命令，在包的根目录执行 |
 | `description` | 可选，server 的说明 |
 
-完整的 server 实现和调用方式见 [示例](04-examples.md#随包携带-mcp-工具)，返回结构见 [MCP tool 配置](05-api-reference/06-mcp-tool-config.md)。
+完整的 server 实现和调用方式见 [示例](04-examples.md#随包携带-mcp-工具)，返回结构见 [McpToolResult](05-api-reference/05-executors.md#mcptoolresult)。

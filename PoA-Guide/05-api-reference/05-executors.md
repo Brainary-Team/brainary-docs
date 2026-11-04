@@ -1,7 +1,15 @@
 # Executor
 
-[Executor](05-executors.md) 及其子类提供 PoA 访问文件、终端、Agent 和 MCP 的统一入口。按设计，每次调用还会生成
-[ExecutorContext](#executorcontext) 和 [PostExecutorContext](#postexecutorcontext) 交给 hook 处理，这部分尚未实现。
+执行器把文件、终端、agent 和 MCP 操作封装成方法，用 `new` 创建，构造时不传参数：
+
+| 执行器 | kind | 文档 |
+| --- | --- | --- |
+| FileExecutor | "file" | [FileExecutor](#fileexecutor) |
+| TerminalExecutor | "terminal" | [TerminalExecutor](#terminalexecutor) |
+| McpExecutor | "mcp" | [McpExecutor](#mcpexecutor) |
+| AgentExecutor | "agent" | [AgentExecutor](03-agent-executor.md) |
+
+Executor 是它们共同的基类，不从 SDK 导出。每个执行器都有只读属性 kind 和静态属性 [tools](#tools)。kind 为 "remote_agent" 的执行器尚未实现。
 
 以下示例假定已导入并创建各执行器：
 
@@ -14,13 +22,427 @@ const terminalExecutor = new TerminalExecutor();
 const mcpExecutor = new McpExecutor();
 ~~~
 
+## FileExecutor
+
+### apply_patch(patch)
+
+**作用**：按 apply_patch 格式新增、删除、修改或移动文件。
+
+**输入类型**：patch: string，必填。格式如下，路径相对于当前程序的工作目录：
+
+~~~text
+*** Begin Patch
+*** Add File: <路径>
++<新文件的每一行>
+*** Delete File: <路径>
+*** Update File: <路径>
+*** Move to: <新路径>
+@@ <定位用的上下文行，可省略>
+ <不变的行>
+-<删除的行>
++<新增的行>
+*** End Patch
+~~~
+
+一个补丁可以包含多个 Add File、Delete File 和 Update File 段；Move to 可选，只能紧跟在 Update File 之后。
+
+**返回值类型**：Promise<void>。
+
+**异常**：补丁格式错误或无法应用（如要修改的行不存在）时抛出 Error。
+
+**示例**：
+
+~~~js
+await fileExecutor.apply_patch(`*** Begin Patch
+*** Add File: notes/todo.md
++- 补充测试
+*** Update File: README.md
+@@ ## 安装
+-npm install
++npm install --save-dev
+*** End Patch`);
+~~~
+
+### view_image(path, detail?, environment_id?)
+
+**作用**：读取本地图片文件，返回 data URL。
+
+**输入类型**：
+
+- path: string，必填，图片文件的路径。
+- detail?: "high" | "original"。默认 "high"，返回缩放后的图片；"original" 在模型支持时保留原始分辨率。
+- environment_id?: string，执行环境 ID，省略时使用主环境。
+
+**返回值类型**：Promise<ViewImageResult>，可以直接传给 [image](07-io.md#imagevalue-detail) 输出。
+
+~~~ts
+interface ViewImageResult {
+  image_url: string;                // 图片的 data URL
+  detail: "high" | "original";      // 实际使用的细节级别
+}
+~~~
+
+**示例**：
+
+~~~js
+const picture = await fileExecutor.view_image("./out.png");
+image(picture);
+~~~
+
+## TerminalExecutor
+
+### exec_command(cmd, options?)
+
+**作用**：运行一条 shell 命令。命令在 yield_time_ms 内结束时返回 exit_code 和全部输出；未结束时返回 session_id，之后用 [write_stdin](#write_stdinsession_id-chars-yield_time_ms-max_output_tokens) 读取后续输出或写入输入。
+
+**输入类型**：cmd: string，必填；options?: ExecCommandOptions。
+
+~~~ts
+interface ExecCommandOptions {
+  workdir?: string;
+  tty?: boolean;
+  yield_time_ms?: number;
+  max_output_tokens?: number;
+  shell?: string;
+  login?: boolean;
+  environment_id?: string;
+  sandbox_permissions?: "use_default" | "with_additional_permissions" | "require_escalated";
+  justification?: string;
+  prefix_rule?: string[];
+  additional_permissions?: object;
+}
+~~~
+
+| 字段 | 说明 |
+| --- | --- |
+| workdir | 工作目录，默认为当前程序的工作目录 |
+| tty | true 时为命令分配伪终端，需要交互输入的命令设为 true；默认 false |
+| yield_time_ms | 等待命令结束的时间，单位毫秒，默认 10000，范围 250–30000，超出范围按边界值处理 |
+| max_output_tokens | 返回输出的 token 上限；省略时返回全部输出 |
+| shell | 运行命令的 shell，默认为用户的默认 shell |
+| login | 是否以 login shell 运行 |
+| environment_id | 执行环境 ID，省略时使用主环境 |
+| sandbox_permissions | 本条命令的权限：use_default（默认）按当前沙箱运行；require_escalated 申请在沙箱外运行；with_additional_permissions 申请 additional_permissions 中的额外权限。申请须经审批策略批准，未批准时命令不运行 |
+| justification | 申请 require_escalated 时向审批方说明的理由 |
+| prefix_rule | 申请 require_escalated 时一并申请的命令前缀，如 `["git", "pull"]`，批准后以该前缀开头的命令不再审批 |
+| additional_permissions | 申请 with_additional_permissions 时需要的文件系统或网络权限 |
+
+**返回值类型**：Promise<ExecOutput>。
+
+~~~ts
+interface ExecOutput {
+  output: string;                 // 本次返回的输出
+  exit_code?: number;             // 命令已结束时为退出码
+  session_id?: number;            // 命令仍在运行时为会话 ID
+  wall_time_seconds: number;      // 本次调用的耗时，单位秒
+  original_token_count?: number;  // 截断前输出的 token 数
+  chunk_id?: string;              // 输出块 ID
+}
+~~~
+
+**示例**：
+
+~~~js
+const result = await terminalExecutor.exec_command("pwd", { workdir: "." });
+text(result.output);
+~~~
+
+### write_stdin(session_id, chars?, yield_time_ms?, max_output_tokens?)
+
+**作用**：向 exec_command 返回的会话写入输入，并返回此后新增的输出。chars 为空时只读取输出。
+
+**输入类型**：
+
+- session_id: number，必填，exec_command 返回的 session_id。
+- chars?: string，写入的内容，默认为空字符串。
+- yield_time_ms?: number，等待输出的时间，单位毫秒，默认 250。chars 非空时范围 250–30000；chars 为空时范围 5000–300000。超出范围按边界值处理，命令提前结束时立即返回。
+- max_output_tokens?: number，返回输出的 token 上限，省略时返回全部输出。
+
+**返回值类型**：Promise<ExecOutput>。命令结束后 exit_code 有值，session_id 不再可用。
+
+**示例**：
+
+~~~js
+const started = await terminalExecutor.exec_command("read answer && echo got $answer", {
+  tty: true,
+  yield_time_ms: 500,
+});
+if (started.session_id !== undefined) {
+  const result = await terminalExecutor.write_stdin(started.session_id, "yes\n", 1000);
+  text(result.output);
+}
+~~~
+
+### shell_lines(command, options?)
+
+**作用**：运行命令直到结束，按行返回全部输出。行尾的 `\n` 或 `\r\n` 被去掉，输出末尾的空行不计入结果。
+
+**输入类型**：command: string，必填；options?: ExecCommandOptions，同 [exec_command](#exec_commandcmd-options)。
+
+**返回值类型**：Promise<string[]>。
+
+**异常**：退出码不为 0 时抛出 [ShellCommandError](#shellcommanderror)。
+
+**示例**：
+
+~~~js
+const names = await terminalExecutor.shell_lines("find . -maxdepth 1 -type f");
+text(names);
+~~~
+
+### wait_for_environment(environment_id)
+
+**作用**：等待状态为 starting 的执行环境启动完成。环境已就绪时立即返回。
+
+**输入类型**：environment_id: string，必填。
+
+**返回值类型**：Promise<EnvironmentReady>。
+
+~~~ts
+interface EnvironmentReady {
+  environment_id: string;
+  status: "ready";
+}
+~~~
+
+**异常**：环境既不是 ready 也不是 starting，或启动失败时抛出 Error。
+
+**示例**：
+
+~~~js
+const result = await terminalExecutor.wait_for_environment("env-123");
+text(result.status);
+~~~
+
+### ShellCommandError
+
+**作用**：shell_lines 运行的命令退出码不为 0 时抛出。
+
+**类型定义**：
+
+~~~ts
+class ShellCommandError extends Error {
+  readonly command: string;          // 运行的命令
+  readonly exit_code: number | null; // 退出码
+  readonly output: string;           // 命令的全部输出
+}
+~~~
+
+**示例**：
+
+~~~js
+try {
+  text(await terminalExecutor.shell_lines("git status --short"));
+} catch (error) {
+  if (error instanceof ShellCommandError) text({ exit_code: error.exit_code, output: error.output });
+  else throw error;
+}
+~~~
+
+## McpExecutor
+
+McpExecutor 访问当前程序可用的 MCP server，包括 config.toml 的 `[mcp_servers]` 和 manifest.toml 的 [`[[capabilities.mcp]]`](../02-configuration.md#随包携带-mcp-server) 中声明的 server。
+
+### list_mcp_resources(server?, cursor?)
+
+**作用**：列出 MCP server 提供的资源，省略 server 时列出所有 server 的资源。
+
+**输入类型**：server?: string，server 名；cursor?: string，上一页返回的 nextCursor。
+
+**返回值类型**：Promise<McpResourcePage>。
+
+~~~ts
+interface McpResourcePage {
+  server?: string;       // 传入 server 时为该 server 名
+  resources: McpResource[];
+  nextCursor?: string;   // 还有下一页时出现
+}
+
+interface McpResource {
+  server: string;        // 资源所属的 server
+  uri: string;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+  size?: number;
+  annotations?: unknown;
+}
+~~~
+
+**示例**：
+
+~~~js
+const page = await mcpExecutor.list_mcp_resources("docs");
+text(page.resources.map((resource) => resource.uri));
+~~~
+
+### list_mcp_resource_templates(server?, cursor?)
+
+**作用**：列出 MCP server 提供的资源模板，省略 server 时列出所有 server 的模板。
+
+**输入类型**：server?: string，server 名；cursor?: string，上一页返回的 nextCursor。
+
+**返回值类型**：Promise<McpResourceTemplatePage>。
+
+~~~ts
+interface McpResourceTemplatePage {
+  server?: string;       // 传入 server 时为该 server 名
+  resourceTemplates: McpResourceTemplate[];
+  nextCursor?: string;   // 还有下一页时出现
+}
+
+interface McpResourceTemplate {
+  server: string;        // 模板所属的 server
+  uriTemplate: string;
+  name: string;
+  title?: string;
+  description?: string;
+  mimeType?: string;
+  annotations?: unknown;
+}
+~~~
+
+**示例**：
+
+~~~js
+const page = await mcpExecutor.list_mcp_resource_templates("docs");
+text(page.resourceTemplates);
+~~~
+
+### read_mcp_resource(server, uri)
+
+**作用**：读取一个 MCP 资源。
+
+**输入类型**：server: string；uri: string。两个参数均必填。
+
+**返回值类型**：Promise<McpResourceRead>。
+
+~~~ts
+interface McpResourceRead {
+  server: string;
+  uri: string;
+  contents: McpResourceContents[];
+}
+
+type McpResourceContents =
+  | { uri: string; mimeType?: string; text: string }   // 文本资源
+  | { uri: string; mimeType?: string; blob: string };  // 二进制资源，blob 为 base64
+~~~
+
+**示例**：
+
+~~~js
+const resource = await mcpExecutor.read_mcp_resource("docs", "file:///README.md");
+text(resource.contents);
+~~~
+
+### call_mcp_tool(server, tool, args?)
+
+**作用**：调用 MCP server 的一个工具。
+
+**输入类型**：
+
+- server: string，必填，server 名：config.toml 中 `[mcp_servers.<name>]` 的 `<name>`，或 manifest.toml 中 `[[capabilities.mcp]]` 的 name。
+- tool: string，必填，工具名，即 server 在 tools/list 中返回的 name。
+- args?: object，工具参数，结构由该工具的 inputSchema 决定，默认 `{}`。
+
+TypeScript 中可以用泛型参数声明 structuredContent 的类型：`call_mcp_tool<{ count: number }>(...)`。
+
+**返回值类型**：Promise<[McpToolResult](#mcptoolresult)>。
+
+工具执行出错、server 出错或调用未获审批时，返回 isError 为 true 的结果，不抛出异常。未在 annotations 中标注 `readOnlyHint: true` 的工具，调用前需要审批。
+
+**异常**：server 或工具不存在时抛出 ReferenceError。
+
+**示例**：
+
+~~~js
+const result = await mcpExecutor.call_mcp_tool("echo", "echo", { text: "hello" });
+if (result.isError) throw new Error("echo 调用失败");
+text(result.structuredContent ?? result.content);
+~~~
+
+### McpToolResult
+
+**作用**：call_mcp_tool 的返回值，即 MCP 的 CallToolResult。
+
+**类型定义**：
+
+~~~ts
+interface McpToolResult<S = Record<string, unknown>> {
+  content: McpContentBlock[];
+  isError?: boolean;
+  structuredContent?: S;
+}
+
+type McpContentBlock =
+  | { type: "text"; text: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | { type: "image"; data: string; mimeType: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | { type: "audio"; data: string; mimeType: string; annotations?: unknown; _meta?: Record<string, unknown> }
+  | {
+    type: "resource_link";
+    uri: string;
+    name: string;
+    title?: string;
+    description?: string;
+    mimeType?: string;
+    size?: number;
+    icons?: unknown;
+    annotations?: unknown;
+    _meta?: Record<string, unknown>;
+  }
+  | { type: "resource"; resource: McpResourceContents; annotations?: unknown; _meta?: Record<string, unknown> };
+~~~
+
+| 字段 | 说明 |
+| --- | --- |
+| content | 工具返回的内容块。image 块可以直接传给 [image](07-io.md#imagevalue-detail)，audio 块可以直接传给 [audio](07-io.md#audiovalue) |
+| isError | 为 true 时表示调用失败，content 中是错误信息 |
+| structuredContent | 工具返回的结构化结果；工具没有返回时不存在 |
+
+McpResourceContents 见 [read_mcp_resource](#read_mcp_resourceserver-uri)。
+
+**示例**：
+
+~~~js
+const result = await mcpExecutor.call_mcp_tool("render", "chart", { data: [1, 2, 3] });
+for (const block of result.content) {
+  if (block.type === "image") image(block);
+  else if (block.type === "text") text(block.text);
+}
+~~~
+
+## tools
+
+**作用**：每个执行器类的静态只读属性，列出该执行器使用的 [BrainaryTool](06-brainary-tool.md) 成员，可以直接放入 [Capabilities](02-agent-config.md#capabilities).brainary_tool。
+
+**类型定义**：静态只读对象，键为成员名，值为同名的 BrainaryTool 成员。
+
+| 执行器 | tools |
+| --- | --- |
+| FileExecutor | apply_patch、view_image |
+| TerminalExecutor | exec_command、write_stdin、wait_for_environment |
+| McpExecutor | list_mcp_resources、list_mcp_resource_templates、read_mcp_resource |
+| AgentExecutor | spawn_agent、create_agent、send_input、wait_agent、resume_agent、close_agent、get_agent_status |
+
+MCP 工具不在 tools 中，用 Capabilities.mcp 授予。wait_for_environment 只在 Brainary 启用执行环境功能时存在，未启用时不能授予。
+
+**示例**：
+
+~~~js
+const brainary_tool = [TerminalExecutor.tools.exec_command, TerminalExecutor.tools.write_stdin, FileExecutor.tools.apply_patch];
+~~~
+
 ## 上下文与 hook
+
+以下类型尚未实现。
 
 ### ExecutorContext
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：描述一次执行调用的调用方、方法、输入和环境。
+**作用**：描述一次执行调用的调用方、方法、输入和环境，作为 pre hook 的输入。
 
 **类型定义**：
 
@@ -37,8 +459,6 @@ interface ExecutorContext {
   started_at: number;
 }
 ~~~
-
-该上下文作为 pre hook 的输入。
 
 **示例**：
 
@@ -57,9 +477,9 @@ const context = {
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：补充执行完成后的状态、输出、错误和耗时。
+**作用**：在 ExecutorContext 的基础上补充执行结果、错误和耗时，作为 post hook 的输入。
 
-**类型定义**：继承 ExecutorContext，并补充必填的 outcome、duration_ms 和可选的 output、error。
+**类型定义**：
 
 ~~~ts
 interface PostExecutorContext extends ExecutorContext {
@@ -70,8 +490,6 @@ interface PostExecutorContext extends ExecutorContext {
   duration_ms: number;
 }
 ~~~
-
-该上下文作为 post hook 的输入。
 
 **示例**：
 
@@ -88,7 +506,7 @@ const post = {
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：在执行器调用前后插入审计、限流或结果处理逻辑。
+**作用**：在执行器调用前后插入审计、限流或结果处理逻辑，作为执行器构造函数的参数。
 
 **类型定义**：
 
@@ -112,11 +530,9 @@ const audited = new TerminalExecutor(hooks);
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：表示执行器调用前运行的单个 hook，接收 ExecutorContext。
+**作用**：执行器调用前运行的单个 hook，接收 [ExecutorContext](#executorcontext)。
 
-**类型定义**：
-
-接收 [ExecutorContext](#executorcontext) 的回调函数。
+**类型定义**：`(context: ExecutorContext) => unknown`。
 
 **示例**：
 
@@ -131,11 +547,9 @@ const hooks = { pre_executor_hooks: [pre_executor_hook] };
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：表示执行器调用完成后运行的单个 hook，接收 PostExecutorContext。
+**作用**：执行器调用完成后运行的单个 hook，接收 [PostExecutorContext](#postexecutorcontext)。
 
-**类型定义**：
-
-接收 [PostExecutorContext](#postexecutorcontext) 的回调函数。
+**类型定义**：`(context: PostExecutorContext) => unknown`。
 
 **示例**：
 
@@ -144,353 +558,4 @@ const post_executor_hook = (context) => {
   text({ outcome: context.outcome, duration_ms: context.duration_ms });
 };
 const hooks = { post_executor_hooks: [post_executor_hook] };
-~~~
-
-### Executor
-
-**作用**：FileExecutor、TerminalExecutor、AgentExecutor 和 McpExecutor 的公共基类。
-
-**类型定义**：
-
-~~~ts
-type ExecutorKind = "file" | "terminal" | "remote_agent" | "mcp" | "agent";
-
-abstract class Executor {
-  readonly kind: ExecutorKind;
-}
-~~~
-
-各执行器用 `new` 创建，并以静态属性 tools 列出所封装的工具，见 [执行器的 tools 入口](#执行器的-tools-入口)。
-"remote_agent" 对应的执行器尚未实现。
-
-**示例**：
-
-~~~js
-text([fileExecutor.kind, terminalExecutor.kind, mcpExecutor.kind]); // ["file", "terminal", "mcp"]
-~~~
-
-## FileExecutor
-
-文件执行器，kind 为 "file"，提供以下文件操作方法。
-
-### apply_patch(patch)
-
-**作用**：按 apply_patch 格式对工作区应用文件补丁。
-
-**输入类型**：patch: string，必填。
-
-**返回值类型**：Promise<void>；补丁无法应用时抛出异常。
-
-**示例**：
-
-~~~js
-await fileExecutor.apply_patch("*** Begin Patch\n*** Add File: note.md\n+done\n*** End Patch");
-~~~
-
-### view_image(path, detail?, environment_id?)
-
-**作用**：读取执行环境中的本地图片。
-
-**输入类型**：path: string，必填；detail?: "high" | "original"；environment_id?: string。
-
-detail 默认为 high；传入 original 时保留原始分辨率。
-
-**返回值类型**：Promise<ViewImageResult>。
-
-~~~ts
-interface ViewImageResult {
-  image_url: string;
-  detail: "high" | "original";
-}
-~~~
-
-结果可直接传给 [image](08-io.md) 输出图片。
-
-**示例**：
-
-~~~js
-const picture = await fileExecutor.view_image("./out.png", "high");
-image(picture);
-~~~
-
-## TerminalExecutor
-
-终端执行器，kind 为 "terminal"，提供以下命令和会话管理方法。
-
-### exec_command(cmd, options?)
-
-**作用**：在指定环境运行 shell 命令或脚本。
-
-**输入类型**：cmd: string，必填；options?: ExecCommandOptions。
-
-~~~ts
-interface ExecCommandOptions {
-  workdir?: string;
-  tty?: boolean;
-  yield_time_ms?: number;
-  max_output_tokens?: number;
-  shell?: string;
-  login?: boolean;
-  environment_id?: string;
-  sandbox_permissions?: "use_default" | "with_additional_permissions" | "require_escalated";
-  justification?: string;
-  prefix_rule?: string[];
-  additional_permissions?: object;
-}
-~~~
-
-max_output_tokens 省略时返回完整输出。
-
-**返回值类型**：Promise<ExecOutput>。
-
-~~~ts
-interface ExecOutput {
-  chunk_id?: string;
-  wall_time_seconds: number;
-  exit_code?: number;
-  session_id?: number;
-  original_token_count?: number;
-  output: string;
-}
-~~~
-
-命令结束时返回 exit_code；在 yield_time_ms 内未结束时返回 session_id，可用 write_stdin 继续交互。
-
-**示例**：
-
-~~~js
-const result = await terminalExecutor.exec_command("pwd", { workdir: "." });
-text(result.output);
-~~~
-
-### write_stdin(session_id, chars?, yield_time_ms?, max_output_tokens?)
-
-**作用**：向已有终端会话写入标准输入，或轮询新增输出。
-
-**输入类型**：session_id: number，必填；chars?: string，传入空字符串时只轮询、不写入；yield_time_ms?: number；max_output_tokens?: number。
-
-**返回值类型**：Promise<ExecOutput>。
-
-**示例**：
-
-~~~js
-const started = await terminalExecutor.exec_command("read answer && echo got $answer", {
-  tty: true,
-  yield_time_ms: 500,
-});
-if (started.session_id !== undefined) {
-  const result = await terminalExecutor.write_stdin(started.session_id, "yes\n", 1000);
-  text(result.output);
-}
-~~~
-
-### shell_lines(command, options?)
-
-**作用**：运行命令直到结束，并按行返回输出。
-
-**输入类型**：command: string，必填；options?: ExecCommandOptions，与 exec_command 相同。
-
-**返回值类型**：Promise<string[]>。
-
-退出码不为 0 时抛出 [ShellCommandError](#shellcommanderror)。
-
-**示例**：
-
-~~~js
-const names = await terminalExecutor.shell_lines("find . -maxdepth 1 -type f");
-text(names);
-~~~
-
-### wait_for_environment(environment_id)
-
-**作用**：等待处于 starting 状态的指定执行环境就绪；环境已经就绪时直接返回。
-
-**输入类型**：environment_id: string，必填。
-
-**返回值类型**：Promise<EnvironmentReady>。环境不存在或启动失败时抛出异常。
-
-~~~ts
-interface EnvironmentReady {
-  environment_id: string;
-  status: "ready";
-}
-~~~
-
-**示例**：
-
-~~~js
-const result = await terminalExecutor.wait_for_environment("env-123");
-text(result.status);
-~~~
-
-### ShellCommandError
-
-**作用**：shell_lines 运行的命令以非 0 退出码结束时抛出。
-
-**类型定义**：
-
-~~~ts
-class ShellCommandError extends Error {
-  readonly command: string;
-  readonly exit_code: number | null;
-  readonly output: string;
-}
-~~~
-
-**示例**：
-
-~~~js
-try {
-  text(await terminalExecutor.shell_lines("git status --short"));
-} catch (error) {
-  if (error instanceof ShellCommandError) text({ exit_code: error.exit_code, output: error.output });
-  else throw error;
-}
-~~~
-
-## AgentExecutor
-
-Agent 执行器的 kind 为 "agent"，负责 Agent 的创建、派发、结果获取、状态查询、关闭和恢复，见 [AgentExecutor](03-agent-executor.md)。
-
-## McpExecutor
-
-MCP 执行器，kind 为 "mcp"，提供以下资源查询、读取和工具调用方法。
-
-### list_mcp_resources(server?, cursor?)
-
-**作用**：列出 MCP server 提供的资源；省略 server 时列出全部 server 的资源。
-
-**输入类型**：server?: string；cursor?: string，上一页返回的 nextCursor。
-
-**返回值类型**：Promise<McpResourcePage>。
-
-~~~ts
-interface McpResourcePage {
-  server?: string;
-  resources: McpResource[];
-  nextCursor?: string;
-}
-
-interface McpResource {
-  server: string;
-  uri: string;
-  name: string;
-  title?: string;
-  description?: string;
-  mimeType?: string;
-  size?: number;
-  annotations?: unknown;
-}
-~~~
-
-**示例**：
-
-~~~js
-const page = await mcpExecutor.list_mcp_resources("docs");
-text(page.resources.map((resource) => resource.uri));
-~~~
-
-### list_mcp_resource_templates(server?, cursor?)
-
-**作用**：列出参数化 MCP 资源模板；省略 server 时列出全部 server 的模板。
-
-**输入类型**：server?: string；cursor?: string，上一页返回的 nextCursor。
-
-**返回值类型**：Promise<McpResourceTemplatePage>。
-
-~~~ts
-interface McpResourceTemplatePage {
-  server?: string;
-  resourceTemplates: McpResourceTemplate[];
-  nextCursor?: string;
-}
-
-interface McpResourceTemplate {
-  server: string;
-  uriTemplate: string;
-  name: string;
-  title?: string;
-  description?: string;
-  mimeType?: string;
-  annotations?: unknown;
-}
-~~~
-
-**示例**：
-
-~~~js
-const page = await mcpExecutor.list_mcp_resource_templates("docs");
-text(page.resourceTemplates);
-~~~
-
-### read_mcp_resource(server, uri)
-
-**作用**：读取指定 MCP 资源。
-
-**输入类型**：server: string；uri: string。两个参数均必填。
-
-**返回值类型**：Promise<McpResourceRead>。
-
-~~~ts
-interface McpResourceRead {
-  server: string;
-  uri: string;
-  contents: McpResourceContents[];
-}
-
-type McpResourceContents =
-  | { uri: string; mimeType?: string; text: string }
-  | { uri: string; mimeType?: string; blob: string };
-~~~
-
-**示例**：
-
-~~~js
-const resource = await mcpExecutor.read_mcp_resource("docs", "file:///README.md");
-text(resource.contents);
-~~~
-
-### call_mcp_tool(server, tool, args?)
-
-**作用**：按 server 名和工具名调用 MCP 工具。
-
-**输入类型**：server: string，必填；tool: string，必填；args?: object，工具参数，须为 JSON 对象，省略时为 `{}`，
-结构由该工具的 input schema 决定。TypeScript 中可用泛型参数声明 structuredContent 的类型。
-
-**返回值类型**：Promise<[McpToolResult](06-mcp-tool-config.md#calltoolresult)>。
-
-工具调用失败时返回 `isError: true` 的结果，不抛出异常。
-
-**示例**：
-
-~~~js
-const result = await mcpExecutor.call_mcp_tool("echo", "echo", { message: "hello" });
-if (result.isError) throw new Error("echo failed");
-text(result.structuredContent ?? result.content);
-~~~
-
-MCP server 的 manifest 配置和生命周期见 [MCP tool 配置](06-mcp-tool-config.md)。
-
-## 执行器的 tools 入口
-
-**作用**：列出执行器封装的宿主工具。每个执行器类以静态属性 tools 提供自己的子集，值为 [BrainaryTool](07-brainary-tool.md#brainarytool) 成员，
-可与其他成员合并为 [Capabilities](02-agent-config.md#capabilities).brainary_tool 的授予列表。
-
-**类型定义**：静态只读对象，键为成员名，值为同名的 BrainaryTool 成员。
-
-| 执行器 | tools |
-| --- | --- |
-| FileExecutor | apply_patch、view_image |
-| TerminalExecutor | exec_command、write_stdin、wait_for_environment |
-| McpExecutor | list_mcp_resources、list_mcp_resource_templates、read_mcp_resource |
-| AgentExecutor | spawn_agent、create_agent、send_input、wait_agent、resume_agent、close_agent、get_agent_status |
-
-call_mcp_tool 调用的工具由 MCP server 提供，不在 tools 中。
-
-**示例**：
-
-~~~js
-text(FileExecutor.tools.view_image);
-
-const brainary_tool = [...Object.values(TerminalExecutor.tools), FileExecutor.tools.apply_patch];
 ~~~

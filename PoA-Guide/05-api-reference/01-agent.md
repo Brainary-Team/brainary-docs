@@ -1,6 +1,6 @@
 # Agent
 
-[Agent](01-agent.md) 是由 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 创建的独立会话，可多次运行、关闭和恢复。
+Agent 是 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 返回的对象，代表一个可以多次运行的 agent。
 
 以下示例中的 agent 均按如下方式创建：
 
@@ -12,26 +12,19 @@ const agent = await agentExecutor.create_agent({
   name: "reviewer",
   description: "代码审查",
   agent_config: {
-    model: { model_id: "gpt-5.6-luna", provider: "openai", reasoning_effort: "high" },
+    model: { model_id: "gpt-5.6-luna", provider: "vendor", reasoning_effort: "high" },
   },
 });
 ~~~
 
 ### Agent 对象
 
-**作用**：保存 Agent 的身份、描述和配置。
+**作用**：create_agent 返回的 agent。Agent 对象只能用 create_agent 创建。
 
 **类型定义**：
 
 ~~~ts
 class Agent {
-  constructor(
-    executor: AgentExecutor,
-    agent_id: string,
-    name: string,
-    description: string | undefined,
-    agent_config: AgentConfig,
-  );
   readonly agent_id: string;
   readonly name: string;
   readonly description: string | undefined;
@@ -39,35 +32,43 @@ class Agent {
 }
 ~~~
 
-PoA 对象不跨 cell 保留；在后续 cell 中可用 agent_id 重新构造 Agent。
+| 属性 | 说明 |
+| --- | --- |
+| agent_id | agent 的 ID，可以传给 [AgentExecutor](03-agent-executor.md) 中按 ID 操作的方法 |
+| name、description、agent_config | 调用 create_agent 时传入的值 |
 
 **示例**：
 
 ~~~js
-import { Agent } from "@brainary/poa-sdk";
-
-// agent_id 与 agent_config 来自先前 cell 中 create_agent 的结果
-const restored = new Agent(agentExecutor, agent_id, "reviewer", "代码审查", agent_config);
-text(await restored.status());
+text({ id: agent.agent_id, name: agent.name });
 ~~~
 
 ### run(message?, items?, output_schema?, timeout_ms?)
 
-**作用**：让 Agent 开始一轮任务，并等待该轮的最终结果。
+**作用**：向 agent 发送一轮任务，并等待这一轮结束。
 
-**输入类型**：message?: string；items?: readonly [MessageItem](04-message-item.md)[]；output_schema?: null，预留参数；timeout_ms?: number，等待返回的超时时间，单位为毫秒（ms），默认 30000。
+**输入类型**：
 
-**参数约束**：message 和 items 至少传入一项；同时传入时 message 排在 items 之前。
+- message?: string，本轮的文本消息。
+- items?: readonly [MessageItem](04-message-item.md)[]，本轮的消息项。同时传入 message 时，message 作为第一个文本项排在 items 之前。
+- output_schema?: null，预留参数，省略或传 null。
+- timeout_ms?: number，最长等待时间，单位毫秒，默认 30000，有效范围与 [acquire_agent_result](03-agent-executor.md#acquire_agent_resultagent_id-timeout_ms) 相同。
+
+message 和 items 至少传入一项。agent 的状态为 pending_init、completed、errored 或 interrupted 时才能运行。
 
 **返回值类型**：Promise<[AgentResult](#agentresult)>。
 
-Agent 正在运行或已关闭时抛出 [AgentNotIdleError](#agentnotidleerror)，已关闭的 Agent 需先调用 resume()。
-超时抛出 [AgentResultTimeoutError](#agentresulttimeouterror)，Agent 继续运行，可用 AgentExecutor.acquire_agent_result 再次获取结果。
+**异常**：
+
+- message 和 items 都未传入，或 message 为空白字符串：抛出 TypeError。
+- timeout_ms 不是正整数：抛出 RangeError。
+- agent 的状态为 running、shutdown 或 not_found：抛出 [AgentNotIdleError](#agentnotidleerror)，消息不会发送。已关闭的 agent 先调用 [resume()](#resume)。
+- 超时：抛出 [AgentResultTimeoutError](#agentresulttimeouterror)。agent 继续运行，之后用 `agentExecutor.acquire_agent_result(agent.agent_id)` 获取本轮结果。
 
 **示例**：
 
 ~~~js
-const result = await agent.run("检查 README", undefined, undefined, 120000);
+const result = await agent.run("检查 README", undefined, undefined, 120_000);
 text({ status: result.agent_status, answer: result.result });
 
 const next = await agent.run("结合截图说明问题", [{ type: "local_image", path: "/workspace/screenshot.png" }]);
@@ -78,12 +79,10 @@ text(next.result);
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：向 Agent 追加消息，并返回任务句柄；Immediately 用于指定是否立即处理。
-与 [AgentExecutor.append_message](03-agent-executor.md#append_messageagent_id-message-message_items-immediately) 相同，作用于当前 Agent。
+**作用**：向 agent 追加消息，并返回任务句柄；Immediately 指定是否立即处理。
+与 [AgentExecutor.append_message](03-agent-executor.md#append_messageagent_id-message-message_items-immediately) 相同，作用于当前 agent。
 
-**输入类型**：message?: string；message_items?: [MessageItem](04-message-item.md)[]；Immediately?: boolean，默认为 false。
-
-**参数约束**：message 和 message_items 至少传入一项。
+**输入类型**：message?: string；message_items?: [MessageItem](04-message-item.md)[]；Immediately?: boolean，默认为 false。message 和 message_items 至少传入一项。
 
 **返回值类型**：Promise<[Handle](03-agent-executor.md#handle)>。
 
@@ -91,7 +90,7 @@ text(next.result);
 
 ~~~js
 const handle = await agent.append_message("优先检查认证逻辑", undefined, true);
-const result = await agentExecutor.acquire_agent_result(handle.agent_id, 60000);
+const result = await agentExecutor.acquire_agent_result(handle.agent_id, 60_000);
 text(result.result);
 ~~~
 
@@ -99,7 +98,7 @@ text(result.result);
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：压缩 Agent 上下文，减少后续运行的上下文占用。
+**作用**：压缩 agent 的上下文，减少后续运行的上下文占用。
 
 **输入类型**：compact_template?: string。
 
@@ -113,11 +112,13 @@ await agent.context_compact("只保留结论和待办");
 
 ### close()
 
-**作用**：关闭 Agent 及其子 Agent，并返回关闭前的状态。关闭后可用 resume() 恢复。
+**作用**：关闭 agent，以及它派出的、仍处于打开状态的各层子 agent。关闭后 status() 返回 "not_found"，并释放 [max_concurrent_threads_per_session](../02-configuration.md#agent-层级和数量) 的名额。
 
 **输入类型**：无。
 
-**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>。
+**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>，关闭前的状态。
+
+**异常**：agent 已关闭时抛出 Error。
 
 **示例**：
 
@@ -127,26 +128,29 @@ text(await agent.close());
 
 ### resume()
 
-**作用**：恢复已关闭的 Agent，并返回恢复后的状态。Agent 按创建时的配置恢复。
+**作用**：恢复已关闭的 agent。恢复后的 agent 保留关闭前的对话记录，使用创建时的配置。agent 未关闭时不做任何操作。
 
 **输入类型**：无。
 
-**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>。
+**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>，恢复后的状态。
+
+**异常**：打开的 agent 数已达到 max_concurrent_threads_per_session 时抛出 Error。
 
 **示例**：
 
 ~~~js
 await agent.close();
-text(await agent.resume());
+await agent.resume();
+text((await agent.run("继续上一轮的检查")).result);
 ~~~
 
 ### status()
 
-**作用**：立即返回 Agent 当前状态。
+**作用**：返回 agent 的当前状态，不等待。
 
 **输入类型**：无。
 
-**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>。
+**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>。已关闭的 agent 返回 "not_found"。
 
 **示例**：
 
@@ -160,7 +164,7 @@ if ((await agent.status()) === "completed") {
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：读取 Agent 自身的 token 用量和上下文用量。
+**作用**：读取 agent 的 token 用量和上下文用量。
 
 **输入类型**：无。
 
@@ -177,29 +181,34 @@ text({
 
 ## AgentResult
 
-**作用**：表示一次 Agent 运行的最终结果。
+**作用**：一轮运行的结果，由 run 和 acquire_agent_result 返回。
 
 **类型定义**：
 
 ~~~ts
 interface AgentResult {
   agent_id: string;
-  schema_result: null;
+  agent_status: AgentStatus;
   result: string | null;
   error: string | null;
-  agent_status: AgentStatus;
+  schema_result: null;
 }
 ~~~
 
-agent_status 是本次运行结束时的状态。completed 时 result 为 Agent 的最终回复；errored 时 error 为错误信息。
-schema_result 为预留字段，用于返回按 output_schema 校验后的对象，当前为 null；需要 JSON 时可用 [parse_json_reply](12-helper.md) 解析 result。
+| 字段 | 说明 |
+| --- | --- |
+| agent_id | agent 的 ID |
+| agent_status | 本轮结束时的状态：completed、errored、shutdown 或 not_found |
+| result | agent_status 为 completed 时为 agent 的最终回复；agent 没有回复或为其他状态时为 null |
+| error | agent_status 为 errored 时为错误信息；其他状态为 null |
+| schema_result | 预留字段，始终为 null。需要结构化结果时，让 agent 回复 JSON，再用 [parse_json_reply](09-helper.md#parse_json_replyraw) 解析 result |
 
 **示例**：
 
 ~~~js
 import { parse_json_reply } from "@brainary/poa-sdk";
 
-const result = await agent.run('以 JSON 返回 {"issues": string[]}');
+const result = await agent.run('只回复 JSON：{"issues": string[]}');
 if (result.agent_status === "completed") {
   const parsed = parse_json_reply(result.result);
   text(parsed.error === null ? parsed.value : result.result);
@@ -210,24 +219,22 @@ if (result.agent_status === "completed") {
 
 ## 错误
 
-两个错误类都从根入口 `@brainary/poa-sdk` 导出。
-
 ### AgentNotIdleError
 
-**作用**：调用 run 时 Agent 正在运行或已关闭，抛出此错误。
+**作用**：run 发现 agent 正在运行（running）或已关闭（shutdown、not_found）时抛出。
 
 **类型定义**：
 
 ~~~ts
 class AgentNotIdleError extends Error {
   readonly agent_id: string;
-  readonly agent_status: AgentStatus;
+  readonly agent_status: AgentStatus;  // 抛出时 agent 的状态
 }
 ~~~
 
 ### AgentResultTimeoutError
 
-**作用**：run 或 acquire_agent_result 等待超时时抛出；Agent 继续运行，可以稍后再次获取结果。
+**作用**：run 或 acquire_agent_result 超时时抛出。agent 继续运行，可以再次调用 acquire_agent_result 获取结果。
 
 **类型定义**：
 

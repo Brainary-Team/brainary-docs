@@ -1,7 +1,6 @@
 # AgentConfig、Capabilities、ModelSpec、RuntimeSpec、AgentGroup、ResourceShareSpace 与 SecureConfig
 
-本页描述 [Agent](01-agent.md) 的配置类型。配置在 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 时传入，
-校验失败时抛出异常。字段名使用 snake_case。
+本页是 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 的 agent_config 参数用到的类型。配置不满足本页的约束时，create_agent 抛出错误，agent 不会创建。
 
 以下示例假定已从根入口导入枚举：
 
@@ -11,7 +10,7 @@ import { ApprovalPolicy, BrainaryTool, Sandbox } from "@brainary/poa-sdk";
 
 ### ModelSpec
 
-**作用**：指定 Agent 使用的模型和推理强度。
+**作用**：指定 agent 使用的模型。
 
 **类型定义**：
 
@@ -23,22 +22,23 @@ interface ModelSpec {
 }
 ~~~
 
-model_id 和 provider 必填。provider 为内置 provider 或配置文件 `[model_providers.<id>]` 中的 id。
-reasoning_effort 如 "low"、"medium"、"high"，可用取值取决于模型；省略时使用模型的默认值。
+| 字段 | 说明 |
+| --- | --- |
+| model_id | 必填，模型 ID，不能为空 |
+| provider | 必填，provider 的 id：config.toml 中 `[model_providers.<id>]` 的 `<id>`，或内置 provider 的 id（如 openai） |
+| reasoning_effort | 推理强度，如 "low"、"medium"、"high"，须为该模型支持的取值；省略时使用模型的默认值 |
+
+provider 的配置方法见 [配置 provider](../02-configuration.md#配置-provider)。
 
 **示例**：
 
 ~~~js
-const model = {
-  model_id: "gpt-5.6-luna",
-  provider: "openai",
-  reasoning_effort: "high",
-};
+const model = { model_id: "gpt-5.6-luna", provider: "vendor", reasoning_effort: "high" };
 ~~~
 
 ### Capabilities
 
-**作用**：声明 Agent 可以使用的工具。Agent 创建后默认没有任何工具，只持有这里列出的能力。
+**作用**：列出 agent 可以使用的工具。用 create_agent 创建的 agent 只拥有这里列出的工具；省略 capabilities 时 agent 没有任何工具。
 
 **类型定义**：
 
@@ -54,34 +54,36 @@ interface Capabilities {
 type McpGrant = `${string}/${string}`;
 ~~~
 
-授予的每一项都须为创建者自己拥有。brainary_tool 取 [BrainaryTool](07-brainary-tool.md#brainarytool) 成员；
-mcp 中 `<server>/*` 授予该 server 的全部工具，`<server>/<tool>` 授予单个工具，server 来自配置文件 `[mcp_servers]` 或当前 PoA 包。
-poa 和 skills 尚未实现。
+| 字段 | 说明 |
+| --- | --- |
+| brainary_tool | [BrainaryTool](06-brainary-tool.md) 成员列表。每一项都须是创建者（调用 create_agent 的程序或 agent）自己拥有的工具 |
+| mcp | MCP 授权列表。`"<server>/*"` 授予该 server 的全部工具，`"<server>/<tool>"` 授予单个工具。server 须来自 config.toml 的 `[mcp_servers]` 或当前 PoA 包的 `[[capabilities.mcp]]`，工具须是创建者能使用的工具 |
+| poa、skills | 尚未实现 |
 
 **示例**：
 
 ~~~js
 const capabilities = {
-  brainary_tool: [BrainaryTool.exec_command, BrainaryTool.write_stdin, BrainaryTool.spawn_agent],
-  mcp: ["github/*", "echo/echo"],
+  brainary_tool: [BrainaryTool.exec_command, BrainaryTool.write_stdin],
+  mcp: ["echo/*"],
 };
 ~~~
 
 ### Sandbox
 
-**作用**：限定 Agent 的文件系统访问级别，按从严到宽排列。
+**作用**：agent 执行命令和修改文件的权限，从严到宽依次为 read_only、workspace_write、danger_full_access。
 
 **类型定义**：
 
 ~~~ts
 enum Sandbox {
-  read_only = "read_only",
-  workspace_write = "workspace_write",
-  danger_full_access = "danger_full_access",
+  read_only = "read_only",                    // 只能读取文件
+  workspace_write = "workspace_write",        // 可以修改工作目录内的文件
+  danger_full_access = "danger_full_access",  // 不做限制
 }
 ~~~
 
-TypeScript 中使用枚举成员，如 Sandbox.read_only。
+TypeScript 中须使用枚举成员，如 `Sandbox.read_only`。
 
 **示例**：
 
@@ -91,19 +93,19 @@ const sandbox = Sandbox.workspace_write;
 
 ### ApprovalPolicy
 
-**作用**：决定 Agent 请求提权时的处理策略。
+**作用**：agent 的命令需要超出沙箱的权限时的处理方式。
 
 **类型定义**：
 
 ~~~ts
 enum ApprovalPolicy {
-  auto_review = "auto_review",
-  deny_all = "deny_all",
+  auto_review = "auto_review",  // 由自动审查决定是否放行
+  deny_all = "deny_all",        // 一律拒绝
   // 尚未实现：manual_review = "manual_review"
 }
 ~~~
 
-auto_review 由自动审查处理提权请求；deny_all 拒绝提权请求。manual_review 尚未实现。
+auto_review 要求创建者自身会请求审批。`brainary poa` 运行的程序默认不请求审批，此时 create_agent 只接受 deny_all。TypeScript 中须使用枚举成员，如 `ApprovalPolicy.deny_all`。
 
 **示例**：
 
@@ -113,7 +115,7 @@ const approval_policy = ApprovalPolicy.deny_all;
 
 ### RuntimeSpec
 
-**作用**：指定 Agent 的工作目录、沙箱和审批策略。
+**作用**：指定 agent 的工作目录、沙箱和审批策略。
 
 **类型定义**：
 
@@ -125,13 +127,19 @@ interface RuntimeSpec {
 }
 ~~~
 
-省略的字段沿用创建者的值，设置的值不能比创建者更宽松。workspace 须为已存在的目录。
+| 字段 | 说明 |
+| --- | --- |
+| workspace | agent 的工作目录，须为已存在的目录；相对路径相对于创建者的工作目录。sandbox 为 workspace_write 时，须位于创建者可写的目录内 |
+| sandbox | 不能比创建者的沙箱宽 |
+| approval_policy | 见 [ApprovalPolicy](#approvalpolicy) |
+
+省略的字段使用创建者的值。
 
 **示例**：
 
 ~~~js
 const runtime = {
-  workspace: "/workspace/project",
+  workspace: "./packages/core",
   sandbox: Sandbox.read_only,
   approval_policy: ApprovalPolicy.deny_all,
 };
@@ -141,7 +149,7 @@ const runtime = {
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：把本地 Agent 与远程 Agent 组合为一组，供 subagents 和 peer_agents 配置使用。
+**作用**：把本地 agent 与远程 agent 组合为一组，供 subagents 和 peer_agents 配置使用。
 
 **类型定义**：
 
@@ -167,16 +175,16 @@ const group = {
 
 **状态**：尚未实现，以下为设计描述。
 
-**作用**：指定 Agent 的资源共享空间、上下文分叉设置和资源上限。
+**作用**：指定 agent 的资源共享空间、上下文分叉设置和资源上限。
 
 **类型定义**：
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `wm_share_space?` | `string[]` | 可选的资源共享空间列表。 |
-| `fork_context` | `boolean` | 是否分叉上下文。 |
-| `token_limit` | `number` | token 上限。 |
-| `runing_time_limit` | `number` | 运行时长上限。 |
+| `wm_share_space?` | `string[]` | 资源共享空间列表 |
+| `fork_context` | `boolean` | 是否分叉上下文 |
+| `token_limit` | `number` | token 上限 |
+| `runing_time_limit` | `number` | 运行时长上限 |
 
 **示例**：
 
@@ -199,10 +207,10 @@ const resourceShareSpace = {
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `allow_unstrusted_tools?` | `Set<string>` | 允许使用的不可信工具集合。 |
-| `block_on_violation?` | `boolean` | 是否在违规时阻塞。 |
-| `apprroval_on_violation?` | `boolean` | 是否在违规时请求审批。 |
-| `pending_approval_ttl?` | `timedelta` | 待审批请求的有效期。 |
+| `allow_unstrusted_tools?` | `Set<string>` | 允许使用的不可信工具集合 |
+| `block_on_violation?` | `boolean` | 是否在违规时阻塞 |
+| `apprroval_on_violation?` | `boolean` | 是否在违规时请求审批 |
+| `pending_approval_ttl?` | `timedelta` | 待审批请求的有效期 |
 
 **示例**：
 
@@ -212,7 +220,7 @@ const secureConfig = { block_on_violation: true };
 
 ### AgentConfig
 
-**作用**：组合 Agent 的模型、系统提示、能力和运行时。
+**作用**：agent 的完整配置。
 
 **类型定义**：
 
@@ -232,18 +240,19 @@ interface AgentConfig {
 }
 ~~~
 
-model 必填。system_prompt 追加在 Agent 的基础指令之后。capabilities 省略时 Agent 没有工具。
-尚未实现的字段分别用于配置子 Agent 组、同级 Agent 组、handoff、资源共享空间、安全配置和最大 Agent 深度。
+| 字段 | 说明 |
+| --- | --- |
+| model | 必填，见 [ModelSpec](#modelspec) |
+| system_prompt | 追加在 agent 基础指令之后的系统提示。创建者自己的 system_prompt 不会传给它 |
+| capabilities | 见 [Capabilities](#capabilities)；省略时 agent 没有工具 |
+| runtime | 见 [RuntimeSpec](#runtimespec)；省略时与创建者相同 |
+| subagents、peer_agents、handof、resource_share_space、secure_config、max_agent_depth | 尚未实现，分别用于配置子 agent 组、同级 agent 组、handoff、资源共享空间、安全配置和最大 agent 深度 |
 
 **示例**：
 
 ~~~js
 const config = {
-  model: {
-    model_id: "gpt-5.6-luna",
-    provider: "openai",
-    reasoning_effort: "high",
-  },
+  model: { model_id: "gpt-5.6-luna", provider: "vendor", reasoning_effort: "high" },
   system_prompt: "只输出可执行的审查结论",
   capabilities: { brainary_tool: [BrainaryTool.exec_command] },
   runtime: { sandbox: Sandbox.read_only, approval_policy: ApprovalPolicy.deny_all },

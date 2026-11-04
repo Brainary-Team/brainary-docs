@@ -100,7 +100,7 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 
 预期结果：PoA 在当前会话执行，结束后可以继续使用 TUI。当前有普通模型任务时，可用 `Tab` 排队，或改用后台运行；如果已有 PoA 在运行，需要先等它结束。
 
-前台 PoA 以 `interactive` 模式运行：程序调用 `ask()` 时会显示问题；PoA 派出的子 agent 也可以在自己的会话中调用 `request_user_input`。问题会标出来源，回答交给实际发问的子线程。关闭问题弹窗与中断整个 PoA 是不同操作；详见 [交互 API](../PoA-Guide/05-api-reference/10-ask.md)。
+前台 PoA 以 `interactive` 模式运行：程序调用 `ask()` 时会显示问题；PoA 派出的子 agent 也可以在自己的会话中调用 `request_user_input`。问题会标出来源，回答交给实际发问的子线程。关闭问题弹窗与中断整个 PoA 是不同操作；`ask()` 的说明见 [ask](../PoA-Guide/05-api-reference/07-io.md#askrequest)。
 
 ### 后台运行与关闭
 

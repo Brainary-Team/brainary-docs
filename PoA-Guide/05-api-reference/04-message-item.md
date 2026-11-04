@@ -1,32 +1,31 @@
 # MessageItem
 
-MessageItem 表示发送给 Agent 的单个消息项，由 type 字段区分文本、图片、音频、skill 和 mention。
-[SpawnSpec](03-agent-executor.md#spawnspec) 的 message_items 和 [Agent.run](01-agent.md) 的 items 均使用这个类型，消息项按顺序发送给 Agent。
+MessageItem 是发给 agent 的一个消息项，用于 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms) 的 items 和 [SpawnSpec](03-agent-executor.md#spawnspec) 的 message_items。多个消息项按数组顺序发送。
 
 ### ImageDetail
 
-**作用**：指定消息中图片的详细程度，与底层消息协议保持一致。
+**作用**：图片的细节级别。
 
 **类型定义**：
 
 ~~~ts
-export type ImageDetail = "auto" | "low" | "high" | "original";
+type ImageDetail = "auto" | "low" | "high" | "original";
 ~~~
 
 **示例**：
 
 ~~~js
-const item = { type: "image", image_url: "https://example.com/diagram.png", detail: "high" };
+const item = { type: "local_image", path: "/workspace/diagram.png", detail: "high" };
 ~~~
 
 ### MessageItem
 
-**作用**：定义 Agent 消息项的类型和对应字段。
+**作用**：消息项的类型，由 type 字段区分。
 
 **类型定义**：
 
 ~~~ts
-export type MessageItem =
+type MessageItem =
   | { type: "text"; text: string }
   | { type: "image"; image_url: string; detail?: ImageDetail | null }
   | { type: "local_image"; path: string; detail?: ImageDetail | null }
@@ -35,7 +34,15 @@ export type MessageItem =
   | { type: "skill" | "mention"; name: string; path: string };
 ~~~
 
-image 与 local_image 的 detail 可以省略，取值见 [ImageDetail](#imagedetail)。skill 的 path 指向 SKILL.md，mention 的 path 标识引用目标。
+| type | 字段 |
+| --- | --- |
+| text | text：文本 |
+| image | image_url：图片的 data URI；detail：可选，见 [ImageDetail](#imagedetail) |
+| local_image | path：本地图片文件的路径；detail：可选，见 [ImageDetail](#imagedetail) |
+| audio | audio_url：音频的 data URI |
+| local_audio | path：本地音频文件的路径 |
+| skill | name：skill 名称；path：该 skill 的 SKILL.md 路径 |
+| mention | name：显示名称；path：引用目标，格式为 `app://<connector-id>` 或 `plugin://<plugin-name>@<marketplace-name>` |
 
 **示例**：
 
@@ -44,13 +51,10 @@ import { AgentExecutor } from "@brainary/poa-sdk";
 
 const handle = await new AgentExecutor().spawn_agent({
   message_items: [
-    { type: "text", text: "结合图片和音频检查这份说明" },
-    { type: "image", image_url: "https://example.com/diagram.png" },
-    { type: "local_image", path: "/workspace/diagram.png", detail: "original" },
-    { type: "audio", audio_url: "https://example.com/recording.wav" },
+    { type: "text", text: "按 code-review skill 检查截图和录音中提到的问题" },
+    { type: "local_image", path: "/workspace/screenshot.png", detail: "original" },
     { type: "local_audio", path: "/workspace/recording.wav" },
     { type: "skill", name: "code-review", path: "/workspace/skills/code-review/SKILL.md" },
-    { type: "mention", name: "README", path: "/workspace/README.md" },
   ],
   agent_name: "reviewer",
 });
