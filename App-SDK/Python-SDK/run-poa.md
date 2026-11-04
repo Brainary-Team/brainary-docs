@@ -4,18 +4,18 @@ Brainary Python SDK 把 `.poa` 包和业务输入提交到开启了 code mode �
 （Program of Agent）程序执行完成。
 
 本文介绍由 Python 应用直接运行 PoA。需要让模型决定何时调用时，请阅读
-[让 Agent 使用 PoA](agent-poa.md)。输入定义、TypeScript 小示例和完整字段列表见
-[PoA input 编写说明](../../PoA-Guide/09-input.md)。
+[让 Agent 使用 PoA](agent-poa.md)。输入的声明方式见
+[输入与输出](../../PoA-Guide/03-input-output.md#接收输入)。
 
 ## 前置条件
 
 - Python 3.10 或更高版本。
 - 支持 PoA input 和 `thread/codeMode/exec` 的 Brainary 二进制；`brainary` 与
   `codex-code-mode-host` 必须放在同一目录。
-- 已按[快速开始](../../PoA-Guide/02-quickstart.md)配置模型、认证信息与
-  `CODEX_HOME/config.toml`。
-- 一个已打包的 `.poa` 文件。SDK 不接受包目录，也不编译 `input_schema.ts`；请按
-  [PoA input 编写说明](../../PoA-Guide/09-input.md)准备包含 JSON Schema 的包。
+- 已按[快速开始](../../PoA-Guide/01-quickstart.md)配置模型、认证信息与
+  `~/.brainary/config.toml`。
+- 一个已打包的 `.poa` 文件。SDK 不接受包目录；请先用
+  [`brainary poa pack`](../../PoA-Guide/01-quickstart.md#6-打包) 打包。
 
 ## 安装 SDK
 
@@ -30,8 +30,8 @@ python -m pip install brainary-sdk
 
 ## 运行带 input 的程序
 
-下面运行 [PoA input 示例](../../PoA-Guide/09-input.md#1-示例城市计划)中的 `city_plan.poa`。
-包内 schema 定义必填的 `city` 和可选的整数 `days`，程序通过 `POA_INPUT` 读取它们。
+下面运行 `city_plan.poa`。包内 schema 定义必填的 `city` 和可选的整数 `days`，程序通过
+`POA_INPUT` 读取它们；输入的声明方式见[输入与输出](../../PoA-Guide/03-input-output.md#接收输入)。
 
 新建 `run_poa.py`：
 
@@ -96,7 +96,7 @@ result = thread.run_poa(
 - 默认绑定的运行时版本可能尚未支持这些接口；通过
   `BrainaryConfig(brainary_bin=...)` 明确指定 Brainary 二进制。
 - 启动 PoA 本身不会触发模型采样，程序调用子 agent 等工具时可能会调用模型。
-- 当前 `Poa.run` 和 `thread.run_poa` 公共方法未发送 `userInputMode`，因此使用默认 `disabled` 模式，脚本中没有 `ask()`；由它们派生的子 agent 也不能向用户发起 PoA 交互。需要交互的客户端应使用支持 `userInputMode` 和用户输入请求的 app-server 协议，并先检查服务端能力；见 [交互 API](../../PoA-Guide/07-api-reference/10-ask.md)。
+- 当前 `Poa.run` 和 `thread.run_poa` 公共方法未发送 `userInputMode`，因此使用默认 `disabled` 模式，脚本中没有 `ask()`；由它们派生的子 agent 也不能向用户发起 PoA 交互。需要交互的客户端应使用支持 `userInputMode` 和用户输入请求的 app-server 协议，并先检查服务端能力；见 [交互 API](../../PoA-Guide/05-api-reference/10-ask.md)。
 - `Poa(thread, package).run(input=poa_input)` 与
   `thread.run_poa(package, input=poa_input)` 等价。
 - 异步应用使用 `AsyncBrainary` 和 `AsyncPoa`，对应调用为
