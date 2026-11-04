@@ -18,20 +18,18 @@ model_provider = "vendor"
 sandbox_mode = "workspace-write"
 suppress_unstable_features_warning = true
 
-#你可以配置多个provider，从而在create_agent()时，灵活选择，需要注意的是model spec中的provider匹配的是下列的vendor/deepseek
+#你可以配置多个provider，从而在create_agent()时，灵活选择，需要注意的是model spec中的provider匹配的是下列的vendor/deepseek 而不是主模型服务/DeepSeek
 [model_providers.vendor]
 name = "主模型服务"
 base_url = "https://api.example.com/v1"
 env_key = "VENDOR_API_KEY"
 wire_api = "responses"
-requires_openai_auth = false
 
 [model_providers.deepseek]
 name = "DeepSeek"
 base_url = "https://api.deepseek.com/anthropic/v1"
 env_key = "DEEPSEEK_API_KEY"
 wire_api = "anthropic"
-requires_openai_auth = false
 
 [agents]
 max_depth = 2
@@ -55,7 +53,6 @@ max_concurrent_threads_per_session = 8
 | `base_url` | API 根地址，不含末尾的 `/responses` 或 `/messages` |
 | `env_key` | 保存 API Key 的环境变量名 |
 | `wire_api` | 接口类型：Responses 接口填 `"responses"`，Anthropic Messages 接口填 `"anthropic"` |
-| `requires_openai_auth` | 固定为 `false` |
 
 需要多个模型服务时，为每个服务写一个分组，并分别设置各自的 API Key：
 
