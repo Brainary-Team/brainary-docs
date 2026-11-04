@@ -142,6 +142,11 @@ brainary poa my-poa.poa -s workspace-write -c agents.max_depth=2
 
 完整参数用 `brainary poa --help` 查看。
 
+当前PoA 中 agent 的会话记录是否持久化，由运行 PoA 时统一配置，不能为单个 agent 单独设置：
+
+- 持久化（默认）：程序本身，以及它用 `spawn_agent`、`create_agent` 得到的每个 agent（包括各层子 agent），各自的完整对话都保存在 `~/.brainary/sessions/`，`resume` 按它恢复 agent。
+- 不持久化：`brainary poa` 加 `--ephemeral`，或用 Python SDK 时在 `thread_start` 中传 `ephemeral=True`，本次运行的所有 agent 都不保存。
+
 ## manifest.toml
 
 `manifest.toml` 放在项目根目录，`brainary poa pack` 按它打包：
