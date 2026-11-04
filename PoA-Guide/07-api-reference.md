@@ -34,6 +34,10 @@ SDK 方法通过单个对象传入命名参数，可选字段直接省略。IO �
 | [Working Memory 异常](07-api-reference/14-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
 | [memory.snapshot](07-api-reference/14-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 
+### Working Memory 声明与接入（设计预览）
+
+[Working Memory 声明与接入](07-api-reference/16-working-memory-authoring.md) 介绍一种新的接入方式：schema 由程序代码声明并在运行时注册，不再随包携带 JSON 文件。目前没有可调用的 PoA API；上面那一组描述的是现行方式。
+
 ### Episodic Memory（设计预览）
 
 [Episodic Memory](07-api-reference/15-episodic-memory.md) 介绍情景记录与 Working Memory 快照的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
