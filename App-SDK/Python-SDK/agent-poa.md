@@ -15,7 +15,7 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
 - 一个已打包的 `.poa` 文件。SDK 不接受未打包目录；打包方式见
-  [打包与分发](../../PoA-Guide/08-packaging.md)。
+  [快速开始](../../PoA-Guide/01-quickstart.md#6-打包)。
 
 ## 注册并使用 PoA
 
@@ -45,8 +45,8 @@ agent = brainary.thread_start(
 
 如果包中的 `[poa].name` 是 `review`，模型看到的工具名就是 `poa.review`；
 `[poa].description` 会成为工具说明。包内的 `[poa].input_schema` 会成为工具的业务参数 schema，模型按它填写输入，程序通过
-`POA_INPUT` 读取。没有声明 input schema 时，模型调用传入空对象 `{}`。定义方式与完整
-字段列表见 [PoA input 编写说明](../../PoA-Guide/09-input.md)。
+`POA_INPUT` 读取。没有声明 input schema 时，模型调用传入空对象 `{}`。定义方式见
+[输入与输出](../../PoA-Guide/03-input-output.md#接收输入)。
 
 可以在 `dev_poas` 中注册多个包。不同包使用相同 `name` 时，运行时会自动生成包含
 namespace 和 version 的限定名；为保持工具名稳定，建议让同一 Agent 使用的 PoA name 互不
@@ -57,7 +57,7 @@ namespace 和 version 的限定名；为保持工具名稳定，建议让同一 
 - `PoaPackage.load()` 会检查文件是否为 zip、根目录是否包含 `manifest.toml`，以及包是否
   超过 64 MiB；其余 manifest 和入口规则由运行时校验。
 - 包内声明的 stdio MCP server 会在 PoA 被调用时启动；能力声明方式见
-  [打包与分发](../../PoA-Guide/08-packaging.md)。
+  [随包携带 MCP server](../../PoA-Guide/02-configuration.md#随包携带-mcp-server)。
 - 是否调用 PoA 由模型决定。必须执行的步骤应改用 `thread.run_poa(...)`。
 - `dev_poas` 只存在于 `thread_start()`；`thread_resume()` 和 `thread_fork()` 不接受该参数。
 - `.poa` 是可执行程序，只加载可信来源的包，并使用合适的 `sandbox` 和
