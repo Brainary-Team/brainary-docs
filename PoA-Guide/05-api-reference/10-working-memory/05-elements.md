@@ -1,6 +1,6 @@
-# BNode、BEdge、BatchBuilder 与读写返回类型
+# BNode、BEdge 与读写返回类型
 
-本页描述 Working Memory 的构造类型、批次构建器和读写返回类型。构造类型用于写入 [BGraph](02-bgraph.md) 与 [BTree](03-btree.md)，返回类型由四类集合的读写方法和 [memory](01-memory.md) 的 batch 返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，它们由 memory 上同名的访问器取得。
+本页描述 Working Memory 的构造类型和读写返回类型。构造类型用于写入 [BGraph](02-bgraph.md) 与 [BTree](03-btree.md)，返回类型由四类集合的读写方法返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，它们是[声明](01-memory.md)里的三个字段。
 
 ### BNode
 
@@ -59,32 +59,6 @@ const edge = new BEdge({
 });
 ~~~
 
-### BatchBuilder
-
-**作用**：在 [memory](01-memory.md) 的 batch 回调内选择集合，并登记这一批次的写入。
-
-**类型定义**：
-
-~~~ts
-interface BatchBuilder {
-  graph(name: string): BatchGraph;
-  tree(name: string): BatchTree;
-  list(name: string): BatchList;
-  map(name: string): BatchMap;
-}
-~~~
-
-四个访问器是同步的。它们校验集合名与集合种类后返回绑定当前批次和该集合的专用句柄，并为每项操作注入协议字段 structure；取句柄失败时同步抛 WmUsageError，此时不发请求。四个返回类型的方法集见下面的批次专用句柄。
-
-**示例**：
-
-~~~js
-const result = await memory.batch((b) => {
-  b.graph("incident_graph").add_node(node);
-  b.map("retry_by_status_code").put(401, 1, "upsert");
-});
-~~~
-
 ### CommitResult
 
 **作用**：表示一次提交的结果。
@@ -93,31 +67,23 @@ const result = await memory.batch((b) => {
 
 ~~~ts
 interface CommitResult {
-  ok: boolean;
-  revision: number;
-  generated?: object;
+  position?: number;
 }
 ~~~
 
-ok 表示本次提交是否落地，接受一次调用不等于提交成功。revision 在成功时是提交后的新版本，在版本冲突时是服务端的当前版本。generated 只出现在 [BList](04-blist-bmap.md) 的 append 上，带出服务端分配的 position，其余方法没有这一位，不是空对象。
-
-generated 有两种形状，按本次提交里 append 的个数判别：
-
-- 一次单独的 append，或一个批次里只有一个 append，回 `generated.position`，没有 positions 这一位。
-- 同一个批次里有两个或更多 append，回 `generated.positions` 数组，每项至少含 change_index、item_id 和 position。change_index 指向原始变更序列的下标，供调用方与自己登记的那一项交叉核对；不能只靠 item_id 关联，因为不同 list 可以用相同的 item_id。非 append 的变更项不占位，所以数组长度等于本批次 append 的个数，不等于变更项总数。
-
-判别方式就是看有没有 positions 这一位。提交失败时不返回部分 generated，版本冲突走 ok 为 false 并且不带生成结果。
+拿到这个对象就表示本次提交已经落地：写方法的失败一律以异常抛出，不靠判返回值。position 只出现在 [BList](04-blist-bmap.md) 的 append 成功返回上，带出服务端分配的位置；append 以外的写方法没有这一位，[BList](04-blist-bmap.md) 的 replace 与 delete 也没有，它们的返回体是一个空对象。
 
 **示例**：
 
 ~~~js
-const result = await incidentGraph.add_node(node);
-text({ ok: result.ok, revision: result.revision });
+await incidentGraph.add_node(node);
+const appended = await evidenceList.append("ev-1", { note: "网关时间快 31 秒" });
+text(appended.position);
 ~~~
 
 ### BPage
 
-**作用**：承载当前实例的分页读结果。
+**作用**：承载当前实例的读结果。
 
 **类型定义**：
 
@@ -125,19 +91,16 @@ text({ ok: result.ok, revision: result.revision });
 interface BPage {
   items: unknown[];
   next_cursor?: unknown;
-  revision: number;
 }
 ~~~
 
-三个字段是字段全集，没有第四位，也没有 complete 字段。是否还有后续页由 next_cursor 判断，有值表示还有下一页。revision 是这一页的读版本，与 CommitResult 的 revision 同口径。
+两个字段是字段全集，没有第三位，也没有 complete 字段。items 是全部命中项。next_cursor 有值表示还有下一页，本阶段它不会出现。
 
 **示例**：
 
 ~~~js
-let page = await incidentGraph.query({ target: "nodes" });
-while (page.next_cursor) {
-  page = await incidentGraph.query({ target: "nodes", cursor: page.next_cursor });
-}
+const page = await incidentGraph.query({ target: "nodes" });
+text(page.items.length);
 ~~~
 
 ### BListItem
@@ -198,7 +161,7 @@ interface BNeighborItem {
 }
 ~~~
 
-它与 query 的项不同形。相邻节点与对应的边来自同一读版本，并分别经过授权过滤。include 的 nodes 与 edges 默认都是 true，把 nodes 传成 false 时返回项里就没有 node，两个字段因此都标成可选。
+它与 query 的项不同形。相邻节点与对应的边来自同一次读，并分别经过授权过滤。include 的 nodes 与 edges 默认都是 true，把 nodes 传成 false 时返回项里就没有 node，两个字段因此都标成可选。
 
 **示例**：
 
@@ -215,7 +178,7 @@ id 由调用方提供，必须是非空字符串，在整个实例内唯一。�
 
 props 的更新粒度是一层字段，嵌套对象与数组只能整体替换，需要逐项更新的数据应声明为 list。edge_class、from_id 和 to_id 都不在 update_edge 的 set 与 unset 范围内，改类别或改端点需要删除后重建。
 
-边的两个端点必须属于所选 graph。端点存在与端点类别相容按一个批次的最终状态校验，批次内部允许先登记边再登记端点。
+边的两个端点必须属于所选 graph。端点存在与端点类别相容在写这条边时校验，所以两个端点要先各写一次，边才能写。
 
 ## 树节点的 parent_id
 
@@ -223,38 +186,19 @@ parent_id 由 WM 维护，不在 BNode 的构造器参数内。建点时的位�
 
 写入时不传它，读回树节点时它必定带回。没有 parent_id，query 的结果之间就没有任何关系信息，调用方无法还原树的形状。图节点不携带该字段。
 
-## 批次专用句柄
-
-BatchGraph、BatchTree、BatchList 和 BatchMap 只提供写方法，这些方法同步执行，只登记意图，不返回提交结果；提交结果只由 batch 本身返回。四类集合的读方法一律不挂批次专用句柄，回调窗口内不发任何请求。
-
-- BatchGraph：add_node、update_node、delete_node、add_edge、update_edge、delete_edge
-- BatchTree：add_root、add_child、set_parent、update、delete
-- BatchList：append、replace、delete
-- BatchMap：put、delete
-
-批次专用句柄与 memory 上的普通集合句柄是不同对象，不共用普通句柄的缓存。BatchBuilder 本身不提供扁平的 add_node、append、delete 等写方法，集合名只在取句柄时传入，不追加为每个写方法的首参。
-
-BatchBuilder 与批次专用句柄仅在所属回调同步执行期间有效。登记窗口在回调同步返回时结束，不延续到 batch 返回的 Promise 结算。把构建器或专用句柄保存到回调外再使用，以及跨批次复用，都会同步抛 WmUsageError。
-
 ## 提交结果
 
-每个写方法和 batch 都返回 CommitResult。写成功推进一次版本，读和快照创建不推进，一个批次无论含多少个写方法整批成功只推进一次。
+每个写方法都返回 CommitResult，一次调用就是一次提交。约束失败与后端拒绝一律抛 [WmRequestError](06-errors.md)，没有一条失败路径走返回值。SDK 不自动合并、也不自动重试。
 
-约束失败一律抛 [WmRequestError](06-errors.md)。只有 REVISION_CONFLICT 以 ok 为 false 回到 CommitResult，ok 为 false 只有版本冲突这一个含义。SDK 不自动合并、也不自动重试。
+写多处时每一次调用各自提交：往返次数等于调用次数，中间状态对并发读可见，中途失败时前面已经落地的写入不会回滚，由调用方自己决定是补齐还是回退。
 
-版本冲突时 append 未分配位置，整个 generated 都缺省，读它前必须先判 ok。
-
-## 游标与分页
+## 读结果
 
 items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgraph.md) 的 query 按 target 返回 BNode 或 BEdge，[BTree](03-btree.md) 的 query 与 children 返回带 parent_id 的 BNode，[BList](04-blist-bmap.md) 的 query 返回 BListItem，[BMap](04-blist-bmap.md) 的 query 返回 BMapItem，BGraph 的 neighbors 返回 BNeighborItem。
 
-游标由 WM 生成，对调用方不透明，只能原样传回。它至少编码了实例身份、读版本、目标与集合、规范化后的过滤排序与 include 条件、末项排序键和到期时间，并在作用域内防篡改。调用方不得自行构造、解析或偏移游标，这与 offset 式分页有本质区别。游标钉住发出它的那次读的版本，继续分页恒在同一读版本上进行，翻页期间发生的提交不使它失效。
+一次调用返回全部命中项，默认序与 limit 的语义、命中项数上限见[默认序与结果规模](01-memory.md)。
 
-翻页时唯一可以变的是 limit，它允许在声明的页大小上限内逐页变化，但不得改变结果集合与排序。查询条件编码在游标里，换了过滤、排序或 include 就不是同一次分页，续页会按条件与句柄不匹配拒绝。游标也不充当授权凭证：每次请求都重新授权，持有一个游标不等于保有读的权限。
-
-读句柄失效时返回 PAGINATION_EXPIRED，它独立于 REVISION_CONFLICT，details 回带当前仍可用的最旧版本，并以 reason 区分「读版本已被压实」与「句柄 TTL 到期」两种成因。收到该码时的恢复路径是丢弃本地视图、重新发起首次读、只组合同一个新读版本上的页，不是重读同一页、也不能把新页拼到旧页上。逐条说明见 [WmErrorCode](06-errors.md) 的分页游标失效。
-
-单项读取也返回这个分页体。按唯一键查询时 items 的长度上界是 1，没有匹配项时 items 是空数组，这不是错误。BTree 的 get、parent 和 root 不套本类型，不返回读版本。
+单项读取也返回这个结果体。按唯一键查询时 items 的长度上界是 1，没有匹配项时 items 是空数组，这不是错误。BTree 的 get、parent 和 root 不套本类型。
 
 ## key 的规范化
 
@@ -264,13 +208,9 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 
 ## 当前未确定
 
-generated 的两种形状及其判别方式见上面的 CommitResult。
-
-游标失效走 PAGINATION_EXPIRED，它在 [WmErrorCode](06-errors.md) 的清单里。游标的有效期与保留预算两个数值仍未确定，在拿到数之前分页会不会中断只能定性，不能定量。
-
-BNeighborItem 的类名与字段名都已冻结，可以写进自己的函数签名；未列出的字段不能作为调用依据。未定的是 node 这一位到底算不算可选：协议把每项描述成「相邻节点加可选边」一对，读起来 node 必有，而 include 的 nodes 允许传 false、那时返回项里就没有 node。本页按后者把两位都标成可选，这一处以协议的后续澄清为准。
+BNeighborItem 的类名与字段名都已稳定，可以写进自己的函数签名；未列出的字段不能作为调用依据。未定的是 node 这一位到底算不算可选：协议把每项描述成「相邻节点加可选边」一对，读起来 node 必有，而 include 的 nodes 允许传 false、那时返回项里就没有 node。本页按后者把两位都标成可选，这一处以协议的后续澄清为准。
 
 ## 相关文档
 
-- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [声明、登记与句柄](01-memory.md)：集合声明、登记与灌入、句柄，以及默认序与结果规模。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

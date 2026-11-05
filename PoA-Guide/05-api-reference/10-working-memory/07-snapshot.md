@@ -1,6 +1,8 @@
 # memory.snapshot
 
-[memory.snapshot](07-snapshot.md) 提供 Working Memory 的快照创建、列举和只读查询。它挂在 [memory](01-memory.md) 上，三个方法都返回 Promise，都不在 [BatchBuilder](05-elements.md) 上提供，在 batch 回调窗口内调用会同步抛 [WmUsageError](06-errors.md)。创建、列举和只读查询都不推进当前 Run 的版本。
+快照属下一阶段，本阶段不提供，下面三个方法挂在哪个对象上也尚未确定。本页写下的是已有依据的语义，不能当作可调用的接口面。
+
+[memory.snapshot](07-snapshot.md) 提供 Working Memory 的快照创建、列举和只读查询，三个方法都返回 Promise。
 
 ### SnapshotPage
 
@@ -15,7 +17,7 @@ interface SnapshotPage {
 }
 ~~~
 
-快照侧的两个多项读不共用一个外壳，这是刻意的。list 返回 SnapshotPage，它的 entries 是快照元数据条目，字段名沿用协议名、不改成 items；这个外壳不带 revision，因为列举快照不是对实例状态的读。query 返回的是 [BPage](05-elements.md)，带 revision，取值是快照捕获时的版本。于是 SnapshotPage 不带 revision、BPage 带，两者的差别就在这一位上。
+快照侧的两个多项读不共用一个外壳，这是刻意的。list 返回 SnapshotPage，它的 entries 是快照元数据条目，字段名沿用协议名、不改成 items。query 返回的是 [BPage](05-elements.md)，它的 items 是查询结果。
 
 **示例**：
 
@@ -43,7 +45,7 @@ text(created);
 
 后端返回的成功信息含快照 id、捕获时绑定的 schema 标识、实际捕获的状态版本、实例内的快照序号，以及一个明确区分导出成功和失败的导出结果。导出结果在协议面的形状已定：一个状态位加两个条件字段，状态只取「已导出」与「失败」两值，没有第三值；文件标识只在已导出时给出，是部署导出根下的相对标识、不由程序指定任意路径；失败时另给一段仅供诊断的说明，不得按它的文本写分支。
 
-本方法的失败走异常，不走返回值。它的返回体不是 [CommitResult](05-elements.md)，没有 ok 这一位，所以期望版本过期时抛 [WmRequestError](06-errors.md) 并带 REVISION_CONFLICT，不会回一个 ok 为 false 的结果，也不会把较新状态当作指定版本的快照。「版本冲突不抛异常」那条例外只适用于返回 CommitResult 的方法，本方法不在其中，调用处要用 try/catch 而不是判 ok。
+本方法的失败走异常，不走返回值，调用处要用 try/catch。它不会把较新状态当作指定版本的快照。
 
 ### list(options?)
 
@@ -66,18 +68,18 @@ text(page.entries);
 
 **作用**：按已知快照 id 只读查询历史数据。
 
-**输入类型**：snapshot_id: string；options: object，目标、过滤和排序字段沿用四类集合的 query。
+**输入类型**：snapshot_id: string；options: object，目标与过滤字段沿用四类集合的 query。
 
-**参数约束**：options 必须含 target 和 structure。快照路径上没有集合句柄，所以 structure 不会被自动注入，必须由调用方给出；缺少它返回 INVALID_ARGUMENT。target 取 nodes 或 edges 时 structure 必须是一个 graph 名。
+**参数约束**：options 必须含 target 和 collection。快照路径上没有集合句柄，所以 collection 不会被自动注入，必须由调用方给出；缺少它返回 INVALID_ARGUMENT。target 取 nodes 或 edges 时 collection 必须是一个 graph 名。
 
-**返回值类型**：Promise<[BPage](05-elements.md)>，items 是查询结果，revision 取快照捕获时的版本。
+**返回值类型**：Promise<[BPage](05-elements.md)>，items 是查询结果。
 
 **示例**：
 
 ~~~js
 const page = await memory.snapshot.query(snapshot_id, {
   target: "nodes",
-  structure: "incident_graph",
+  collection: "incident_graph",
 });
 text(page.items.length);
 ~~~
@@ -94,7 +96,7 @@ association 由 WM 只校验形状和大小、保存并返回，不解释业务�
 
 ## 持久化与导出
 
-[memory](01-memory.md) 当前使用内存存储，进程退出后运行态与内存中的快照都会丢失，只有此前成功导出的文件和接入侧记录能留存。
+Working Memory 当前使用内存存储，进程退出后运行态与内存中的快照都会丢失，只有此前成功导出的文件和接入侧记录能留存。
 
 导出失败不使快照创建失败，但会在响应中显式标出。这时快照仍可在本 WM 进程内读取，却没有得到可跨进程留存的文件，快照创建成功不等于数据已持久保存。收到创建成功而导出失败时，应按该快照不可跨进程使用处理。
 
@@ -110,12 +112,12 @@ query 按宿主注入的授权范围检查，可以跨 Run，但只在 WM 进程
 
 ## 当前未确定
 
-list 与 query 的分页外壳已定，分别是 SnapshotPage 与 [BPage](05-elements.md)；create 的完整 JS 返回形状与列举、查询的分页参数位置仍未确定。上面只说明已有依据的语义，未定的那几处不能把示例里的字段访问当作稳定的调用面。
+list 与 query 的返回外壳已定，分别是 SnapshotPage 与 [BPage](05-elements.md)；create 的完整 JS 返回形状与列举、查询的参数位置仍未确定。上面只说明已有依据的语义，未定的那几处不能把示例里的字段访问当作稳定的调用面。
 
-create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字段名写分支 —— 未定的是协议字段到 JS 字段名这一层映射，不是语义，上面已写明的那几项和导出结果的形状都已有依据。创建成功与版本冲突这两支怎么写已经定了：成功走返回值、冲突走异常，不需要统一成一个返回形状。
+create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字段名写分支 —— 未定的是协议字段到 JS 字段名这一层映射，不是语义，上面已写明的那几项和导出结果的形状都已有依据。创建的成功与失败这两支怎么写已经定了：成功走返回值、失败走异常，不需要统一成一个返回形状。
 
 ## 相关文档
 
-- [memory](01-memory.md)：集合访问、批量提交和 Run 关闭。
+- [声明、登记与句柄](01-memory.md)：集合声明、登记与灌入、句柄，以及默认序与结果规模。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
 - [Episodic Memory（设计预览）](../11-episodic-memory.md)：WM 快照与未来情景记录的关系，以及尚未确定的接入方式。
