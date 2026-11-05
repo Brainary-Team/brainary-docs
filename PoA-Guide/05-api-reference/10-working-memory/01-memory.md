@@ -4,40 +4,49 @@ Working Memory 的作者面分三段：用一个 class 声明有哪些集合、�
 
 ## 声明
 
-集合写在一个 class 的 static fields 里，类上的 to_schema() 把这份声明导出成一份 schema。
+集合写成一个 class 上的字段类型标注：字段名就是集合名，字段的类型说明它是哪一类集合，以及里面有哪些类别和值类型。schema 由打包期从这些类型里提取，程序运行时这个 class 上没有任何成员。
 
-~~~js
-// 类型构造器 wm 由 SDK 提供，它的名字与各构造器名尚未确定，见下面的当前未确定
-const Task = wm.type("Task", { title: wm.string(), priority: wm.integer().optional() });
-const Evidence = wm.type("Evidence", { note: wm.string() });
+~~~typescript
+// 标记类型 Graph、Tree、List、KvMap 与具名标量 Int 由 SDK 提供，它们的名字尚未确定，见下面的当前未确定
+interface Task {
+  /** @minLength 1 */
+  title: string;
+  /** @asType integer
+   * @minimum 0
+   */
+  priority?: number;
+}
+
+interface Evidence {
+  note: string;
+}
 
 class MyWorkingMemory {
-  static fields = {
-    incident_graph: wm.graph({
-      nodes: [
-        { name: "Task", value_type: Task },
-        { name: "Evidence", value_type: Evidence },
-      ],
-      edges: [{ name: "has_evidence", from_class: "Task", to_class: "Evidence" }],
-    }),
-    task_tree: wm.tree({
-      nodes: [
-        { name: "Plan", value_type: Task, child_classes: ["Milestone", "Task"] },
-        { name: "Milestone", value_type: Task, child_classes: ["Task"] },
-        { name: "Task", value_type: Task },
-      ],
-    }),
-    evidence_list: wm.list({ item_type: Evidence }),
-    retry_by_status_code: wm.map({ key_type: wm.integer(), value_type: wm.integer() }),
-  };
+  // 第一个类型参数：类别名 → 该类别的值类型
+  // 第二个类型参数：graph 是「边类别 → [起点类别, 终点类别]」，tree 是「类别 → 允许的子类别」
+  incident_graph: Graph<
+    { Task: Task; Evidence: Evidence },
+    { has_evidence: ["Task", "Evidence"] }
+  >;
+
+  task_tree: Tree<
+    { Plan: Task; Milestone: Task; Task: Task },
+    { Plan: ["Milestone", "Task"]; Milestone: ["Task"]; Task: [] }
+  >;
+
+  evidence_list: List<Evidence>;
+
+  retry_by_status_code: KvMap<Int, Int>;
+
+  goal: string;
 }
 ~~~
 
-值类型的第一个参数是类型名，它是导出的 schema 里 $defs 的键，自引用类型靠它才能导出成引用。类别名是另一回事，写在 nodes[].name 上：类别名与值类型名是两样东西，两个不同类别可以引用同一个值类型 —— 上面 task_tree 的 Plan、Milestone 与 Task 三个类别就都引 Task 这一个值类型。
+值类型用 interface 写，字段上的标量精度与取值范围用 JSDoc 标注，写法与 input_schema 那一套相同。类别名是第一个类型参数里的键：类别名与值类型是两样东西，多个类别可以引用同一个值类型 —— 上面 task_tree 的 Plan、Milestone 与 Task 三个类别就都引 Task 这一个值类型。
 
-四个集合构造器的参数闭集如上：graph 的 nodes 与 edges 都必填，edges 可以是空数组；tree 只声明 nodes，child_classes 挂在每个节点类别上，省略按不接受子节点处理；list 只有 item_type；map 的 key_type 与 value_type 都必填，key_type 只能是标量。
+两个类型参数的含义按集合种类定：graph 的第二个参数是边类别到起点与终点类别的映射；tree 的第二个参数是每个类别允许的子类别，写成空数组表示这个类别不接受子节点；list 只有一个参数，就是项的值类型；map 的两个参数分别是 key 与 value 的类型，key 只能是标量。
 
-顶层也允许声明非集合的标量字段，例如 goal: wm.string()。
+顶层也允许声明非集合的标量字段，例如 goal: string。
 
 ## 登记与灌入
 
@@ -46,6 +55,7 @@ class MyWorkingMemory {
 ~~~js
 // PoA 与 Kind 由 SDK 提供；agent_id 由宿主提供
 const poa = new PoA({ agent_id });
+// schema 由打包期从上面那些类型提取；它怎么回到程序里尚未确定，见下面的当前未确定
 await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 
 const wm_data = {
@@ -59,7 +69,7 @@ const wm_data = {
   evidence_list: { entries: [{ item_id: "ev-1", value: { note: "移动端复现" } }] },
   retry_by_status_code: { entries: [{ key: 401, value: 2 }] },
 };
-const mem = await poa.load_data(Kind.WM, wm_data);   // 句柄由哪个调用交出尚未确定，见下面的当前未确定
+const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);   // 句柄由哪个调用交出尚未确定，见下面的当前未确定
 ~~~
 
 register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明存进去。未登记声明就灌入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记也一律被拒，不覆盖也不合并。
@@ -135,27 +145,22 @@ limit 取的是默认序的前 N 项。要「按某个字段排序的前 N 项�
 
 下面这段串起一次完整动线：声明、登记与灌入、按字段读写、建一条边、取回全部命中项后在客户端排序。
 
-~~~js
-// PoA、Kind、类型构造器 wm、BNode 与 BEdge 由 SDK 提供；agent_id 由宿主提供
-const Task = wm.type("Task", { title: wm.string(), priority: wm.integer().optional() });
-const Evidence = wm.type("Evidence", { note: wm.string() });
+~~~typescript
+// PoA、Kind、标记类型、BNode 与 BEdge 由 SDK 提供；agent_id 由宿主提供
+interface Task { title: string }
+interface Evidence { note: string }
 
 class MyWorkingMemory {
-  static fields = {
-    incident_graph: wm.graph({
-      nodes: [
-        { name: "Task", value_type: Task },
-        { name: "Evidence", value_type: Evidence },
-      ],
-      edges: [{ name: "has_evidence", from_class: "Task", to_class: "Evidence" }],
-    }),
-    evidence_list: wm.list({ item_type: Evidence }),
-  };
+  incident_graph: Graph<
+    { Task: Task; Evidence: Evidence },
+    { has_evidence: ["Task", "Evidence"] }
+  >;
+  evidence_list: List<Evidence>;
 }
 
 const poa = new PoA({ agent_id });
 await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
-const mem = await poa.load_data(Kind.WM, {
+const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, {
   incident_graph: { nodes: [], edges: [] },
   evidence_list: { entries: [] },
 });                                            // 句柄由哪个调用交出尚未确定
@@ -183,11 +188,15 @@ text(titles);
 
 ## 当前未确定
 
-集合声明写成什么形状尚未确定。本页写的是在一个 class 的 static fields 里用类型构造器声明，另一个方向是只写 TypeScript 的类型标注、由构建期从类型里提取出 schema。两种形状在后面两节上没有差别：句柄仍然是声明里的那个字段，字段名仍然是集合名，登记与灌入的两个调用也不变。
+打包期从类型里提取 schema 这件事还没有实现：现在的打包链不受理 class 声明，也不受理带类型参数的字段，上面的声明一节描述的是目标形状。
+
+提取出来的 schema 怎么回到程序里尚未确定。两条路是提取器另生成一个模块、由作者 import 进来，或者打包器把那个调用点替换成字面量。示例里的 MyWorkingMemory.to_schema() 只是示意 —— 这种写法下那个 class 没有运行期成员，挂不住一个真的静态方法。
+
+类别名在类型参数里是字符串字面量的键，写错一个类别名编译器未必报得出来：结构化类型下两个同形状的类型可以互相赋值，这一道要靠提取期校验，当前没有实现。
 
 哪一个调用交出句柄尚未确定。当前倾向是由 load_data 交出，上面的示例按这个写法示意，它的签名还没有定稿，不要当作稳定的调用面。同一个 Run 内不重新灌入就取回句柄的入口同样未确定。
 
-类型构造器的名字与它们所在的命名空间尚未确定，示例里的 wm.type、wm.string、wm.integer、wm.graph、wm.tree、wm.list 和 wm.map 都只是示意写法。
+标记类型与具名标量类型的名字尚未确定，示例里的 Graph、Tree、List、KvMap 和 Int 都只是示意写法。map 不写成 Map，那个名字与 TypeScript 的内置类型相撞。标量精度也还没定下来用哪一种表达：具名标量类型，还是类型实参上的其他标注手段 —— 类型实参位置挂不了 JSDoc。
 
 agent_id 的类型、来源与唯一性尚未确定，示例里的 new PoA({ agent_id }) 只说明它是 PoA 上唯一要给的东西。
 
