@@ -1,0 +1,205 @@
+name: Feishu CI Notify
+
+on:
+  workflow_run:
+    # 必须与目标 workflow 的 name 一致。
+    workflows: ["sync-poa-guide", "sync-app-sdk", "sync-cli-tui-command"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  # 每行一个群聊，必须是 oc_ 开头。
+  receivers: |
+    oc_be89fe6400c518cceb22a108aa9352ce
+
+jobs:
+  notify:
+    if: github.event.workflow_run.conclusion != 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Feishu
+        env:
+          FEISHU_APP_ID: ${{ secrets.FEISHU_APP_ID }}
+          FEISHU_APP_SECRET: ${{ secrets.FEISHU_APP_SECRET }}
+          RECEIVERS: ${{ env.receivers }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          CI_EVENT: ${{ github.event.workflow_run.event }}
+          TITLE: ${{ github.event.workflow_run.display_title }}
+          URL: ${{ github.event.workflow_run.html_url }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_ID: ${{ github.event.workflow_run.workflow_id }}
+        run: |
+          set -euo pipefail
+          python3 - << 'PY'
+          import json, os, urllib.error, urllib.parse, urllib.request
+
+          def receive_type(receiver):
+              if receiver.startswith("oc_"):
+                  return "chat_id"
+              raise ValueError(f"只支持群聊：{receiver}")
+
+          receivers = []
+          for line in os.environ.get("RECEIVERS", "").splitlines():
+              line = line.strip()
+              if line and not line.startswith("#"):
+                  receivers.append(line)
+          if not receivers:
+              raise SystemExit("没有接收人")
+
+          def github_get(path):
+              token = os.environ.get("GH_TOKEN") or ""
+              if not token:
+                  return None
+              req = urllib.request.Request(
+                  "https://api.github.com" + path,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "feishu-ci-notify",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      return json.loads(resp.read().decode())
+              except urllib.error.HTTPError as exc:
+                  print(json.dumps({"github_api": path, "code": exc.code}, ensure_ascii=False))
+                  return None
+
+          def is_first_pr_run():
+              repo = os.environ["REPO"]
+              workflow_id = os.environ.get("WORKFLOW_ID") or ""
+              branch = os.environ.get("HEAD_BRANCH") or ""
+              if not workflow_id or not branch:
+                  return None
+              query = urllib.parse.urlencode({
+                  "branch": branch,
+                  "event": "pull_request",
+                  "per_page": "1",
+              })
+              data = github_get(f"/repos/{repo}/actions/workflows/{workflow_id}/runs?{query}")
+              if not isinstance(data, dict) or "total_count" not in data:
+                  return None
+              return data["total_count"] <= 1
+
+          def find_tag(sha):
+              if not sha:
+                  return ""
+              refs = github_get(f"/repos/{os.environ['REPO']}/git/matching-refs/tags")
+              if not isinstance(refs, list):
+                  return ""
+              for ref in refs:
+                  obj = ref.get("object") or {}
+                  name = (ref.get("ref") or "").removeprefix("refs/tags/")
+                  if obj.get("sha") == sha:
+                      return name
+                  if obj.get("type") == "tag" and obj.get("sha"):
+                      tag = github_get(f"/repos/{os.environ['REPO']}/git/tags/{obj['sha']}")
+                      if isinstance(tag, dict) and (tag.get("object") or {}).get("sha") == sha:
+                          return name
+              return ""
+
+          def event_label():
+              event = os.environ.get("CI_EVENT") or ""
+              branch = os.environ.get("HEAD_BRANCH") or ""
+              if event == "workflow_dispatch":
+                  return "手动触发"
+              if event == "pull_request":
+                  first = is_first_pr_run()
+                  if first is True:
+                      return "提了 PR"
+                  if first is False:
+                      return "PR 有新提交"
+                  return "PR"
+              if event == "push":
+                  if branch:
+                      return f"推送到 {branch}"
+                  tag = find_tag(os.environ.get("HEAD_SHA") or "")
+                  return f"打了 tag {tag}".rstrip() if tag else "打了 tag"
+              return event or "未知事件"
+
+          repo = os.environ["REPO"]
+          conclusion = os.environ.get("CONCLUSION") or ""
+          labels = {
+              "success": "🟢执行成功",
+              "failure": "🔴执行失败",
+              "timed_out": "🟡执行超时",
+              "cancelled": "⚪️已取消",
+          }
+          label = labels.get(conclusion, conclusion)
+
+          title = os.environ.get("TITLE") or ""
+          url = os.environ["URL"]
+          bullets = [f"- 事件类型：{event_label()}"]
+          if title:
+              bullets.append(f"- 任务名称：{title}")
+          bullets.append(f"- 详情链接：[{url}]({url})")
+
+          rows = [
+              [
+                  {"tag": "text", "text": f"[{label}]" if label else ""},
+                  {"tag": "text", "text": repo, "style": ["bold"]},
+              ],
+              [{"tag": "md", "text": "\n".join(bullets)}],
+          ]
+
+          token_req = urllib.request.Request(
+              "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+              data=json.dumps({
+                  "app_id": os.environ["FEISHU_APP_ID"],
+                  "app_secret": os.environ["FEISHU_APP_SECRET"],
+              }).encode(),
+              headers={"Content-Type": "application/json"},
+          )
+          with urllib.request.urlopen(token_req) as resp:
+              token_body = json.loads(resp.read().decode())
+          if token_body.get("code") not in (0, None):
+              raise SystemExit(f"获取 token 失败：{token_body.get('code')} {token_body.get('msg')}")
+          content = json.dumps({"zh_cn": {"content": rows}}, ensure_ascii=False)
+          failures = []
+          for receiver in receivers:
+              try:
+                  id_type = receive_type(receiver)
+              except ValueError as exc:
+                  print(json.dumps({"receive_id": receiver, "error": str(exc)}, ensure_ascii=False))
+                  failures.append(receiver)
+                  continue
+              message = {
+                  "receive_id": receiver,
+                  "msg_type": "post",
+                  "content": content,
+              }
+              send_req = urllib.request.Request(
+                  f"https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type={id_type}",
+                  data=json.dumps(message, ensure_ascii=False).encode(),
+                  headers={
+                      "Content-Type": "application/json",
+                      "Authorization": f"Bearer {token_body['tenant_access_token']}",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(send_req) as resp:
+                      sent = json.loads(resp.read().decode())
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode()
+                  try:
+                      sent = json.loads(body)
+                  except json.JSONDecodeError:
+                      sent = {"code": exc.code, "msg": body}
+              print(json.dumps({
+                  "receive_id": receiver,
+                  "receive_id_type": id_type,
+                  "code": sent.get("code"),
+                  "msg": sent.get("msg"),
+              }, ensure_ascii=False))
+              if sent.get("code") not in (0, None):
+                  failures.append(receiver)
+          if failures:
+              raise SystemExit("发送失败：" + ", ".join(failures))
+          PY

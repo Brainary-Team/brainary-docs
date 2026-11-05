@@ -7,6 +7,9 @@ on:
       - main
     tags:
       - "**"
+    # paths 只过滤分支推送；手动触发和 tag 不受影响，仍会全量同步。
+    paths:
+      - "PoA-Guide/**"
 
 jobs:
   sync-docs:
