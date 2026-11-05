@@ -29,7 +29,7 @@ wire_api = "responses"
 name = "DeepSeek"
 base_url = "https://api.deepseek.com/anthropic/v1"
 env_key = "DEEPSEEK_API_KEY"
-wire_api = "anthropic"
+wire_api = "responses"
 
 [agents]
 max_depth = 2
