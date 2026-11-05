@@ -1,6 +1,6 @@
 # Working Memory
 
-Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 class 声明有哪些集合，再把声明登记进 PoA 对象并灌入整份数据，
+Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 class 声明有哪些集合，再把声明登记进 PoA 对象并载入整份数据，
 之后用声明里的字段读写。它的全部状态属于当前 Run，而不属于某个 cell、turn 或 thread。
 
 这组文档按对象拆分，与本章其余部分同一体例：类型按“作用、类型定义、示例”说明，

@@ -44,7 +44,7 @@ const result = await incidentGraph.add_edge(
 
 端点节点必须已经存在，端点类别必须正好是该边类别声明的 from_class 与 to_class，端点不存在时返回 CONSTRAINT_VIOLATION。端点属于另一个 graph 或 tree 时返回 INVALID_STRUCTURE。这两项与多重边唯一性都在本次调用时校验，规则见下面的提交与约束。
 
-端点类别不符与端点不存在同样返回 CONSTRAINT_VIOLATION，但在 details 里占不同的位。类别不符的来源是 schema 声明，它在 reason 的取值集合里占一个值；端点不存在是一条内置检查，不进那个集合，由 details 的约束标识回带一个保留标识。两个位都是协议规定必返的，见 [WmError](06-errors.md) 的 details 白名单。
+端点类别不符与端点不存在同样返回 CONSTRAINT_VIOLATION，但在 details 里占不同的字段。类别不符的来源是 schema 声明，它在 reason 的取值集合里占一个值；端点不存在是一条内置检查，不进那个集合，由 details 的约束标识返回一个保留标识。两个字段都是协议规定必返的，见 [WmError](06-errors.md) 的 details 白名单。
 
 ### update_node(id, changes)
 
@@ -129,7 +129,7 @@ const page = await incidentGraph.neighbors("node-1", { direction: "out" });
 text(page.items.length);
 ~~~
 
-direction 三者有意义的前提是边恒有向，这由 schema 固定，没有对应的声明字段。带上边才能还原每个邻居是经哪条边、从哪个方向到达的，只需要邻居 id 时应显式传入 include 的 edges 为 false，否则返回体比必要的大。查询可能需要扫描所选图的边，大图上应控制查询范围。
+direction 三者有意义的前提是边恒有向，这由 schema 固定，没有对应的声明字段。带上边才能还原每个邻居是经哪条边、从哪个方向到达的，只需要邻居 id 时应显式传入 include 的 edges 为 false，否则返回体会大于实际需要。查询可能需要扫描所选图的边，大图上应控制查询范围。
 
 邻接结果的顺序由服务端按一个稳定键排序，调用方选不了排哪个键，也不应依赖具体是哪个键。一次调用返回全部邻居，命中项数超过上限时返回 RESULT_TOO_LARGE，规则见[默认序与结果规模](01-memory.md)。
 
@@ -150,7 +150,7 @@ const page = await incidentGraph.query({ target: "nodes", filter: { node_class: 
 text(page.items.map((item) => item.id));
 ~~~
 
-filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配。一次调用返回全部命中项，默认按元素 id 升序，target 为 nodes 时按节点 id、为 edges 时按边 id。这个默认顺序是确定的，不是「调用方不应依赖」。limit 的语义与命中项数上限见[默认序与结果规模](01-memory.md)。
+filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配。一次调用返回全部命中项，默认按元素 id 升序，target 为 nodes 时按节点 id、为 edges 时按边 id。这个默认顺序是确定的，不是“调用方不应依赖”。limit 的语义与命中项数上限见[默认序与结果规模](01-memory.md)。
 
 ## 集合归属与类别定位
 
@@ -164,22 +164,22 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 
 ## 提交与约束
 
-一次调用就是一次提交。端点存在、端点类别相容和多重边唯一性都在这一次调用时按当下的状态校验：要有一条边，先各写一次它的两个端点，再写这条边，三次独立提交。
+一次调用就是一次提交。端点存在、端点类别相容和多重边唯一性都在这一次调用时按当时的状态校验：新增一条边之前，先分别写入它的两个端点，再写这条边，三次独立提交。
 
 不支持多重边，同一边类别下同一个有序节点对至多一条边。要把一条边换成同类别同端点的另一条，先删旧边，再加新边，两次调用之间那个节点对上没有边。
 
-删除要求目标存在，删一个不存在的目标返回 NOT_FOUND。已存在的 id 被一个 add_node 撞上返回 STRUCTURE_CONFLICT。
+删除要求目标存在，删一个不存在的目标返回 NOT_FOUND。add_node 遇到已存在的 id 返回 STRUCTURE_CONFLICT。
 
-更换一个元素的类别没有专门动作：node_class 不在 update 的作用范围内，要换类别得先删再建。这两步不是原子的，中间状态对并发读可见，而且删之前要先处理它的关联边 —— 删节点不级联删边，留下关联边就会被拒。
+更换一个元素的类别没有专门动作：node_class 不在 update 的作用范围内，要换类别需要先删再建。这两步不是原子的，中间状态对并发读可见，而且删之前要先处理它的关联边：删节点不级联删边，留下关联边就会被拒绝。
 
 ## 当前未确定
 
-上面八个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。
+上面八个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定，遇到本页未写明的取值规则不要自行推定。
 
-两处的声明依据还没有着落，见[当前未确定](01-memory.md)：边的属性类型在声明里没有写处，所以 update_edge 和带 props 的边本阶段写不出来；unique_property 也没有写处，add_node 那条拒绝因此暂时没有对应的声明手段。
+两处的声明依据尚未确定，见[当前未确定](01-memory.md)：边的属性类型在声明里没有对应的位置，所以 update_edge 和带 props 的边本阶段写不出来；unique_property 也没有对应的位置，add_node 那条拒绝因此暂时没有对应的声明手段。
 
 ## 相关文档
 
-- [声明、登记与句柄](01-memory.md)：集合声明、登记与灌入、句柄，以及默认序与结果规模。
+- [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
 - [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

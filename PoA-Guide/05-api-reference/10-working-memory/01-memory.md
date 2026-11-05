@@ -1,6 +1,6 @@
 # 声明、登记与句柄
 
-Working Memory 的作者面分三段：用一个 class 声明有哪些集合、把声明登记进 PoA 对象并灌入整份数据、再用声明里的字段读写。四类集合的句柄就是声明里的字段，字段名就是集合名。它的全部状态属于当前 Run，程序拿到的是 owner 侧句柄。
+Working Memory 在程序侧分三步使用：用一个 class 声明有哪些集合，把声明登记进 PoA 对象并载入整份数据，再用声明里的字段读写。四类集合的句柄就是声明里的字段，字段名就是集合名。它的全部状态属于当前 Run，程序获得的是 owner 侧句柄。
 
 ## 声明
 
@@ -23,7 +23,7 @@ interface Evidence {
 
 class MyWorkingMemory {
   // 第一个类型参数：类别名 → 该类别的值类型
-  // 第二个类型参数：graph 是「边类别 → [起点类别, 终点类别]」，tree 是「类别 → 允许的子类别」
+  // 第二个类型参数：graph 是“边类别 → [起点类别, 终点类别]”，tree 是“类别 → 允许的子类别”
   incident_graph: Graph<
     { Task: Task; Evidence: Evidence },
     { has_evidence: ["Task", "Evidence"] }
@@ -42,15 +42,15 @@ class MyWorkingMemory {
 }
 ~~~
 
-值类型用 interface 写，字段上的标量精度与取值范围用 JSDoc 标注，写法与 input_schema 那一套相同。类别名是第一个类型参数里的键：类别名与值类型是两样东西，多个类别可以引用同一个值类型 —— 上面 task_tree 的 Plan、Milestone 与 Task 三个类别就都引 Task 这一个值类型。
+值类型用 interface 写，字段上的标量精度与取值范围用 JSDoc 标注，写法与 input_schema 相同。类别名是第一个类型参数里的键：类别名与值类型是两回事，多个类别可以引用同一个值类型，例如上面 task_tree 的 Plan、Milestone 与 Task 三个类别都引用 Task 这一个值类型。
 
 两个类型参数的含义按集合种类定：graph 的第二个参数是边类别到起点与终点类别的映射；tree 的第二个参数是每个类别允许的子类别，写成空数组表示这个类别不接受子节点；list 只有一个参数，就是项的值类型；map 的两个参数分别是 key 与 value 的类型，key 只能是标量。
 
 顶层也允许声明非集合的标量字段，例如 goal: string。
 
-## 登记与灌入
+## 登记与载入
 
-先登记声明，再灌入整份数据，次序不能反。
+先登记声明，再载入整份数据，顺序不能颠倒。
 
 ~~~typescript
 // PoA 与 Kind 由 SDK 提供；agent_id 由宿主提供
@@ -70,19 +70,19 @@ const wm_data = {
   retry_by_status_code: { entries: [{ key: 401, value: 2 }] },
   goal: "排查移动端 401",
 };
-const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);   // 句柄由哪个调用交出尚未确定，见下面的当前未确定
+const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);   // 句柄由哪个调用返回尚未确定，见下面的当前未确定
 ~~~
 
-register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明存进去。未登记声明就灌入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记也一律被拒，不覆盖也不合并。
+register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明写入。未登记声明就载入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记同样被拒绝，不覆盖也不合并。
 
-整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形 —— list 的元素是 item_id 与 value，map 的元素是 key 与 value。顶层的标量字段直接给值，上面的 goal 就是这么写的。
+整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形：list 的元素是 item_id 与 value，map 的元素是 key 与 value。顶层的标量字段直接给值，上面的 goal 就是这样写的。
 
 ## 句柄
 
 句柄就是声明里的那个字段，集合名只写在声明里，调用处不再传集合名。句柄的变量名由作者自取，本指南一律写成 mem。
 
 ~~~js
-// BNode 由 SDK 提供；mem 是上一段灌入后拿到的句柄
+// BNode 由 SDK 提供；mem 是上一段载入后得到的句柄
 await mem.task_tree.add_child(
   "plan-1",
   new BNode({ id: "task-1", node_class: "Task", props: { title: "核对 token" } }),
@@ -92,11 +92,11 @@ await mem.evidence_list.append("ev-2", { note: "网关时间快 31 秒" });
 await mem.retry_by_status_code.put(503, 1, "upsert");
 ~~~
 
-字段的种类在声明里已经定下：声明为 graph 的字段是 [BGraph](02-bgraph.md)，tree 是 [BTree](03-btree.md)，list 是 [BList](04-blist-bmap.md)，map 是 [BMap](04-blist-bmap.md)。句柄把集合名作为协议字段 collection 注入每次请求，业务代码不重复传入集合名。
+字段的种类在声明里已经确定：声明为 graph 的字段是 [BGraph](02-bgraph.md)，tree 是 [BTree](03-btree.md)，list 是 [BList](04-blist-bmap.md)，map 是 [BMap](04-blist-bmap.md)。句柄把集合名作为协议字段 collection 注入每次请求，业务代码不重复传入集合名。
 
-句柄对象上只挂声明过的集合字段。访问未声明的名字抛 [WmUsageError](06-errors.md)，不会得到 undefined —— 集合名拼错时报的是这个名字没有声明，而不是在调用方法时拿到一个原生 TypeError。
+句柄对象上只有声明过的集合字段。访问未声明的名字抛 [WmUsageError](06-errors.md)，不会得到 undefined：集合名拼错时报的是这个名字没有声明，而不是在调用方法时得到一个原生 TypeError。
 
-顶层的标量字段在本阶段没有元素级的读写入口，只随整份数据一起灌入，句柄上没有单独读写它们的方法。
+顶层的标量字段在本阶段没有元素级的读写入口，只随整份数据一起载入，句柄上没有单独读写它们的方法。
 
 ## 作用域与实例
 
@@ -108,7 +108,7 @@ Run 的生命周期由宿主管理。Run 结束没有可依赖的宿主信号，
 
 ## 可用范围
 
-本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。执行 PoA 另有一条路径 —— 注册为 poa 工具后由模型在普通 turn 里执行一个完整程序 —— 它的作用域锚点与身份派生都与本页这条不同，当前单独待裁，本页不覆盖它，也不要默认两条同构。子 agent 的 Working Memory 入口同样单独待裁。这几处都不要读成「确定没有入口」，它们是尚未裁定，不是已有结论。
+本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。执行 PoA 另有一条路径，即注册为 poa 工具后由模型在普通 turn 里执行一个完整程序。那条路径的作用域锚点与身份派生都与本页这条不同，当前尚未确定，本页不覆盖它，也不要默认两条同构。子 agent 的 Working Memory 入口同样尚未确定。这几处都不表示“确定没有入口”，而是还没有结论。
 
 可选工具组 memories 和 [tools](../06-brainary-tool.md) 枚举里的 memory 工具类别是模型可见的工具，与本页的 Working Memory 同名不同物。
 
@@ -120,23 +120,23 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 集合名
 
-集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。协议层不对集合名规定字符集、长度与大小写敏感性，但在声明里它要写成一个字段名：中文这类非 ASCII 字母可以直接当字段名，含连字符或空格的名字不是合法标识符，怎么写见下面的当前未确定。本文档对函数和方法的 snake_case 约定不约束集合名。
+集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。协议层不对集合名规定字符集、长度与大小写敏感性，但在声明里它要写成一个字段名：中文这类非 ASCII 字母可以直接用作字段名；含连字符或空格的名字不是合法标识符，写法见下面的当前未确定。本文档对函数和方法的 snake_case 约定不约束集合名。
 
 ## 默认序与结果规模
 
-四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。[BPage](05-elements.md) 的 next_cursor 是一个可选位，本阶段不会出现。
+四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。[BPage](05-elements.md) 的 next_cursor 是一个可选字段，本阶段不会出现。
 
-默认序由服务端固定：graph 按元素 id 升序，tree 按 id 升序，list 按 position 升序，map 按规范化 key 升序。map 的整数 key 按数值比较，9 排在 401 之前。本阶段请在客户端自行排序。
+默认序由服务端固定：graph 按元素 id 升序，tree 按 id 升序，list 按 position 升序，map 按规范化 key 升序。map 的整数 key 按数值比较，9 排在 401 之前。本阶段需要其他顺序时在客户端自行排序。
 
 limit 省略时返回全部命中项，给出时按默认序取前 N 项。limit 取 0、负数、非整数或超过上限都返回 INVALID_ARGUMENT。
 
-limit 取的是默认序的前 N 项。要「按某个字段排序的前 N 项」，必须省略 limit、取回全部后自行排序再截断。写 limit: 10 再在客户端排序，拿到的是 id 最小的 10 项按该字段重排，它不报错，但不是按该字段排序的前 10 项。
+limit 取的是默认序的前 N 项。要“按某个字段排序的前 N 项”，必须省略 limit、取回全部后自行排序再截断。写 limit: 10 再在客户端排序，得到的是 id 最小的 10 项按该字段重排，它不报错，但不是按该字段排序的前 10 项。
 
-命中项数的上限是 10000。它量的是命中数而不是返回数，所以给 limit 不能绕过它：limit 为 10 而 filter 命中 5 万项时照样被拒。超限是确定性拒绝，返回 RESULT_TOO_LARGE，处理方式是收窄 filter 或先减少数据。
+命中项数的上限是 10000。它针对的是命中项数而不是返回项数，所以指定 limit 不能绕过它：limit 为 10 而 filter 命中 5 万项时同样被拒绝。超限是确定性拒绝，返回 RESULT_TOO_LARGE，处理方式是收窄 filter 或先减少数据。
 
-请求的大小另有两道闸，与上面那道各管一头。请求文本有一个 UTF-8 字节上限，按即将发送的那一份文本的实际编码字节数计；SDK 在发出前命中时同步抛 [WmUsageError](06-errors.md)，请求根本没上线。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB；超出帧上限是请求发出之后的传输层失败，抛 [WmTransportError](06-errors.md)，它没有错误码，以 Promise 拒绝的形式交付。
+请求大小另有两项上限，与上面的命中项数上限各管一侧。请求文本有一个 UTF-8 字节上限，按即将发送的那份文本的实际编码字节数计；SDK 在发出前命中该上限时同步抛 [WmUsageError](06-errors.md)，请求尚未发出。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB；超出帧上限是请求发出之后的传输层失败，抛 [WmTransportError](06-errors.md)，它没有错误码，以 Promise 拒绝的形式交付。
 
-三道闸互不替代，中间有一条缝要知道：命中项数没超过 10000 而回传的字节数超了，在错误码面没有出口 —— 这一类由传输层异常承接，拿到的是 WmTransportError 而不是 RESULT_TOO_LARGE。读大对象时应当先靠 filter 把范围收窄，不要只盯着项数。
+三项上限互不替代，其间有一处空隙：命中项数没超过 10000 而回传的字节数超出时，错误码一侧没有对应的出口，这一类由传输层异常承接，得到的是 WmTransportError 而不是 RESULT_TOO_LARGE。读取大对象时应当先用 filter 收窄范围，不能只按项数估算。
 
 ## 本阶段不提供
 
@@ -144,7 +144,7 @@ limit 取的是默认序的前 N 项。要「按某个字段排序的前 N 项�
 
 ## 完整示例
 
-下面这段串起一次完整动线：声明、登记与灌入、按字段读写、建一条边、取回全部命中项后在客户端排序。
+下面的示例覆盖一次完整流程：声明、登记与载入、按字段读写、新建一条边、取回全部命中项后在客户端排序。
 
 ~~~typescript
 // PoA、Kind、标记类型、BNode 与 BEdge 由 SDK 提供；agent_id 由宿主提供
@@ -165,7 +165,7 @@ await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, {
   incident_graph: { nodes: [], edges: [] },
   evidence_list: { entries: [] },
-});                                            // 句柄由哪个调用交出尚未确定
+});                                            // 句柄由哪个调用返回尚未确定
 
 // 边不能先于端点存在：两个端点各写一次，边再写一次，三次独立提交
 await mem.incident_graph.add_node(
@@ -186,37 +186,37 @@ const ids = page.items.map((item) => item.id).sort();
 text(ids);
 ~~~
 
-上面每个 await 都是一次独立提交，任何一次失败都以异常抛出，前面几次已经落地的写入不会回滚；中间状态对并发读可见。最后的 query 不带 limit，取回全部命中项之后在客户端排序。
+上面每个 await 都是一次独立提交，任何一次失败都以异常抛出，前面几次已经提交的写入不会回滚；中间状态对并发读可见。最后的 query 不带 limit，取回全部命中项之后在客户端排序。
 
 ## 当前未确定
 
-打包期从类型里提取 schema 这件事还没有实现：现在的打包链不受理 class 声明，也不受理带类型参数的字段，上面的声明一节描述的是目标形状。
+打包期从类型提取 schema 尚未实现：现在的打包链不受理 class 声明，也不受理带类型参数的字段，上面的声明一节描述的是目标形状。
 
-提取出来的 schema 怎么回到程序里尚未确定。两条路是提取器另生成一个模块、由作者 import 进来，或者打包器把那个调用点替换成字面量。示例里的 MyWorkingMemory.to_schema() 只是示意 —— 这种写法下那个 class 没有运行期成员，挂不住一个真的静态方法。
+提取出来的 schema 怎么回到程序里尚未确定。两种做法是提取器另生成一个模块、由作者 import 进来，或者打包器把那个调用点替换成字面量。示例里的 MyWorkingMemory.to_schema() 只是示意：这种写法下那个 class 没有运行期成员，承载不了静态方法。
 
-边的属性类型在声明里没有写处。协议层的边类别带一个可选的属性类型，声明了它的边才能带 props，而声明里 graph 的第二个类型参数只有边类别到两端类别的映射，边的属性写在哪里没有定。[BGraph](02-bgraph.md) 的 update_edge 和 [BEdge](05-elements.md) 的 props 都以这个声明为前提，所以本阶段只按空 props 的边来写。
+边的属性类型在声明里没有对应的位置。协议层的边类别带一个可选的属性类型，声明了它的边才能带 props，而声明里 graph 的第二个类型参数只有边类别到两端类别的映射，边的属性写在哪里尚未确定。[BGraph](02-bgraph.md) 的 update_edge 和 [BEdge](05-elements.md) 的 props 都以这个声明为前提，所以本阶段只按空 props 的边来写。
 
-唯一属性约束同样没有写处。[BGraph](02-bgraph.md) 的 add_node 会因违反它返回 CONSTRAINT_VIOLATION，而声明里没有写它的地方，这一类约束本阶段做不做也还没有定。
+唯一属性约束同样没有对应的声明位置。[BGraph](02-bgraph.md) 的 add_node 会因违反它返回 CONSTRAINT_VIOLATION，而声明里没有写它的位置，这一类约束本阶段是否支持也尚未确定。
 
-不是合法标识符的集合名怎么写尚未确定。协议层不限制集合名的字符集，而声明里它是一个字段名，含连字符或空格的名字得加引号声明、调用处按键取，打包期提取受不受理这种写法没有定。要用这类名字之前先确认。
+不是合法标识符的集合名怎么写尚未确定。协议层不限制集合名的字符集，而声明里它是一个字段名，含连字符或空格的名字需要加引号声明、调用处按键访问，打包期提取是否受理这种写法尚未确定。使用这类名字之前请先确认。
 
-类别名在类型参数里是字符串字面量的键，写错一个类别名编译器未必报得出来：结构化类型下两个同形状的类型可以互相赋值，这一道要靠提取期校验，当前没有实现。
+类别名在类型参数里是字符串字面量的键，写错一个类别名编译器未必报得出来：结构化类型下两个同形状的类型可以互相赋值，这一项要靠提取期校验，当前没有实现。
 
-哪一个调用交出句柄尚未确定。当前倾向是由 load_data 交出，上面的示例按这个写法示意，它的签名还没有定稿，不要当作稳定的调用面。同一个 Run 内不重新灌入就取回句柄的入口同样未确定。
+由哪个调用返回句柄尚未确定。当前倾向是由 load_data 返回，上面的示例按这个写法示意；它的签名还没有定稿，不要当作稳定的调用方式。同一个 Run 内不重新载入就取回句柄的入口同样尚未确定。
 
-标记类型与具名标量类型的名字尚未确定，示例里的 Graph、Tree、List、KvMap 和 Int 都只是示意写法。map 不写成 Map，那个名字与 TypeScript 的内置类型相撞。标量精度也还没定下来用哪一种表达：具名标量类型，还是类型实参上的其他标注手段 —— 类型实参位置挂不了 JSDoc。
+标记类型与具名标量类型的名字尚未确定，示例里的 Graph、Tree、List、KvMap 和 Int 都只是示意写法。map 不写成 Map，那个名字与 TypeScript 的内置类型冲突。标量精度用哪一种表达也尚未确定：具名标量类型，还是类型实参上的其他标注手段；类型实参位置无法使用 JSDoc。
 
 agent_id 的类型、来源与唯一性尚未确定，示例里的 new PoA({ agent_id }) 只说明它是 PoA 上唯一要给的东西。
 
-整份灌入时 list 的 position 从哪里来尚未确定：由调用方在 entries 的元素里提供，还是灌入时按数组顺序从 0 重排。平时这个值由服务端分配，上面的示例没有写它。
+整份载入时 list 的 position 从哪里来尚未确定：由调用方在 entries 的元素里提供，还是载入时按数组顺序从 0 重排。正常写入时这个值由服务端分配，上面的示例没有写它。
 
-声明了的字段在灌入的那份数据里允不允许缺省尚未确定。当前导出的 schema 把声明里没带 ? 的字段都算必填，所以上面登记与灌入那段把声明的四个集合和那个标量字段逐个写了出来，暂时不要省略其中任何一个。
+声明过的字段在载入的那份数据里是否允许缺省尚未确定。当前导出的 schema 把声明里没带 ? 的字段都算必填，所以上面登记与载入那段把声明的四个集合和那个标量字段逐个写了出来，暂时不要省略其中任何一个。
 
-顶层标量字段怎么读写尚未确定。本阶段它们只随整份灌入的数据一起写入，没有元素级的入口。
+顶层标量字段怎么读写尚未确定。本阶段它们只随整份载入的数据一起写入，没有元素级的入口。
 
 tree、list 与 map 的 query 是否仍需要 target 尚未确定。graph 侧按节点与边区分是确定的，它的 target 取 nodes 或 edges。
 
-四类集合的方法签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来。query 统一取单个 options 对象，可含 filter 和 limit；filter 是按 id、key、类别名或已声明属性的精确匹配条件。四类集合的默认顺序都已确定，见上面的默认序与结果规模。
+四类集合的方法签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定。query 统一取单个 options 对象，可含 filter 和 limit；filter 是按 id、key、类别名或已声明属性的精确匹配条件。四类集合的默认顺序都已确定，见上面的默认序与结果规模。
 
 ## 相关文档
 

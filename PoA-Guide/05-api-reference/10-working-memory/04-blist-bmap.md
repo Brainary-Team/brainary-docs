@@ -21,7 +21,7 @@ const result = await evidenceList.append("ev-1", { note: "网关时间快 31 秒
 text(result.position);
 ~~~
 
-这是四类集合里唯一会带 position 的方法，该值由服务端分配，不能自行指定；replace 与 delete 的返回体没有这一位。追加失败时不分配位置，失败一律以异常抛出，所以拿到返回值就意味着这一位在。
+这是四类集合里唯一会带 position 的方法，该值由服务端分配，不能自行指定；replace 与 delete 的返回体没有这个字段。追加失败时不分配位置，失败一律以异常抛出，所以得到返回值就意味着该字段存在。
 
 item_id 已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
 
@@ -41,7 +41,7 @@ item_id 已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 
 const result = await evidenceList.replace("ev-1", { note: "复测后时钟已同步" });
 ~~~
 
-replace 替换完整 value，item_id 与 position 保持不变。它与先删再追加是两种不同的改法，后者会让同一个 item_id 拿到新的 position，语义是删掉再追加到末尾，而且那是两次调用、中间该项不存在。目标不存在时返回 NOT_FOUND。
+replace 替换完整 value，item_id 与 position 保持不变。它与先删再追加是两种不同的改法，后者会让同一个 item_id 得到新的 position，语义是删掉再追加到末尾，而且那是两次调用、中间该项不存在。目标不存在时返回 NOT_FOUND。
 
 ### delete(item_id)
 
@@ -80,17 +80,17 @@ if (page.items.length > 0) text(page.items[0].value);
 
 ## BList 的项与顺序
 
-list 的每个项有三样东西：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 WM 分配的非负整数 position，字段说明见 [BListItem](05-elements.md)。服务端不生成 item_id。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
+list 的每个项由三部分组成：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 WM 分配的非负整数 position，字段说明见 [BListItem](05-elements.md)。服务端不生成 item_id。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
 
 当前只支持末尾追加、按 item_id 替换完整 value、按 item_id 删除。不支持任意位置插入、链表指针、自动去重或隐式重排。
 
 position 按调用先后递增，取每个 list 的单调高水位加一，所以两次 append 的相对次序就是调用次序。只有成功的追加才分配，失败不消耗；删除后不复用并允许出现间隔；在实例、快照和恢复后保持不变。
 
-三条前置条件都按调用时的状态求值：追加一个已存在的 item_id 被拒绝；先删再追加通过，该项拿到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id。
+三条前置条件都按调用时的状态求值：追加一个已存在的 item_id 被拒绝；先删再追加通过，该项得到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id。
 
 默认按 position 升序。limit 的语义与命中项数上限见[默认序与结果规模](01-memory.md)。
 
-元素级的「目标不存在」四类集合统一使用 NOT_FOUND，图的节点与边、树的节点、list 的 item_id、map 的 key 都走这个码。
+元素级的“目标不存在”四类集合统一使用 NOT_FOUND，图的节点与边、树的节点、list 的 item_id、map 的 key 都走这个码。
 
 ## BMap
 
@@ -110,7 +110,7 @@ position 按调用先后递增，取每个 list 的单调高水位加一，所�
 const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 ~~~
 
-模式不匹配一定报错，不会静默覆盖或静默创建。两支取的不是同一个码：create 撞上已存在的 key 返回 STRUCTURE_CONFLICT，语义是「已经有了」；replace 撞上不存在的 key 返回 NOT_FOUND，语义是「目标不存在」，与 replace、delete 这类要求目标存在的操作同口径。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
+模式不匹配一定报错，不会静默覆盖或静默创建。两支取的不是同一个码：create 遇到已存在的 key 返回 STRUCTURE_CONFLICT，语义是“已经存在”；replace 遇到不存在的 key 返回 NOT_FOUND，语义是“目标不存在”，与 replace、delete 这类要求目标存在的操作一致。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
 
 ### delete(key)
 
@@ -163,10 +163,10 @@ map 的历史不另建一套接口，对快照使用同样的 query，见 [memor
 
 ## 当前未确定
 
-上面七个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。replace 与 append 逐字同形，这是刻意的。
+上面七个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定，遇到本页未写明的取值规则不要自行推定。replace 与 append 的参数形状完全相同，这是有意保持的。
 
 ## 相关文档
 
-- [声明、登记与句柄](01-memory.md)：集合声明、登记与灌入、句柄，以及默认序与结果规模。
+- [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
 - [BListItem 与 BMapItem](05-elements.md)：项类型、提交结果和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
