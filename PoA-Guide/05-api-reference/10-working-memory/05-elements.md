@@ -1,6 +1,6 @@
 # BNode、BEdge 与读写返回类型
 
-本页描述 Working Memory 的构造类型和读写返回类型。构造类型用于写入 [BGraph](02-bgraph.md) 与 [BTree](03-btree.md)，返回类型由四类集合的读写方法返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，它们是[声明](01-memory.md)里的三个字段。
+本页描述 Working Memory 的构造类型和读写返回类型。构造类型用于写入 [BGraph](02-bgraph.md) 与 [BTree](03-btree.md)，返回类型由四类集合的读写方法返回。下面的示例以 incidentGraph、evidenceList 和 retryByStatusCodeMap 指代三类集合的句柄，取法是 `const incidentGraph = mem.incident_graph;`，另两个同理，句柄本身是[声明](01-memory.md)里的字段。
 
 ### BNode
 
@@ -45,7 +45,7 @@ interface BEdge {
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 props 必填，未声明时必须是空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了属性类型时 props 必填，未声明时必须是空对象或省略 —— 而边的属性类型在声明里还没有写处，见[当前未确定](01-memory.md)，所以本阶段 props 一律传空对象或省略。
 
 **示例**：
 
@@ -161,7 +161,7 @@ interface BNeighborItem {
 }
 ~~~
 
-它与 query 的项不同形。相邻节点与对应的边来自同一次读，并分别经过授权过滤。include 的 nodes 与 edges 默认都是 true，把 nodes 传成 false 时返回项里就没有 node，两个字段因此都标成可选。
+它与 query 的项不同形。相邻节点与对应的边来自同一次读。include 的 nodes 与 edges 默认都是 true，把 nodes 传成 false 时返回项里就没有 node，两个字段因此都标成可选。
 
 **示例**：
 

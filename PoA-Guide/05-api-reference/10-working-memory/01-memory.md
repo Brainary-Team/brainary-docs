@@ -52,7 +52,7 @@ class MyWorkingMemory {
 
 先登记声明，再灌入整份数据，次序不能反。
 
-~~~js
+~~~typescript
 // PoA 与 Kind 由 SDK 提供；agent_id 由宿主提供
 const poa = new PoA({ agent_id });
 // schema 由打包期从上面那些类型提取；它怎么回到程序里尚未确定，见下面的当前未确定
@@ -68,13 +68,14 @@ const wm_data = {
   },
   evidence_list: { entries: [{ item_id: "ev-1", value: { note: "移动端复现" } }] },
   retry_by_status_code: { entries: [{ key: 401, value: 2 }] },
+  goal: "排查移动端 401",
 };
 const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);   // 句柄由哪个调用交出尚未确定，见下面的当前未确定
 ~~~
 
 register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明存进去。未登记声明就灌入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记也一律被拒，不覆盖也不合并。
 
-整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形 —— list 的元素是 item_id 与 value，map 的元素是 key 与 value。
+整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形 —— list 的元素是 item_id 与 value，map 的元素是 key 与 value。顶层的标量字段直接给值，上面的 goal 就是这么写的。
 
 ## 句柄
 
@@ -115,11 +116,11 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 持久化
 
-当前使用内存存储。进程退出后运行态、快照和变更历史都会丢失。要跨进程保留数据，保存成功导出的快照文件，见 [memory.snapshot](07-snapshot.md)。
+当前使用内存存储。进程退出后运行态和变更历史都会丢失。本阶段没有跨进程保留数据的手段：导出快照属下一阶段，见 [memory.snapshot](07-snapshot.md)。
 
 ## 集合名
 
-集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。集合名允许非 ASCII，含连字符、空格或中文都可用，调用时写 schema 中的原始名称。本文档对函数和方法的 snake_case 约定不约束集合名。
+集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。协议层不对集合名规定字符集、长度与大小写敏感性，但在声明里它要写成一个字段名：中文这类非 ASCII 字母可以直接当字段名，含连字符或空格的名字不是合法标识符，怎么写见下面的当前未确定。本文档对函数和方法的 snake_case 约定不约束集合名。
 
 ## 默认序与结果规模
 
@@ -159,6 +160,7 @@ class MyWorkingMemory {
 }
 
 const poa = new PoA({ agent_id });
+// to_schema() 只是示意，schema 怎么回到程序里尚未确定
 await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, {
   incident_graph: { nodes: [], edges: [] },
@@ -180,8 +182,8 @@ const appended = await mem.evidence_list.append("ev-1", { note: "网关时间快
 text(appended.position);
 
 const page = await mem.incident_graph.query({ target: "nodes" });
-const titles = page.items.map((item) => item.id).sort();
-text(titles);
+const ids = page.items.map((item) => item.id).sort();
+text(ids);
 ~~~
 
 上面每个 await 都是一次独立提交，任何一次失败都以异常抛出，前面几次已经落地的写入不会回滚；中间状态对并发读可见。最后的 query 不带 limit，取回全部命中项之后在客户端排序。
@@ -191,6 +193,12 @@ text(titles);
 打包期从类型里提取 schema 这件事还没有实现：现在的打包链不受理 class 声明，也不受理带类型参数的字段，上面的声明一节描述的是目标形状。
 
 提取出来的 schema 怎么回到程序里尚未确定。两条路是提取器另生成一个模块、由作者 import 进来，或者打包器把那个调用点替换成字面量。示例里的 MyWorkingMemory.to_schema() 只是示意 —— 这种写法下那个 class 没有运行期成员，挂不住一个真的静态方法。
+
+边的属性类型在声明里没有写处。协议层的边类别带一个可选的属性类型，声明了它的边才能带 props，而声明里 graph 的第二个类型参数只有边类别到两端类别的映射，边的属性写在哪里没有定。[BGraph](02-bgraph.md) 的 update_edge 和 [BEdge](05-elements.md) 的 props 都以这个声明为前提，所以本阶段只按空 props 的边来写。
+
+唯一属性约束同样没有写处。[BGraph](02-bgraph.md) 的 add_node 会因违反它返回 CONSTRAINT_VIOLATION，而声明里没有写它的地方，这一类约束本阶段做不做也还没有定。
+
+不是合法标识符的集合名怎么写尚未确定。协议层不限制集合名的字符集，而声明里它是一个字段名，含连字符或空格的名字得加引号声明、调用处按键取，打包期提取受不受理这种写法没有定。要用这类名字之前先确认。
 
 类别名在类型参数里是字符串字面量的键，写错一个类别名编译器未必报得出来：结构化类型下两个同形状的类型可以互相赋值，这一道要靠提取期校验，当前没有实现。
 
@@ -202,7 +210,7 @@ agent_id 的类型、来源与唯一性尚未确定，示例里的 new PoA({ age
 
 整份灌入时 list 的 position 从哪里来尚未确定：由调用方在 entries 的元素里提供，还是灌入时按数组顺序从 0 重排。平时这个值由服务端分配，上面的示例没有写它。
 
-声明了的集合在灌入的那份数据里允不允许缺省尚未确定。当前导出的 schema 把全部集合都算必填，所以上面登记与灌入那段把声明的四个集合逐个写了出来，暂时不要省略其中任何一个。
+声明了的字段在灌入的那份数据里允不允许缺省尚未确定。当前导出的 schema 把声明里没带 ? 的字段都算必填，所以上面登记与灌入那段把声明的四个集合和那个标量字段逐个写了出来，暂时不要省略其中任何一个。
 
 顶层标量字段怎么读写尚未确定。本阶段它们只随整份灌入的数据一起写入，没有元素级的入口。
 

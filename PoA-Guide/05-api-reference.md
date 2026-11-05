@@ -43,7 +43,7 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | [BTree](05-api-reference/10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
 | [BList 与 BMap](05-api-reference/10-working-memory/04-blist-bmap.md) | 有序项追加与键值读写 |
 | [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) | BNode、BEdge、CommitResult、BPage 和三个项类型 |
-| [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
+| [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError、WmTransportError 和错误码 |
 | [memory.snapshot](05-api-reference/10-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage，属下一阶段 |
 
 ### Episodic Memory（设计预览）
@@ -83,5 +83,5 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | BTree | [BTree](05-api-reference/10-working-memory/03-btree.md) |
 | BList、BMap | [BList 与 BMap](05-api-reference/10-working-memory/04-blist-bmap.md) |
 | BNode、BEdge、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) |
-| WmError、WmUsageError、WmRequestError、WmErrorCode | [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) |
+| WmError、WmUsageError、WmRequestError、WmTransportError、WmErrorCode | [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) |
 | SnapshotPage | [memory.snapshot](05-api-reference/10-working-memory/07-snapshot.md) |
