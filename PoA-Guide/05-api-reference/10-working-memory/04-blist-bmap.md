@@ -22,7 +22,9 @@ if (!result.ok) throw new Error("追加未提交，需重读后重新计算");
 text(result.generated.position);
 ~~~
 
-这是四类集合里唯一会带 generated 的方法，position 由服务端分配，不能自行指定。版本冲突时未分配位置，整个 generated 都缺省，读它前必须像上面那样先判 ok；冲突路径上直接读会拿到一个 TypeError，不是一个可处理的失败。item_id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
+这是四类集合里唯一会带 generated 的方法，position 由服务端分配，不能自行指定。版本冲突时未分配位置，整个 generated 都缺省，读它前必须像上面那样先判 ok；冲突路径上直接读会拿到一个 TypeError，不是一个可处理的失败。
+
+把两个或更多 append 放进同一个批次时 generated 换另一种形状：回的是 positions 数组而不是单个 position，每项至少含 change_index、item_id 和 position。判别方式是看有没有 positions 这一位，两种形状的完整说明见 [CommitResult](05-elements.md)。item_id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
 
 ### replace(item_id, value)
 
@@ -87,9 +89,9 @@ position 分配是生成器，按书写顺序递增，取每个 list 的单调�
 
 三条前置条件都按该操作之前的前缀状态求值，由此确定三种批次组合的结果：同一批次两次追加同一个 item_id 被拒绝，并指向第二项；先删再追加通过，该项拿到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id，而图与树对批次开始时已有的元素 id 不允许在同一批次中删除后重新创建。
 
-未指定 sort 时按 position 升序。可排序字段是 item_type 已声明的一层标量字段，加上系统字段 position 和 item_id，并自动追加 item_id 为稳定末级排序键。字段值按声明类型比较，整数按数值，字符串按原始 Unicode 标量序列。缺失或显式 null 排在非空值之后，同值再按 item_id 排序。item_type 是内联标量时该 list 没有字段名，此时可排序的是 value 本身。排序只是读取视图，不改变 position，也不产生新版本。服务端可以按能力拒绝代价过高的排序。
+未指定 sort 时按 position 升序。可排序字段是 item_type 已声明的一层标量字段，加上系统字段 position 和 item_id，并自动追加 item_id 为稳定末级排序键。字段值按声明类型比较，整数按数值，字符串按原始 Unicode 标量序列。缺失或显式 null 排在非空值之后，同值再按 item_id 排序。item_type 是内联标量时该 list 没有字段名，此时可排序的是 value 本身。排序只是读取视图，不改变 position，也不产生新版本，也不需要事先在声明里开启。凡声明允许的排序，服务端一律受理，不会以代价过高为由拒绝 —— 「这次排序代价高不高」是调用方事先查不出来的，而能力要么可查询、要么不该做成一道撞上才知道的门；排序的代价由查询规模上限和 RESOURCE_EXHAUSTED 兜住，那是「资源耗尽」，不是「我不想算」。
 
-list 侧的目标不存在使用 NOT_FOUND，图与树侧使用 NOT_FOUND_OR_DENIED，调用方按具体方法分别处理。
+元素级的「目标不存在」四类集合统一使用 NOT_FOUND，图的节点与边、树的节点、list 的 item_id、map 的 key 都走这个码。
 
 ## BMap
 
@@ -109,7 +111,7 @@ list 侧的目标不存在使用 NOT_FOUND，图与树侧使用 NOT_FOUND_OR_DEN
 const result = await retryByStatusCodeMap.put(503, 1, "upsert");
 ~~~
 
-模式不匹配一定报错，不会静默覆盖或静默创建。create 撞上已存在的 key、replace 撞上不存在的 key，都返回 STRUCTURE_CONFLICT；协议层在 details 里回带究竟是哪一种，details 的可用性见 [WmRequestError](06-errors.md)。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
+模式不匹配一定报错，不会静默覆盖或静默创建。两支取的不是同一个码：create 撞上已存在的 key 返回 STRUCTURE_CONFLICT，语义是「已经有了」；replace 撞上不存在的 key 返回 NOT_FOUND，语义是「目标不存在」，与 replace、delete 这类要求目标存在的操作同口径。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
 
 ### delete(key)
 
@@ -162,11 +164,9 @@ map 的历史不另建一套接口，对快照使用同样的 query，见 [memor
 
 ## 当前未确定
 
-BList 的 replace 与 delete、BMap 的 delete，以及两个 query 的选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名。
+上面七个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。replace 与 append 逐字同形，这是刻意的。
 
-一个批次包含多个 append 时 generated 如何对应各项尚未确定，批次里的 append 当前不能依赖这个字段。
-
-list 与 map 侧的目标不存在用 NOT_FOUND、图与树侧用 NOT_FOUND_OR_DENIED，两者要不要统一尚未确定。
+generated 的两种形状及其判别方式见 [CommitResult](05-elements.md)，上面 append 的条目也有一段说明。
 
 ## 相关文档
 

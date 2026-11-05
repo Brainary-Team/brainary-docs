@@ -6,18 +6,23 @@ MCP 和 Skills。代码配置示例分别见[创建与运行 Agent](agents.md)�
 
 ## 配置位置与加载
 
-运行时默认读取 `~/.codex/config.toml`。设置 `CODEX_HOME` 后，用户配置改为
-`$CODEX_HOME/config.toml`；该环境变量指向的目录必须已经存在。
-`CODEX_HOME` 同时决定会话等运行时数据的存放位置。
+运行时默认读取 `~/.brainary/config.toml`；Windows 对应
+`$HOME\.brainary\config.toml`。设置 `BRAINARY_HOME` 后，用户配置改为该目录下的
+`config.toml`；指定目录必须已经存在，建议使用 absolute path。
+未设置或值为空时使用默认目录，无需额外设置环境变量。
+`BRAINARY_HOME` 同时决定认证、会话等用户运行数据的存放位置。
 
-先在 `/srv/my-app/codex-home/config.toml` 中保存下面需要的配置，再启动客户端：
+下文的 `<Brainary home>` 指实际生效的用户数据目录。
+
+自定义目录的示例：先创建 `/srv/my-app/brainary-home` 并在其中的 `config.toml`
+保存所需配置，再启动客户端：
 
 ```python
 from brainary import Brainary, BrainaryConfig
 
 config = BrainaryConfig(
-    brainary_bin="/opt/brainary/brainary",
-    env={"CODEX_HOME": "/srv/my-app/codex-home"},
+    brainary_bin="/opt/brainary/bin/brainary",
+    env={"BRAINARY_HOME": "/srv/my-app/brainary-home"},
 )
 
 with Brainary(config=config) as brainary:
@@ -27,8 +32,8 @@ with Brainary(config=config) as brainary:
 ```
 
 `BrainaryConfig.env` 在父进程环境基础上更新变量，部署环境中已导出的认证变量
-会被运行时继承。项目级 `.codex/config.toml` 是否加载受项目可信状态影响；本文的
-持久配置示例统一放在用户级配置文件中。
+会被运行时继承。项目级配置、系统或组织管理策略仍可能影响最终生效的配置；
+本文的持久配置示例统一放在用户级配置文件中。
 
 `BrainaryConfig.config_overrides` 会转换为 `brainary --config <value>` 启动参数，
 `thread_start(config=...)` 则提供 thread 级配置覆盖。两者都不修改配置文件；在同一
@@ -146,11 +151,10 @@ Skill 内容保存在 `SKILL.md` 和配套资源中。配置文件控制已发�
 | 发现位置 | 作用范围 |
 | --- | --- |
 | 项目根到当前 `cwd` 路径上各级 `.agents/skills` | 对应目录及其子目录中的 Agent；通过 `cwd` 和项目根识别规则确定范围 |
-| 项目配置层的 `.codex/skills` | 加载该项目配置层的 Agent |
 | `$HOME/.agents/skills` | 当前操作系统用户的 Skills |
-| `$CODEX_HOME/skills` | 共用该配置目录的 Agent；源码保留此位置用于兼容旧用法 |
-| `$CODEX_HOME/skills/.system` | 运行时内置 Skills，可通过 `skills.bundled.enabled` 控制 |
-| 系统配置目录中的 `skills`（Unix 通常为 `/etc/codex/skills`） | 管理员部署的 Skills |
+| `<Brainary home>/skills` | 共用该用户数据目录的 Agent |
+| `<Brainary home>/skills/.system` | 运行时内置 Skills，可通过 `skills.bundled.enabled` 控制 |
+| 系统配置目录中的 `skills` | 管理员部署的 Skills |
 | 已启用插件的 Skill 目录 | 随插件加载的 Skills |
 
 保持自动 Skills 目录说明，同时关闭内置 Skills：
@@ -187,6 +191,6 @@ enabled = false
 没有其他禁用规则时删除该项。
 
 当前运行时仅从用户配置层和 session 覆盖层读取 `skills.config` 启用规则，因此应把
-这些持久规则写在 `$CODEX_HOME/config.toml` 中。项目级 Skill 内容仍可放在
+这些持久规则写在 `<Brainary home>/config.toml` 中。项目级 Skill 内容仍可放在
 `.agents/skills` 中。用户级规则作用于共用此配置目录的 Agent，thread 级覆盖的示例见
 [使用 Skills](skills.md#用代码配置-skill-池)。

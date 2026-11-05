@@ -14,11 +14,11 @@
 
 ~~~js
 const result = await incidentGraph.add_node(
-  new BNode({ id: "node-1", node_class: "Task", properties: { title: "排查移动端 401" } }),
+  new BNode({ id: "node-1", node_class: "Task", props: { title: "排查移动端 401" } }),
 );
 ~~~
 
-新增不会覆盖已有节点。id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、properties 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT；违反 schema 声明的 unique_property 返回 CONSTRAINT_VIOLATION。
+新增不会覆盖已有节点。id 在该操作之前的状态中已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、props 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT；违反 schema 声明的 unique_property 返回 CONSTRAINT_VIOLATION。
 
 ### add_edge(edge)
 
@@ -37,18 +37,20 @@ const result = await incidentGraph.add_edge(
     edge_class: "has_evidence",
     from_id: "node-1",
     to_id: "node-2",
-    properties: {},
+    props: {},
   }),
 );
 ~~~
 
 端点节点必须存在，端点类别必须正好是该边类别声明的 from_class 与 to_class，端点在最终状态中不存在时返回 CONSTRAINT_VIOLATION。端点属于另一个 graph 或 tree 时返回 INVALID_STRUCTURE。这两项与多重边唯一性都按最终状态校验，规则见下面的提交与约束。
 
-### update_node(id, update)
+端点类别不符与端点不存在同样返回 CONSTRAINT_VIOLATION，但在 details 里占不同的位。类别不符的来源是 schema 声明，它在 reason 的取值集合里占一个值；端点不存在是一条内置检查，不进那个集合，由 details 的约束标识回带一个保留标识。两个位都是协议规定必返的，见 [WmError](06-errors.md) 的 details 白名单。
+
+### update_node(id, changes)
 
 **作用**：更新一个节点的属性。
 
-**输入类型**：id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
@@ -60,7 +62,7 @@ const result = await incidentGraph.add_edge(
 const result = await incidentGraph.update_node("node-1", { set: { priority: 2 } });
 ~~~
 
-字段缺失不表示删除，移除属性要写进 unset。粒度是 properties 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND_OR_DENIED。
+字段缺失不表示删除，移除属性要写进 unset。粒度是 props 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标在该操作之前的状态中不存在时返回 NOT_FOUND。
 
 ### delete_node(id)
 
@@ -78,11 +80,11 @@ const result = await incidentGraph.delete_node("node-1");
 
 不级联删边。删除后仍留下关联边时返回 CONSTRAINT_VIOLATION；悬空边这一条按最终状态校验，同一批次同时删边删点是允许的。
 
-### update_edge(id, update)
+### update_edge(id, changes)
 
 **作用**：更新一条边的属性。
 
-**输入类型**：id: string；update: object，用 set 表达要写入的属性、用 unset 表达要移除的属性。
+**输入类型**：id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。
 
 **参数约束**：set 与 unset 至少一个非空。edge_class、from_id 和 to_id 都不在两者的作用范围内。
 
@@ -129,6 +131,8 @@ text(page.items.length);
 
 direction 三者有意义的前提是边恒有向，这由 schema 固定，没有对应的声明字段。带上边才能还原每个邻居是经哪条边、从哪个方向到达的，只需要邻居 id 时应显式传入 include 的 edges 为 false，否则返回体比必要的大。查询可能需要扫描所选图的边，大图上应控制查询范围。
 
+本方法不接受 sort，邻接结果的顺序由服务端按一个稳定键排序，调用方选不了排哪个键，也不应依赖具体是哪个键。稳定这一点是分页正确性的前提，与 query 自动追加末级排序键是同一条规则。服务端另有最大返回量限制，所以结果是分页的，有 next_cursor 时本页不是全部邻居。
+
 ### query(options)
 
 **作用**：按条件分页查询当前 graph 的节点或边。
@@ -149,7 +153,7 @@ while (page.next_cursor) {
 }
 ~~~
 
-filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配。sort 的可用字段是已声明的一层标量字段，并自动追加元素 id 作为末级排序键。graph 未指定 sort 时的默认顺序尚未固定，需要稳定顺序时必须显式传入 sort。
+filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配。sort 的可用字段是已声明的一层标量字段，并自动追加元素 id 作为末级排序键。未指定 sort 时按元素 id 升序，target 为 nodes 时按节点 id、为 edges 时按边 id。这个默认顺序是确定的，不是「调用方不应依赖」—— 分页要求全序，首页就得定一个确定顺序才能发出游标。
 
 ## 集合归属与类别定位
 
@@ -167,15 +171,15 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 
 不支持多重边，同一边类别下同一个有序节点对至多一条边。这一条也按最终状态判：同一批次先删旧边再加一条同类别同端点的新边允许，同一批次新增两条同类别同端点的边不允许。
 
-同一批次内重复删同一个目标按去重处理，不返回 NOT_FOUND_OR_DENIED，删除在最终状态语义下幂等；单次删除一个不存在的目标仍然报错。delete_edge 与 delete_node 的去重规则相同。
+同一批次内重复删同一个目标按去重处理，不返回 NOT_FOUND，删除在最终状态语义下幂等；单次删除一个不存在的目标仍然报错。delete_edge 与 delete_node 的去重规则相同。
 
 已有元素不能在同一批次内通过删除再创建更换类别。更换类别需要分别提交删除与新建，并处理关联边和两个提交之间的中间状态。
 
 ## 当前未确定
 
-update_node、delete_node、update_edge、delete_edge 的参数形状，以及 query 与 neighbors 的查询选项形状，都尚未确定。上面给出的是这些方法需要表达的信息和当前的调用形态，还不能作为稳定调用签名，写业务代码时应把这几处集中封装在一处。
+上面八个方法的签名已经冻结，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节没有定下来，遇到本页未写明的取值规则不要自行推定。
 
-更复杂的删除序列的结果尚未确定。对批次开始时就不存在的目标，以及删除、重建后再次删除这类组合，都不能按上面的去重规则推导结果。
+更复杂的删除序列不按上面的去重规则推导，管它们的是另外两条规则。一条是批次级禁令：同一批次里不得重用「批次开始时就已存在、而在本批次中被删除」的元素 id，也就是先 delete_node(X) 再 add_node(X) 返回 INVALID_ARGUMENT。它堵的是改类别的唯一旁路 —— node_class 不在 update 的作用范围内，而删了重建会让既有边的端点类别校验静默失效。两种情形不禁：反方向的先建后删，以及该 id 本来就是在这一批次里新建的。另一条是目标必须存在这个前置条件：删一个批次开始时就不存在的目标返回 NOT_FOUND，批次开始时已存在的 id 被一个裸 add_node 撞上则返回 STRUCTURE_CONFLICT。要换一个元素的类别，得分两个批次提交，并自行处理关联边与中间状态。
 
 ## 相关文档
 

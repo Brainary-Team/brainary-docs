@@ -17,26 +17,26 @@ API Key 是模型服务给你的访问凭证。把它和模型信息配置好，
 | 接口类型 | 确认是 `responses` 还是 `anthropic` |
 | API Key | 你自己的访问凭证 |
 
-不知道接口类型时，可以先判断API_key：“这个服务支持 Responses 接口，还是 Anthropic Messages 接口？API 根地址和模型 ID 是什么？”只支持 Chat Completions 的服务，当前不能直接接入。
+不知道接口类型时，可以直接问管理员或服务商：“这个服务支持 Responses 接口，还是 Anthropic Messages 接口？API 根地址和模型 ID 是什么？”只支持 Chat Completions 的服务，当前不能直接接入。
 
 ## 第 2 步：填写配置文件
 
-在终端中运行与你的系统对应的命令，打开配置文件：
+Brainary 默认使用 `~/.brainary/config.toml`；Windows 对应 `$HOME\.brainary\config.toml`。无需设置 `BRAINARY_HOME` 即可使用这个默认目录。
 
-如果文件已经有内容，不要清空或直接追加整段模板，先看[已有配置怎么修改](#已有配置怎么修改)。设置过 `CODEX_HOME` 的用户，使用[该变量指定的目录](#我设置过-codex_home)。
+如果设置过 `BRAINARY_HOME`，先看[自定义配置目录](#自定义配置目录)，打开该目录中的 `config.toml`。未设置时，执行下面与你的系统对应的命令。文件已有内容时，先看[已有配置怎么修改](#已有配置怎么修改)，不要清空或直接追加整段模板。
 
 **macOS / Linux：**
 
 ```bash
-mkdir -p ~/.codex
-nano ~/.codex/config.toml
+mkdir -p ~/.brainary
+nano ~/.brainary/config.toml
 ```
 
 **Windows PowerShell：**
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.codex"
-notepad "$HOME\.codex\config.toml"
+New-Item -ItemType Directory -Force "$HOME\.brainary"
+notepad "$HOME\.brainary\config.toml"
 ```
 
 文件为空时，复制下面这一份模板。只需要修改 `model`、`base_url`、`wire_api` 三项，其余先保持原样：
@@ -110,6 +110,7 @@ brainary exec --skip-git-repo-check "请只回复：配置成功"
 | 返回 `401` 或“未授权” | Key 是否填错、过期，是否有当前模型的使用权限？特殊认证方式见下文 |
 | 返回 `404` 或“接口不存在” | 地址和接口类型是否对应？地址末尾是否多写了 `/responses` 或 `/messages`？ |
 | 提示“模型不存在” | `model` 是否使用了服务商提供的准确模型 ID？ |
+| 实际模型与配置不一致 | 按[模型与配置不一致](#模型与配置不一致)检查配置目录、覆盖项和旧会话 |
 | 提示 `Brainary credentials are not configured` | 配置是否保存到了正确目录？`model_provider = "vendor"` 是否写在顶层，且厂商配置中有 `requires_openai_auth = false`？ |
 
 ### 已有配置怎么修改
@@ -139,13 +140,35 @@ brainary exec --skip-git-repo-check "请只回复：配置成功"
 
 这会同时发送 Bearer 和 `x-api-key`。如果服务商要求只发其中一种，或使用其他签名方式，请让管理员按服务要求配置，不能只靠切换 `wire_api` 解决。
 
-### 我设置过 `CODEX_HOME`
+### 自定义配置目录
 
-`CODEX_HOME` 用来指定配置和数据放在哪里。没有设置时，默认使用 `~/.codex`；设置过时，请编辑指定目录里的 `config.toml`，不要继续修改默认目录中的文件。
+`BRAINARY_HOME` 指定用户配置、认证及会话数据目录。未设置或值为空时使用 `~/.brainary`；设置后，请编辑指定目录中的 `config.toml`。
 
-查看当前设置：macOS / Linux 执行 `echo "$CODEX_HOME"`；Windows PowerShell 执行 `$env:CODEX_HOME`。没有输出表示使用默认目录。
+查看当前设置：macOS / Linux 执行 `echo "$BRAINARY_HOME"`；Windows PowerShell 执行 `$env:BRAINARY_HOME`。没有输出表示使用默认目录。
 
-自定义目录必须先创建，再将它的 absolute path 设为 `CODEX_HOME`。目录可以叫 `.brainary`，但当前版本不会自动查找它，也不识别 `BRAINARY_HOME`。切换目录不会自动搬走旧配置和历史记录。
+自定义目录必须先创建，再设置它的 absolute path。例如，macOS / Linux：
+
+```bash
+mkdir -p "$HOME/brainary-data"
+export BRAINARY_HOME="$HOME/brainary-data"
+nano "$BRAINARY_HOME/config.toml"
+```
+
+Windows PowerShell：
+
+```powershell
+New-Item -ItemType Directory -Force "$HOME\brainary-data"
+$env:BRAINARY_HOME = "$HOME\brainary-data"
+notepad "$env:BRAINARY_HOME\config.toml"
+```
+
+这些设置只作用于当前终端及其启动的程序。切换目录不会自动搬走旧配置和历史记录。
 
 如果启动时还使用了 `--profile <name>`，也要检查该目录里的 `<name>.config.toml`，它可能覆盖刚修改的配置。
 
+### 模型与配置不一致
+
+- 检查 `BRAINARY_HOME` 是否指向了另一个目录。
+- 检查启动命令中的 `-m`、`-c` 和 `--profile`，它们可能改变模型选择。
+- 检查项目级配置、系统或组织管理策略是否覆盖了用户配置中的模型选择。
+- 修改配置后退出程序，再启动一个新会话验证；恢复旧会话可能沿用该会话的设置。进入 TUI 后用 `/status` 核对，不要只根据模型的自我介绍判断。

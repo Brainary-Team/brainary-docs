@@ -4,7 +4,7 @@
 
 ### SnapshotPage
 
-**作用**：承载快照侧的分页结果，由 list 和 query 共用。
+**作用**：承载 list 的分页结果。
 
 **类型定义**：
 
@@ -15,7 +15,7 @@ interface SnapshotPage {
 }
 ~~~
 
-快照侧不使用 [BPage](05-elements.md)。这个分页外壳不带 revision，快照分页绑定的是不可变的快照 id，不是一个读版本。list 返回的 entries 是快照元数据条目，query 返回的 entries 是查询结果，两者共用同一个外壳。
+快照侧的两个多项读不共用一个外壳，这是刻意的。list 返回 SnapshotPage，它的 entries 是快照元数据条目，字段名沿用协议名、不改成 items；这个外壳不带 revision，因为列举快照不是对实例状态的读。query 返回的是 [BPage](05-elements.md)，带 revision，取值是快照捕获时的版本。于是 SnapshotPage 不带 revision、BPage 带，两者的差别就在这一位上。
 
 **示例**：
 
@@ -41,7 +41,9 @@ const created = await memory.snapshot.create({ kind: "check", round_ref: "round-
 text(created);
 ~~~
 
-后端返回的成功信息含快照 id、捕获时绑定的 schema 标识、实际捕获的状态版本、实例内的快照序号，以及一个明确区分导出成功和失败的导出结果。期望版本过期时协议返回 REVISION_CONFLICT，不会把较新状态当作指定版本的快照。
+后端返回的成功信息含快照 id、捕获时绑定的 schema 标识、实际捕获的状态版本、实例内的快照序号，以及一个明确区分导出成功和失败的导出结果。导出结果在协议面的形状已定：一个状态位加两个条件字段，状态只取「已导出」与「失败」两值，没有第三值；文件标识只在已导出时给出，是部署导出根下的相对标识、不由程序指定任意路径；失败时另给一段仅供诊断的说明，不得按它的文本写分支。
+
+本方法的失败走异常，不走返回值。它的返回体不是 [CommitResult](05-elements.md)，没有 ok 这一位，所以期望版本过期时抛 [WmRequestError](06-errors.md) 并带 REVISION_CONFLICT，不会回一个 ok 为 false 的结果，也不会把较新状态当作指定版本的快照。「版本冲突不抛异常」那条例外只适用于返回 CommitResult 的方法，本方法不在其中，调用处要用 try/catch 而不是判 ok。
 
 ### list(options?)
 
@@ -68,7 +70,7 @@ text(page.entries);
 
 **参数约束**：options 必须含 target 和 structure。快照路径上没有集合句柄，所以 structure 不会被自动注入，必须由调用方给出；缺少它返回 INVALID_ARGUMENT。target 取 nodes 或 edges 时 structure 必须是一个 graph 名。
 
-**返回值类型**：Promise<[SnapshotPage](07-snapshot.md)>，entries 是查询结果。
+**返回值类型**：Promise<[BPage](05-elements.md)>，items 是查询结果，revision 取快照捕获时的版本。
 
 **示例**：
 
@@ -77,7 +79,7 @@ const page = await memory.snapshot.query(snapshot_id, {
   target: "nodes",
   structure: "incident_graph",
 });
-text(page.entries.length);
+text(page.items.length);
 ~~~
 
 示例里的 snapshot_id 来自接入侧索引或本 Run 的列举结果。本方法不装载、也不改写当前 Run。结果必须按快照捕获时的 schema 解释，历史数据不按当前 schema 重新解释。map 的历史不另建一套接口，用的就是本方法。
@@ -88,7 +90,7 @@ text(page.entries.length);
 
 association 由 WM 只校验形状和大小、保存并返回，不解释业务含义。它是接入侧的业务字段，不是 WM 解释执行的控制参数。检查轮次建议记录类别、稳定的轮次引用和结果，适用时另记判据引用与判据版本。
 
-同一状态可以生成多个不同快照。响应丢失后重试可能多拍一份，WM 不去重，也不标记重试产物，同一个业务轮次可能对应多条快照，不能假定一轮一快照。
+同一状态可以生成多个不同快照。响应丢失后重试可能多拍一份，WM 不去重，也不标记重试产物，同一个业务轮次可能对应多条快照，不能假定一轮一快照。这件事在查询端有一条可直接实现的规则：同一个轮次引用对应多条记录时取序号最大的那条，序号是正式字段且单调递增。
 
 ## 持久化与导出
 
@@ -108,9 +110,9 @@ query 按宿主注入的授权范围检查，可以跨 Run，但只在 WM 进程
 
 ## 当前未确定
 
-三个方法的完整 JS 返回形状尚未确定，列举与查询的分页参数位置、以及导出结果的字段名也尚未确定。上面只说明已有依据的语义，不能把示例里的字段访问当作稳定的调用面。
+list 与 query 的分页外壳已定，分别是 SnapshotPage 与 [BPage](05-elements.md)；create 的完整 JS 返回形状与列举、查询的分页参数位置仍未确定。上面只说明已有依据的语义，未定的那几处不能把示例里的字段访问当作稳定的调用面。
 
-create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字段名写分支。创建成功与 REVISION_CONFLICT 这个失败分支如何统一成一个 JS 签名也尚未确定。
+create 的成功响应里各项对应的 JS 字段名尚未确定，不要按字段名写分支 —— 未定的是协议字段到 JS 字段名这一层映射，不是语义，上面已写明的那几项和导出结果的形状都已有依据。创建成功与版本冲突这两支怎么写已经定了：成功走返回值、冲突走异常，不需要统一成一个返回形状。
 
 ## 相关文档
 

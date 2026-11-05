@@ -13,11 +13,11 @@ interface BNode {
   id: string;
   node_class: string;
   parent_id?: string | null;
-  properties: object;
+  props: object;
 }
 ~~~
 
-实例由 new BNode({ id, node_class, properties }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。properties 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 WM 维护，不在构造器参数内。
+实例由 new BNode({ id, node_class, props }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。props 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 WM 维护，不在构造器参数内。
 
 **示例**：
 
@@ -25,7 +25,7 @@ interface BNode {
 const node = new BNode({
   id: "node-1",
   node_class: "Task",
-  properties: { title: "排查移动端 401" },
+  props: { title: "排查移动端 401" },
 });
 ~~~
 
@@ -41,11 +41,11 @@ interface BEdge {
   edge_class: string;
   from_id: string;
   to_id: string;
-  properties?: object;
+  props?: object;
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, properties }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 properties 必填，未声明时必须是空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了 value_type 时 props 必填，未声明时必须是空对象或省略。
 
 **示例**：
 
@@ -55,7 +55,7 @@ const edge = new BEdge({
   edge_class: "has_evidence",
   from_id: "node-1",
   to_id: "node-2",
-  properties: {},
+  props: {},
 });
 ~~~
 
@@ -100,6 +100,13 @@ interface CommitResult {
 ~~~
 
 ok 表示本次提交是否落地，接受一次调用不等于提交成功。revision 在成功时是提交后的新版本，在版本冲突时是服务端的当前版本。generated 只出现在 [BList](04-blist-bmap.md) 的 append 上，带出服务端分配的 position，其余方法没有这一位，不是空对象。
+
+generated 有两种形状，按本次提交里 append 的个数判别：
+
+- 一次单独的 append，或一个批次里只有一个 append，回 `generated.position`，没有 positions 这一位。
+- 同一个批次里有两个或更多 append，回 `generated.positions` 数组，每项至少含 change_index、item_id 和 position。change_index 指向原始变更序列的下标，供调用方与自己登记的那一项交叉核对；不能只靠 item_id 关联，因为不同 list 可以用相同的 item_id。非 append 的变更项不占位，所以数组长度等于本批次 append 的个数，不等于变更项总数。
+
+判别方式就是看有没有 positions 这一位。提交失败时不返回部分 generated，版本冲突走 ok 为 false 并且不带生成结果。
 
 **示例**：
 
@@ -206,7 +213,7 @@ id 由调用方提供，必须是非空字符串，在整个实例内唯一。�
 
 类别由集合名和类别名共同定位，别的集合里存在同名类别不会使本次写入有效。两个不同类别可以引用同一个值类型。缺端点这类构造期失败在构造处就抛出，不等到写入期。
 
-properties 的更新粒度是一层字段，嵌套对象与数组只能整体替换，需要逐项更新的数据应声明为 list。edge_class、from_id 和 to_id 都不在 update_edge 的 set 与 unset 范围内，改类别或改端点需要删除后重建。
+props 的更新粒度是一层字段，嵌套对象与数组只能整体替换，需要逐项更新的数据应声明为 list。edge_class、from_id 和 to_id 都不在 update_edge 的 set 与 unset 范围内，改类别或改端点需要删除后重建。
 
 边的两个端点必须属于所选 graph。端点存在与端点类别相容按一个批次的最终状态校验，批次内部允许先登记边再登记端点。
 
@@ -241,9 +248,11 @@ BatchBuilder 与批次专用句柄仅在所属回调同步执行期间有效。�
 
 items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgraph.md) 的 query 按 target 返回 BNode 或 BEdge，[BTree](03-btree.md) 的 query 与 children 返回带 parent_id 的 BNode，[BList](04-blist-bmap.md) 的 query 返回 BListItem，[BMap](04-blist-bmap.md) 的 query 返回 BMapItem，BGraph 的 neighbors 返回 BNeighborItem。
 
-游标由 WM 生成，对调用方不透明，只能原样传回。它至少编码了目标、规范化过滤器、排序键和读版本，并在作用域内防篡改。调用方不得自行构造、解析或偏移游标，这与 offset 式分页有本质区别。游标钉住发出它的那次读的版本，继续分页恒在同一读版本上进行，翻页期间发生的提交不使它失效。
+游标由 WM 生成，对调用方不透明，只能原样传回。它至少编码了实例身份、读版本、目标与集合、规范化后的过滤排序与 include 条件、末项排序键和到期时间，并在作用域内防篡改。调用方不得自行构造、解析或偏移游标，这与 offset 式分页有本质区别。游标钉住发出它的那次读的版本，继续分页恒在同一读版本上进行，翻页期间发生的提交不使它失效。
 
-该读版本被压实后游标失效，走一个独立于 REVISION_CONFLICT 的错误码，并回带当前仍可用的最旧版本。收到该码时的恢复路径是丢弃本地视图、重新发起首次读、从新的版本继续，不是重读同一页。
+翻页时唯一可以变的是 limit，它允许在声明的页大小上限内逐页变化，但不得改变结果集合与排序。查询条件编码在游标里，换了过滤、排序或 include 就不是同一次分页，续页会按条件与句柄不匹配拒绝。游标也不充当授权凭证：每次请求都重新授权，持有一个游标不等于保有读的权限。
+
+读句柄失效时返回 PAGINATION_EXPIRED，它独立于 REVISION_CONFLICT，details 回带当前仍可用的最旧版本，并以 reason 区分「读版本已被压实」与「句柄 TTL 到期」两种成因。收到该码时的恢复路径是丢弃本地视图、重新发起首次读、只组合同一个新读版本上的页，不是重读同一页、也不能把新页拼到旧页上。逐条说明见 [WmErrorCode](06-errors.md) 的分页游标失效。
 
 单项读取也返回这个分页体。按唯一键查询时 items 的长度上界是 1，没有匹配项时 items 是空数组，这不是错误。BTree 的 get、parent 和 root 不套本类型，不返回读版本。
 
@@ -255,11 +264,11 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 
 ## 当前未确定
 
-一个批次包含多个 append 时 generated 如何对应各项尚未确定，当前批次里的 append 不能依赖这个字段。
+generated 的两种形状及其判别方式见上面的 CommitResult。
 
-游标失效的那个错误码还没有定名，不在 [WmErrorCode](06-errors.md) 的清单里。游标的有效期与保留预算两个数值也尚未确定，在拿到数之前分页会不会中断只能定性，不能定量。
+游标失效走 PAGINATION_EXPIRED，它在 [WmErrorCode](06-errors.md) 的清单里。游标的有效期与保留预算两个数值仍未确定，在拿到数之前分页会不会中断只能定性，不能定量。
 
-BNeighborItem 的字段全集尚未确定，未列出的字段不能作为调用依据。
+BNeighborItem 的类名与字段名都已冻结，可以写进自己的函数签名；未列出的字段不能作为调用依据。未定的是 node 这一位到底算不算可选：协议把每项描述成「相邻节点加可选边」一对，读起来 node 必有，而 include 的 nodes 允许传 false、那时返回项里就没有 node。本页按后者把两位都标成可选，这一处以协议的后续澄清为准。
 
 ## 相关文档
 

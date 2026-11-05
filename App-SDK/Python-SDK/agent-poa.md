@@ -9,8 +9,9 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 ## 前置条件
 
 - Python 3.10 或更高版本。
-- 支持 PoA 和 code mode 的 Brainary 二进制；`brainary` 与
-  `codex-code-mode-host` 必须位于同一目录。
+- 支持 PoA 和 code mode 的完整 Brainary 运行时安装包；保留全部解压目录，
+  `bin/brainary` 与 `bin/brainary-code-mode-host` 必须位于同一目录，Windows 对应
+  文件带 `.exe` 后缀。
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
 - 一个已打包的 `.poa` 文件。SDK 不接受未打包目录；打包方式见
@@ -23,7 +24,7 @@ from brainary import Brainary, BrainaryConfig, PoaPackage
 
 package = PoaPackage.load("/srv/poas/review.poa")
 
-with Brainary(config=BrainaryConfig(brainary_bin="/opt/brainary/brainary")) as brainary:
+with Brainary(config=BrainaryConfig(brainary_bin="/opt/brainary/bin/brainary")) as brainary:
     agent = brainary.thread_start(
         cwd="/srv/workspaces/project",
         dev_poas=[package],

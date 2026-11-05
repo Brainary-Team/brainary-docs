@@ -2,6 +2,7 @@
 
 本文说明当前 Brainary 项目的终端交互界面（TUI），包括基本输入方式、快捷键、公开的斜杠命令和常见操作流程。
 
+首次使用请先按[配置说明](<Brainary API Key 使用前配置说明.md>)填写 `~/.brainary/config.toml`；设置过 `BRAINARY_HOME` 时使用该目录中的配置。
 
 ## 快速开始
 
@@ -73,13 +74,14 @@ brainary "检查这个项目当前未提交的修改"
 | `/copy` | 以 Markdown 复制最近一次完成的回复 | 需要把已完成回复粘贴到其他工具时 |
 | `/raw` | 切换原始滚动模式 | 终端选择或复制格式化输出不方便时 |
 | `/status` | 显示当前会话配置和 Token 使用情况 | 核对模型、权限、工作目录和上下文余量时 |
+| `/usage` | 查看当前已保存会话的 LLM 用量及模型分组 | 核对执行轮数、Token 消耗和记录的耗时时 |
 | `/title` | 配置终端标题显示内容 | 同时打开多个项目或会话，需要从标签快速区分时 |
 | `/statusline` | 配置状态栏显示内容 | 希望持续看到模型、分支、Token 或任务进度时 |
 | `/theme` | 选择语法高亮主题 | 代码颜色在当前终端不清楚时 |
 | `/exit` | 退出 Brainary | 当前工作结束或准备返回 Shell 时 |
 | `/clear` | 清空终端并开始一个新会话 | 同时需要清屏和重置对话上下文时 |
 
-`/btw` 和 `/quit` 是可直接输入的别名，不单独出现在默认菜单。`/app`、`/apps`、`/feedback`、`/logout`、`/plugins`、`/usage` 目前不是可用的公开入口。`/delete` 是永久删除操作；如只想暂时收起会话，请使用 `/archive`。
+`/btw` 和 `/quit` 是可直接输入的别名，不单独出现在默认菜单。`/app`、`/apps`、`/feedback`、`/logout`、`/plugins` 目前不是可用的公开入口。`/delete` 是永久删除操作；如只想暂时收起会话，请使用 `/archive`。
 
 ## 运行 PoA 包
 
@@ -114,7 +116,7 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 
 ### 使用条件与路径规则
 
-- 包目录根部需要有效的 `manifest.toml`，本机需要可用的 code-mode 运行环境。如果报缺少 `codex-code-mode-host`，需要补齐这个配套程序。
+- 包目录根部需要有效的 `manifest.toml`。本机应使用完整的 Brainary 运行时安装包，保留 `bin/brainary`、同目录的 `brainary-code-mode-host` 及其他配套目录；Windows 对应文件带 `.exe` 后缀。缺少配套文件时重新取得完整安装包，不要只复制主程序。
 - 当前仅支持本地运行；通过 `brainary --remote` 连接远程服务时不能执行 `/poa`，侧边会话中也不能执行。
 - `<PATH>` 可使用 absolute path 或相对路径；相对路径按提交命令时当前会话的工作目录解析。
 - TUI 不按 Shell 规则处理路径：空格直接保留，不要加引号或反斜杠转义，也不要使用 `~`、环境变量或通配符。例如输入 `/poa /path/to/my package`。
@@ -162,6 +164,16 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 2. 核对模型、审批策略、沙箱、工作目录和 Token 使用情况。
 
 预期结果：Brainary 打印当前会话摘要，便于确认它正在预期的目录和权限范围内运行。
+
+### 使用 `/usage` 查看模型用量
+
+1. 在当前会话完成一次任务，确保已有保存的会话记录。
+2. 输入 `/usage` 并按 `Enter`。
+3. 查看总执行轮数、总 Token、输入和输出 Token，以及记录的耗时合计；下方按模型提供方、模型及执行类型列出轮数和 Token。
+
+预期结果：TUI 直接显示当前会话的用量汇总。`calls` 按记录的执行轮次计数，一轮可能包含多次模型请求；`duration_ms` 的单位为毫秒。该功能不计算费用，也不代表模型提供方的账单。
+
+`/status` 用于核对当前配置和上下文余量，`/usage` 用于查看已保存的执行用量。没有保存记录时会显示提示；尚未写入磁盘的用量不会计入，远程会话暂不支持此查询。跨会话查询、查询归档会话或导出 JSON，请使用 CLI 的 [`brainary usage`](Brainary-CLI使用说明.md#llm-用量统计usage)。
 
 ### 使用 `/archive` 或 `/delete` 整理会话
 
