@@ -13,33 +13,40 @@
 
 ---
 
-## 0. 取得两个二进制
+## 0. 取得完整运行时安装包
 
-运行 PoA 需要两个二进制，且必须位于同一目录：
+运行 PoA 需要完整的 Brainary 运行时安装包。其中两个主执行文件位于同一个 `bin/` 目录，Windows 对应文件带 `.exe` 后缀：
 
 | 二进制 | 作用 |
 | --- | --- |
-| `brainary` | 本项目的 CLI 与 app-server，提供 `--poa` 与 `thread/codeMode/exec` |
-| `codex-code-mode-host` | 承载 V8 的独立沙箱进程，由 `brainary` 拉起。`brainary` 按自己所在目录去找它 |
+| `bin/brainary` | 本项目的 CLI 与 app-server，提供 `--poa` 与 `thread/codeMode/exec` |
+| `bin/brainary-code-mode-host` | 承载 V8 的独立沙箱进程，由 `brainary` 拉起 |
 
-两者一起打在 `brainary-poa-<平台>.tar.gz` 里，发布在本项目的 GitHub release 页：
+发布包下载地址：
 
 <https://github.com/Brainary-Team/brainary-codex/releases>
 
-当前只发布 `x86_64-unknown-linux-musl` 一个平台，版本都是 `dev-<分支名>-<时间戳>` 形式的预发布，尚无正式 release。
+在发布页的 Assets 中选择与你的操作系统和架构匹配的完整运行时安装包，
+并下载同一发布页的校验文件。
 
 两条硬约束：
 
-- **两个文件必须放在同一目录。**
-- **机器上装过 `codex` 时，注意不要调到那一个。** 本篇所有命令都写完整路径。
-
-> macOS 与 arm64 当前没有制品。
+- **保留完整解压目录结构。** 不要只复制两个执行文件；包内的 `brainary-package.json`、`brainary-resources/`、`brainary-path/` 等也应保留。
+- **确认调用的是这份包中的 `bin/brainary`。** 下文命令中的 `brainary` 指该程序；未加入 PATH 时请使用它的 absolute path，避免调到旧安装。
 
 ---
 
-## 1. 配置 `CODEX_HOME/config.toml`
+## 1. 配置 `~/.brainary/config.toml`
 
-`CODEX_HOME` 默认是 `~/.codex`。最小推荐配置：
+默认用户配置文件为 `~/.brainary/config.toml`，Windows 对应
+`$HOME\.brainary\config.toml`，无需设置环境变量。自定义目录时，先创建目录并将其
+absolute path 设为 `BRAINARY_HOME`，再编辑该目录中的 `config.toml`；操作步骤见
+[配置说明](<../CLITUI-Command/Brainary API Key 使用前配置说明.md#自定义配置目录>)。
+
+项目级配置、系统或组织管理策略仍可能影响最终生效的配置；其覆盖关系见
+[CLI 配置说明](../CLITUI-Command/Brainary-CLI使用说明.md#配置与数据目录)。
+
+最小推荐配置：
 
 ```toml
 model = "gpt-5.6-luna"

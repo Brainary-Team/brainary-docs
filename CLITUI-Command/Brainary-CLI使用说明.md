@@ -72,6 +72,7 @@ brainary poa /path/to/package.poa
 | `brainary archive` | 归档指定会话 |
 | `brainary unarchive` | 恢复已归档会话 |
 | `brainary delete` | 永久删除指定会话 |
+| `brainary usage` | 查看已保存会话的 LLM 用量，支持指定会话或输出 JSON |
 | `brainary completion` | 生成 Shell 自动补全脚本 |
 | `brainary doctor` | 检查安装、配置、认证、运行环境、Git、终端、MCP 和会话状态 |
 | `brainary sandbox` | 在 Brainary 提供的沙箱中执行命令 |
@@ -146,7 +147,7 @@ brainary exec --ephemeral "解释这个函数"
 | --- | --- | --- |
 | `--skip-git-repo-check` | boolean flag | 允许在非 Git 仓库目录中运行 |
 | `--ephemeral` | boolean flag | 不在磁盘上保存本次会话 |
-| `--ignore-user-config` | boolean flag | 不读取用户配置；认证仍使用 `CODEX_HOME` |
+| `--ignore-user-config` | boolean flag | 不读取 Brainary 用户目录中的 `config.toml`；认证仍使用该目录 |
 | `--ignore-rules` | boolean flag | 不读取用户或项目的 execpolicy `.rules` 文件 |
 | `--output-schema` | 文件路径 | 用 JSON Schema 约束最终回复结构 |
 | `--json` | boolean flag | 以 JSONL 输出执行事件 |
@@ -181,7 +182,7 @@ brainary exec --poa ./workflow.poa
 使用条件和限制：
 
 - 包目录根部必须包含有效的 `manifest.toml`；`.poa` 文件是相同目录结构的打包形式。
-- 本机需要可用的 code-mode 运行环境；如果报缺少 `codex-code-mode-host`，需要补齐这个配套程序。当前不支持通过 `--remote` 执行 PoA。
+- 本机需要完整的 Brainary 运行时安装包；`bin/brainary` 与 `bin/brainary-code-mode-host` 应位于同一目录，Windows 对应文件带 `.exe` 后缀。保留完整解压目录结构，不要只复制主程序；缺少配套文件时重新取得完整安装包。当前不支持通过 `--remote` 执行 PoA。
 - `brainary poa` 不接受普通任务描述或图片参数；使用 `exec --poa` 时，也不能与普通 `[PROMPT]`、`exec resume` 或 `exec review` 组合。
 - CLI 中的相对包路径按启动命令时的 Shell 目录解析；`-C` 指定的是任务工作目录。两者不同时，建议使用 absolute path，避免加载错包。
 - 路径包含空格时，按 Shell 的规则加引号，例如 `brainary poa "/path/to/my package"`。TUI 的 `/poa` 路径规则不同。
@@ -205,6 +206,34 @@ brainary exec --poa ./workflow.poa
 | `brainary delete <UUID> --force` | 会话 UUID | 跳过确认并永久删除指定会话 |
 
 > `brainary delete` 是不可恢复操作。`--force` 会跳过确认，而且此时会话参数必须是 UUID。
+
+### LLM 用量统计：`usage`
+
+读取本机已保存的会话记录，按会话显示 Token 用量、执行轮数和耗时，并按模型提供方、模型及执行类型分组。默认只读取未归档的会话。
+
+```bash
+# 查看所有已保存、未归档会话的用量
+brainary usage
+
+# 查看指定会话，用实际会话 UUID 替换占位符
+brainary usage --session "<THREAD_ID>"
+
+# 同时查看已归档会话
+brainary usage --include-archived
+
+# 将统计结果保存为 JSON
+brainary usage --json > usage.json
+```
+
+| 参数 | 类型或取值 | 说明 |
+| --- | --- | --- |
+| `--session <THREAD_ID>` | 会话 UUID | 只查询指定会话；也可直接查询已归档会话，无须另加 `--include-archived` |
+| `--include-archived` | boolean flag | 批量查询时包含已归档会话 |
+| `--json` | boolean flag | 输出 JSON 数组，每项包含会话记录路径、逐轮明细、汇总及分组统计 |
+
+默认输出可读文本，其中 `calls` 是记录的执行轮数，一轮内可能包含多次模型请求；`tokens`、`input`、`output` 分别是总 Token、输入 Token 和输出 Token；`duration_ms` 是记录中各轮耗时的合计，单位为毫秒。分组中的 `regular` 表示普通轮次，`poa_cell` 表示 PoA 程序单元轮次，`unknown` 表示类型未知。
+
+统计以已写入磁盘的记录为准，不保存的会话和尚未写入的用量不会计入；缺失的模型信息可能显示为 `unknown-model` 或 `unknown-provider`。该功能不计算费用，也不代表模型提供方的账单。TUI 中可用 [`/usage`](Brainary-TUI使用说明.md#使用-usage-查看模型用量) 查看当前会话。
 
 ### 环境诊断：`doctor`
 
@@ -293,17 +322,19 @@ brainary unarchive <会话名称或UUID>
 - `-a never` 表示执行过程中不再请求人工确认；它不等同于关闭沙箱，实际访问范围仍由 `--sandbox` 决定。
 - CI 中可组合 `--json` 与 `--output-last-message <FILE>`，分别保存过程事件和最终自然语言结果。
 
-## 配置与兼容路径
+## 配置与数据目录
 
-当前版本仍沿用上游兼容配置路径和环境变量：
+用户配置和运行数据使用 Brainary 自己的目录：
 
 | 标识 | 用途 |
 | --- | --- |
-| `~/.codex/config.toml` | 默认用户配置文件 |
-| `CODEX_HOME` | 覆盖配置、认证及会话数据目录 |
-| `$CODEX_HOME/<name>.config.toml` | `--profile <name>` 对应的叠加配置文件 |
+| `~/.brainary/config.toml` | 默认用户配置文件；Windows 对应 `$HOME\.brainary\config.toml` |
+| `BRAINARY_HOME` | 覆盖用户配置、认证及会话数据目录；目录必须已存在，未设置或值为空时使用 `~/.brainary` |
+| `<Brainary home>/<name>.config.toml` | `--profile <name>` 对应的叠加配置文件；`<Brainary home>` 是上述实际生效的目录 |
 
-这些名称属于存储和配置兼容标识。保留它们可以继续读取已有配置与会话，不代表用户启动命令仍是 `codex`；当前 CLI 入口是 `brainary`。
+默认目录无需设置环境变量；自定义目录的步骤见[配置说明](<Brainary API Key 使用前配置说明.md#自定义配置目录>)。
+
+项目级配置、系统或组织管理策略，以及 `-m`、`-c`、profile 和恢复的会话，都可能影响实际模型。排查步骤见[模型与配置不一致](<Brainary API Key 使用前配置说明.md#模型与配置不一致>)。
 
 当前版本不提供顶层 `brainary login`、`brainary logout` 或 `brainary update`。如果后续接入新的账户或更新体系，应以对应版本的 `brainary --help` 为准。
 
@@ -313,5 +344,6 @@ brainary unarchive <会话名称或UUID>
 brainary --help
 brainary poa --help
 brainary exec --help
+brainary usage --help
 brainary doctor --help
 ```

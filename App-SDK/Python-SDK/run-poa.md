@@ -10,10 +10,11 @@ Brainary Python SDK 把 `.poa` 包和业务输入提交到开启了 code mode �
 ## 前置条件
 
 - Python 3.10 或更高版本。
-- 支持 PoA input 和 `thread/codeMode/exec` 的 Brainary 二进制；`brainary` 与
-  `codex-code-mode-host` 必须放在同一目录。
+- 支持 PoA input 和 `thread/codeMode/exec` 的完整 Brainary 运行时安装包；保留全部
+  解压目录，`bin/brainary` 与 `bin/brainary-code-mode-host` 必须位于同一目录，
+  Windows 对应文件带 `.exe` 后缀。
 - 已按[快速开始](../../PoA-Guide/02-quickstart.md)配置模型、认证信息与
-  `CODEX_HOME/config.toml`。
+  `~/.brainary/config.toml`；设置 `BRAINARY_HOME` 后改用该目录中的 `config.toml`。
 - 一个已打包的 `.poa` 文件。SDK 不接受包目录，也不编译 `input_schema.ts`；请按
   [PoA input 编写说明](../../PoA-Guide/09-input.md)准备包含 JSON Schema 的包。
 
@@ -40,8 +41,8 @@ from pathlib import Path
 
 from brainary import Brainary, BrainaryConfig, Poa, PoaPackage
 
-# brainary 和 codex-code-mode-host 必须保存在同一目录。
-BRAINARY_BIN = Path("/path/to/brainary-poa/brainary")
+# 保留完整运行时安装包；bin 内包含 brainary 和 brainary-code-mode-host。
+BRAINARY_BIN = Path("/path/to/brainary-package/bin/brainary")
 POA_FILE = Path("/path/to/city_plan.poa")
 WORKSPACE = Path("/path/to/workspace")
 

@@ -12,6 +12,8 @@ PoA 把这个关系倒过来：调度、分发、汇总、判定全部写在程�
 > [AgentOrchestration API](07-api-reference/01-agent-orchestration.md) →
 > [05 编写指南 §12](05-writing.md#12-完整范例)。其余按需查。
 
+> Brainary 默认使用 `~/.brainary` 保存用户配置和运行数据，可通过 `BRAINARY_HOME` 指定目录。安装与配置步骤见[快速开始](02-quickstart.md)。
+
 下面只画程序的结构，**是伪代码，不能直接运行**：其中 reviewer 是已配置的 Agent。
 
 ```js
@@ -40,7 +42,7 @@ text(batch);
 
 | # | 文档 | 文件 | 内容 |
 | --- | --- | --- | --- |
-| 01 | 概览 | [01-overview.md](01-overview.md) | PoA 是什么、解决什么问题、与自建编排框架的分工、brainary 把它接在 codex 的哪一层、程序的典型形状 |
+| 01 | 概览 | [01-overview.md](01-overview.md) | PoA 是什么、解决什么问题、与自建编排框架的分工、PoA 在 Brainary 中的接入位置、程序的典型形状 |
 | 02 | 快速开始 | [02-quickstart.md](02-quickstart.md) | 取得二进制 → 写 `config.toml` → 跑探针包 → 接上第一个 agent → 打开可选工具组 |
 | 03 | 核心概念 | [03-concepts.md](03-concepts.md) | 四节：三个角色与 cell、prelude 与内置的分界、沙箱里有什么、怎么确定是哪一代后端 |
 | 04 | 工作原理 | [04-how-it-works.md](04-how-it-works.md) | code mode、`tools.foo()` 的分发路径与工具并行安全判据 |
@@ -59,13 +61,13 @@ text(batch);
 
 | 术语 | 含义 |
 | --- | --- |
-| brainary | 本项目。它建在 codex 之上：codex 提供 V8 沙箱、工具面与子 agent；brainary 提供 PoA 这条通道、`.poa` 包格式与包自带 MCP |
-| codex | PoA 所在的那套 agent 运行时。文中凡是说"codex 内置""codex 的某某"，指的都是这一层提供的东西 |
+| Brainary | 本项目，提供 Agent 运行时、V8 沙箱、工具与子 agent，以及 PoA 通道、`.poa` 包格式和包自带 MCP |
+| 运行时 | Brainary 中负责模型调用、工具执行、沙箱与会话管理的部分 |
 | PoA | Program of Agent，"驱动 agent 的程序"。既指开发者编写的那段 JavaScript，也指这整条通道 |
 | `.poa` 包 | brainary 定义的分发形态：一个 zip，根上放 `manifest.toml`，里面是程序本体和它自带的 MCP server。提交接口只收这一种形状，只持有一段 JS 时同样封装成一个"申报零能力"的包 |
 | manifest | 包里的 `manifest.toml`：`[poa]` 元数据 + `[[capabilities.mcp]]` 能力申报。申报了的 server 起不来就拒跑 |
 | cell | 一次提交的那整段 JS 的一次运行。一次提交 = 一个 cell = 一次跑完 |
-| 宿主 | 跑这段程序的那个 codex 运行时，即 `brainary exec --poa` 或 `brainary app-server` 那个进程。它持有工具注册表与分发链路、审批与沙箱策略、子 agent 的注册表与名额，并拉起 `codex-code-mode-host` 那个独立进程来承载 V8。文中"宿主侧""宿主配置的"指的都是它，与开发者自己的进程相对 |
+| 宿主 | 跑这段程序的 Brainary 运行时，即 `brainary exec --poa` 或 `brainary app-server` 那个进程。它持有工具注册表与分发链路、审批与沙箱策略、子 agent 的注册表与名额，并拉起 `brainary-code-mode-host` 那个独立进程来承载 V8。文中"宿主侧""宿主配置的"指的都是它，与开发者自己的进程相对 |
 | code mode | ordinary CodeMode 给模型直接工具 + `exec`；CodeModeOnly 把 nested tools 折叠进 `exec`，但 `wait` / `DirectModelOnly` 工具仍独立可见。详见 [04 工作原理](04-how-it-works.md) |
 | 工具面 | 一次运行中可用的工具集合。新 SDK 的全局 `tools` 汇总各执行器的工具枚举，每个枚举成员的值都是字符串；通过执行器方法调用工具 |
 | 曝光度 | 决定工具对模型和 cell 是否可见。`DirectModelOnly` 不进 cell；`Deferred` 可在 cell 调用但不展开进 CodeModeOnly 的 `exec` 正文。运行时声明见 [拆分后的 API 参考](07-api-reference.md) |
