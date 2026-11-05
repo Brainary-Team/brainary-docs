@@ -27,7 +27,7 @@ wire_api = "responses"
 
 [model_providers.deepseek]
 name = "DeepSeek"
-base_url = "https://api.deepseek.com/anthropic/v1"
+base_url = "https://api.deepseek.com/v1"
 env_key = "DEEPSEEK_API_KEY"
 wire_api = "responses"
 
@@ -59,6 +59,13 @@ max_concurrent_threads_per_session = 8
 ```bash
 export VENDOR_API_KEY="替换为主模型服务的 API Key"
 export DEEPSEEK_API_KEY="替换为 DeepSeek 的 API Key"
+```
+
+也可以把 API Key 写入 `config.toml` 同目录下的 `.env` 文件，Brainary 启动时自动读取，不必每次在终端设置：
+
+```dotenv
+VENDOR_API_KEY=替换为主模型服务的 API Key
+DEEPSEEK_API_KEY=替换为 DeepSeek 的 API Key
 ```
 
 `spawn_agent` 派出的 agent 使用默认 provider 和默认模型。程序用 `create_agent` 创建 agent 时，可以在 `model.provider` 中指定任一 provider 的 id：
