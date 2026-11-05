@@ -1,6 +1,6 @@
 # 示例
 
-两个完整程序：代码审查展示业务输入和 `create_agent` 的用法，随包携带 MCP 工具展示如何把 MCP server 和程序打进同一个包。
+两个完整程序：代码审查展示业务输入和 `create_agent` 的用法，随包携带 MCP 工具展示如何把 MCP server 和程序打进同一个包。两个项目都从 [PoA 模板](01-quickstart.md#2-创建项目) 创建，用 `pnpm package` 打包。
 
 ## 代码审查
 
@@ -38,7 +38,7 @@ version = "0.1.0"
 description = "审查指定文件，并指出最需要先修的问题"
 runtime = "codex-v8"
 poa_api_version = 1
-entry = "src/main.ts"
+entry = "main.js"
 ```
 
 `src/main.ts`：
@@ -80,12 +80,12 @@ await reviewer.close();
 - `capabilities` 只授予执行命令的工具，`runtime.sandbox` 设为只读，审查过程不会修改文件。
 - `model.provider` 是 `config.toml` 中 provider 的 id，见 [配置 provider](02-configuration.md#配置-provider)。
 
-用 `brainary poa pack` 打包后，通过 Python SDK 传入输入运行：
+打包后，通过 Python SDK 传入输入运行：
 
 ```python
 from brainary import Brainary, BrainaryConfig, Poa, PoaPackage
 
-package = PoaPackage.load("code_review.poa")
+package = PoaPackage.load("dist/my-poa.poa")
 
 with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as brainary:
     thread = brainary.thread_start(
@@ -117,7 +117,7 @@ name = "echo_demo"
 version = "0.1.0"
 runtime = "codex-v8"
 poa_api_version = 1
-entry = "src/main.ts"
+entry = "main.js"
 
 [[capabilities.mcp]]
 name = "echo"

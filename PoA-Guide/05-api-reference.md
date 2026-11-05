@@ -1,6 +1,6 @@
 # PoA SDK API 参考
 
-`@brainary/poa-sdk` 是 ESM 包。全部 API 都可以从根入口导入，部分 API 也可以从子入口导入：
+`@brainary/poa-sdk` 是 ESM 包，用 `npm install @brainary/poa-sdk` 安装；从 [PoA 模板](https://github.com/Brainary-Team/brainary-poa-template) 创建的项目已包含它。全部 API 都可以从根入口导入，部分 API 也可以从子入口导入：
 
 | 入口 | 导出 |
 | --- | --- |
