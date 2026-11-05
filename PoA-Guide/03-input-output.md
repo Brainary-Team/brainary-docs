@@ -34,7 +34,7 @@ export interface InputParams {
 }
 ```
 
-`brainary poa pack` 会把它编译成 JSON Schema 写入包中。`input_schema.ts` 只能包含类型声明：interface、type、可选属性、数组、字面量、联合类型、交叉类型、对其他声明的引用和 JSDoc 约束标签；不支持 import、泛型声明和 interface extends。对象不接受未声明的字段。
+`pnpm package` 会把它编译成 JSON Schema 写入包中。`input_schema.ts` 只能包含类型声明：interface、type、可选属性、数组、字面量、联合类型、交叉类型、对其他声明的引用和 JSDoc 约束标签；不支持 import、泛型声明和 interface extends。对象不接受未声明的字段。
 
 程序从 `POA_INPUT` 读取输入：
 
@@ -51,7 +51,7 @@ text({ root, concurrency });
 ```python
 from brainary import Brainary, BrainaryConfig, Poa, PoaPackage
 
-package = PoaPackage.load("repo_scan.poa")
+package = PoaPackage.load("dist/my-poa.poa")
 
 with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as brainary:
     thread = brainary.thread_start(

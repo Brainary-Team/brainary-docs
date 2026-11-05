@@ -15,7 +15,7 @@ Python SDK 可以在创建 Agent 时，通过 `dev_poas` 把 `.poa` 包注册为
 - 使用 `responses` 协议的模型 provider。当前 `anthropic` 协议不会向模型发送 PoA
   使用的 namespace tools。
 - 一个已打包的 `.poa` 文件。SDK 不接受未打包目录；打包方式见
-  [快速开始](../../PoA-Guide/01-quickstart.md#6-打包)。
+  [快速开始](../../PoA-Guide/01-quickstart.md#5-打包)。
 
 ## 注册并使用 PoA
 
