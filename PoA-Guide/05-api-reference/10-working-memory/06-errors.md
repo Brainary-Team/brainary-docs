@@ -64,7 +64,7 @@ interface WmRequestError extends WmError {
 }
 ~~~
 
-约束失败一律抛这个类，没有一条后端拒绝走返回值。details 用于诊断，在协议层可定位到字段，图与树形如 changes 下的 element.props.title，list 与 map 形如 changes 下的 value.title。
+约束失败一律抛这个类，没有一条后端拒绝走返回值。details 用于诊断，在协议层可定位到字段。定位路径从本次调用的参数算起，图与树形如 element.props.title，list 与 map 形如 value.title。
 
 details 的整体形状不作为调用依据，可据以分支的只是协议明文规定必返的那几项，它是一份白名单，而不是“凡 details 里有的都能读”。当前在册的是：CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、CONSTRAINT_VIOLATION 在三条内置检查上的约束标识、RESOURCE_EXHAUSTED 的 reason 与 metric、RESULT_TOO_LARGE 的 max_items 与 actual_at_least、SCHEMA_TOO_LARGE 与 DATA_TOO_LARGE 的 limit 与 actual_at_least、INVALID_SCHEMA 的 rule 与定位路径及定位状态、以及字段级的定位路径。本页各处写“协议层在 details 里返回究竟是哪一条”时说的都是这几项，不是允许按别的键写分支。这条限制与下面那条“产出信封的那一侧还没有实现”是两件事：后者说当前连 code 都还得不到，前者说即使得到了也只有白名单内的项可依赖。
 
@@ -140,7 +140,7 @@ type WmErrorCode =
   | "UNSUPPORTED_VERSION";
 ~~~
 
-这二十四个是协议当前的全集，逐码含义见下面的错误码。其中有十个本阶段不会出现，各自的条目里都标了出来，不必为它们写分支。另有两个码不在这个集合里，但在规范中仍然有效：UNSUPPORTED_CAPABILITY 与 INSTANCE_UNRECOVERABLE 随后续阶段恢复，当前阶段没有可达输入，因此不列入上面的类型。除这两个之外协议没有集合外的错误码，收到未列出的 code 应按未知值记录，不要写进分支。
+上面是 WmErrorCode 当前的全部取值，逐码含义见下面的错误码。其中有十个本阶段不会出现，各自的条目里都标了出来，不必为它们写分支。本版没有这个集合之外的错误码；后续阶段启用新能力时可能增补，所以收到未列出的 code 应按未知值记录，不要写进分支。
 
 **示例**：
 
@@ -183,7 +183,7 @@ code 与 details 怎么跨传输边界传到 JS 侧已经确定，但产出这�
 
 输入与状态断言一类判的是请求内容和它对状态的假设：
 
-- INVALID_ARGUMENT：请求字段缺失、类型不符、参数组合非法，或类别未在所选集合声明。单项或属性大小超过声明上限也取这个码，请求文本超过字节上限同样如此：那是请求自身形状的问题，资源状况改变也不会成功。
+- INVALID_ARGUMENT：请求字段缺失、类型不符、参数组合非法，或类别未在所选集合声明。节点 id、边 id 与 list 的 item_id 超过 256 个 UTF-8 字节也取这个码。单项或属性大小超过声明上限也取这个码，请求文本超过字节上限同样如此：那是请求自身形状的问题，资源状况改变也不会成功。
 - INVALID_STRUCTURE：集合不存在、集合种类与操作不符，已授权的写入目标、边端点、树父节点或邻接起点属于另一集合，以及 list 的 value 不符声明的 item_type、map 的 key 或 value 不符声明的类型、按未声明的字段排序。item_id 不在这一类里：它不由 item_type 约束，它的类型错判给 INVALID_ARGUMENT。
 - STRUCTURE_CONFLICT：断言“目标不存在”而它实际存在，按调用时的状态求值，包括元素或条目的 id 已存在、put 以 create 模式遇到已存在的 key。set_parent 的期望父节点与实际当前父不符也取这个码，details 的 reason 为 tree_parent_mismatch，并返回实际父节点。反方向的那一支不在这里：put 以 replace 模式遇到不存在的 key 属于“目标不存在”，取 NOT_FOUND。
 - CONSTRAINT_VIOLATION：图、树或 schema 约束在本次写入之后不满足。

@@ -107,7 +107,9 @@ position 按调用先后递增，取每个 list 的单调高水位加一，所�
 **示例**：
 
 ~~~js
-const result = await retryByStatusCodeMap.put(503, 1, "upsert");
+const result = await retryByStatusCodeMap.put(503, 1, "upsert");   // 新建与覆盖都允许
+await retryByStatusCodeMap.put(429, 1, "create");                  // 429 已存在时被拒
+await retryByStatusCodeMap.put(503, 2, "replace");                 // 503 不存在时被拒
 ~~~
 
 模式不匹配一定报错，不会静默覆盖或静默创建。两支取的不是同一个码：create 遇到已存在的 key 返回 STRUCTURE_CONFLICT，语义是“已经存在”；replace 遇到不存在的 key 返回 NOT_FOUND，语义是“目标不存在”，与 replace、delete 这类要求目标存在的操作一致。key 或 value 不符 schema 声明返回 INVALID_STRUCTURE，整数 key 写成字符串属于这一类，不做隐式转换。
@@ -163,7 +165,7 @@ map 的历史不另建一套接口，对快照使用同样的 query，见 [memor
 
 ## 当前未确定
 
-上面七个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定，遇到本页未写明的取值规则不要自行推定。replace 与 append 的参数形状完全相同，这是有意保持的。
+上面七个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定，遇到本页未写明的取值规则不要自行推定。replace 与 append 的参数形状完全相同。
 
 ## 相关文档
 

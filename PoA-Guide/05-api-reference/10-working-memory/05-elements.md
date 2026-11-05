@@ -145,7 +145,7 @@ interface BMapItem {
 
 ~~~js
 const page = await retryByStatusCodeMap.query({ target: "map", filter: { key: 429 } });
-text(page.items[0].value);
+if (page.items.length > 0) text(page.items[0].value);
 ~~~
 
 ### BNeighborItem
@@ -172,7 +172,7 @@ text(page.items.map((item) => item.node?.id));
 
 ## id 与类别
 
-id 由调用方提供，必须是非空字符串，在整个实例内唯一。图的节点与树的节点不能重用同一个 id，节点与边各用一个命名空间。WM 不解析 id 的内部结构，也不做大小写或空白归一，T1 与 t1 是两个 id。
+id 由调用方提供，必须是非空字符串，在整个实例内唯一，长度不超过 256 个 UTF-8 字节，超长返回 INVALID_ARGUMENT。这个上限同样适用于边 id 与 [BList](04-blist-bmap.md) 的 item_id。图的节点与树的节点不能重用同一个 id，节点与边各用一个命名空间。WM 不解析 id 的内部结构，也不做大小写或空白归一，T1 与 t1 是两个 id。
 
 类别由集合名和类别名共同定位，别的集合里存在同名类别不会使本次写入有效。两个不同类别可以引用同一个值类型。缺端点这类构造期失败在构造处就抛出，不等到写入期。
 
@@ -208,7 +208,7 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 
 ## 当前未确定
 
-BNeighborItem 的类名与字段名都已稳定，可以写进自己的函数签名；未列出的字段不能作为调用依据。尚未确定的是 node 这个字段算不算可选：协议把每项描述成“相邻节点加可选边”一对，照此 node 必有，而 include 的 nodes 允许传 false，那时返回项里就没有 node。本页按后者把两个字段都标成可选，这一处以协议的后续澄清为准。
+上面七个类型的类名与字段名都已稳定，可以写进自己的函数签名；未列出的字段不能作为调用依据。边的属性类型在声明里还没有对应的位置，所以 BEdge 的 props 本阶段一律是空对象或省略，见[当前未确定](01-memory.md)。
 
 ## 相关文档
 

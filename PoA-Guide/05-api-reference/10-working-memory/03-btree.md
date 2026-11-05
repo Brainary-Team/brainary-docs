@@ -73,7 +73,7 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 ~~~
 
-更新粒度与图节点相同，是 props 的一层字段。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
+更新粒度与 set、unset 的参数规则都与 [update_node](02-bgraph.md) 相同。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT，改父只能走 set_parent。
 
 ### delete(node_id)
 
@@ -190,9 +190,9 @@ filter 的可用键是 id、node_class、parent_id、child_id 和已声明的一
 - 深度上限
 - 父子类别相容
 
-顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限由宿主能力声明带出，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里返回究竟是哪一条，details 的可用性见 [WmRequestError](06-errors.md)。但承载它的字段有两个，对应上面那条分层：四条写入期谓词各在 reason 的取值集合里占一个值，引用完整性作为内置强制项有意不进那个集合，由 details 的约束标识返回。
+顺序本身有后果，一个输入同时违反两条时返回前一条检查对应的错误码。无环排在深度之前，因为环上的节点到根没有路径，深度无定义。深度是根到该节点的边数，根为 0，上限是服务端固定的 64，不进 schema。深度超限归在 CONSTRAINT_VIOLATION，不归 RESOURCE_EXHAUSTED，它是确定性的输入性失败。违反以上任一条都返回 CONSTRAINT_VIOLATION，协议层在 details 里返回究竟是哪一条，details 的可用性见 [WmRequestError](06-errors.md)。但承载它的字段有两个，对应上面那条分层：四条写入期谓词各在 reason 的取值集合里占一个值，引用完整性作为内置强制项有意不进那个集合，由 details 的约束标识返回。
 
-两条判别规则跟着这个顺序一起读。成环与深度超限是两种不同的违规，不是同一种的两种程度：父链上溯正常终止于根、只是步数超过上限的那种输入属深度违规，不报成环；深度超限时 details 另外返回上限、实测深度和最深那个节点的 id：违规的节点可能不是任何一次调用的目标，没有它就无法定位。自环按成环处理，不另算一种。
+两条判别规则跟着这个顺序一起读。成环与深度超限是两种不同的违规，不是同一种的两种程度：父链上溯正常终止于根、只是步数超过上限的那种输入属深度违规，不报成环；深度超限时 details 另外返回上限 64、实测深度和最深那个节点的 id：违规的节点可能不是任何一次调用的目标，没有它就无法定位。自环按成环处理，不另算一种。
 
 单个方法另有自己的检查顺序，只执行该操作适用的检查：字段形状与必填、集合归属、目标状态前提、父指针比对、空操作。这五步评估的是调用自身与它执行之前的状态，五条判定评估的是它执行之后的状态。两者分两段：先逐项评估这五步，全部通过后再对写入之后的状态评估一次五条判定。
 
@@ -258,7 +258,6 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 
 children 的 options 里能不能再给 filter 尚未确定：协议层它展开成一次按 parent_id 过滤的 query，调用方自带的 filter 与那个自动注入的条件如何合并没有规定。要在子节点上再加筛选条件时改用 query，由调用方给出 parent_id。
 
-深度上限的具体数值待实测。
 
 ## 相关文档
 

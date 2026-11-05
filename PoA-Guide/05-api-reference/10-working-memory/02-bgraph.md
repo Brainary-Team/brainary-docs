@@ -52,7 +52,7 @@ const result = await incidentGraph.add_edge(
 
 **输入类型**：id: string；changes: object，形状是 { set?: object, unset?: string[] }，set 的键是属性名、值是新值，unset 是属性名的数组。
 
-**参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
+**参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。unset 是属性名的数组，其中的名字必须是已声明的非必填属性，且不得与 set 的键相交；违反这几条都返回 INVALID_ARGUMENT。
 
 **返回值类型**：Promise<[CommitResult](05-elements.md)>。
 
@@ -60,6 +60,7 @@ const result = await incidentGraph.add_edge(
 
 ~~~js
 const result = await incidentGraph.update_node("node-1", { set: { priority: 2 } });
+await incidentGraph.update_node("node-1", { unset: ["priority"] });
 ~~~
 
 字段缺失不表示删除，移除属性要写进 unset。粒度是 props 的一层字段，嵌套对象与数组只能整体替换。把 parent_id 写进 set 或 unset 返回 INVALID_ARGUMENT；目标不存在时返回 NOT_FOUND。
@@ -96,7 +97,7 @@ const result = await incidentGraph.delete_node("node-1");
 const result = await incidentGraph.update_edge("edge-1", { set: { weight: 3 } });
 ~~~
 
-形状与粒度同 update_node。改类别或改端点不在本方法的能力内，需要删除后重建。
+形状与粒度同 update_node。改类别或改端点不在本方法的能力内，需要删除后重建。本方法以该边类别声明了属性类型为前提，而边的属性类型在声明里还没有对应的位置，所以示例里的 weight 只是形状示意，本阶段写不出带属性的边，见下面的当前未确定。
 
 ### delete_edge(id)
 
@@ -148,6 +149,9 @@ direction 三者有意义的前提是边恒有向，这由 schema 固定，没�
 ~~~js
 const page = await incidentGraph.query({ target: "nodes", filter: { node_class: "Evidence" } });
 text(page.items.map((item) => item.id));
+
+const edgePage = await incidentGraph.query({ target: "edges", filter: { edge_class: "has_evidence" } });
+text(edgePage.items.map((edge) => edge.from_id));
 ~~~
 
 filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配。一次调用返回全部命中项，默认按元素 id 升序，target 为 nodes 时按节点 id、为 edges 时按边 id。这个默认顺序是确定的，不是“调用方不应依赖”。limit 的语义与命中项数上限见[默认序与结果规模](01-memory.md)。
