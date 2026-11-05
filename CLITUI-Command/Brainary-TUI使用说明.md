@@ -98,7 +98,7 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 
 1. 确认当前会话空闲。
 2. 输入 `/poa /path/to/package.poa` 并按 `Enter`。
-3. 在当前会话查看输出和完成状态；需要中断时按 `Esc`。
+3. 在当前会话查看输出、日志和完成状态；需要中断时按 `Esc`。
 
 预期结果：PoA 在当前会话执行，结束后可以继续使用 TUI。当前有普通模型任务时，可用 `Tab` 排队，或改用后台运行；如果已有 PoA 在运行，需要先等它结束。
 
@@ -107,7 +107,7 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 ### 后台运行与关闭
 
 1. 输入 `/poa bg /path/to/package.poa` 并按 `Enter`。
-2. 使用 `/thread` 切换到对应的 PoA 会话，查看进度和结果。
+2. 使用 `/thread` 切换到对应的 PoA 会话，查看日志、进度和结果。
 3. 需要关闭时，在该 PoA 会话中输入 `/poa close` 并按 `Enter`。
 
 预期结果：启动后台 PoA 不会自动切换当前界面。关闭成功后，TUI 移除对应的后台会话入口；这不等同于永久删除历史记录，也不保证后端资源立即全部释放。

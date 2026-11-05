@@ -190,6 +190,18 @@ brainary exec --poa ./workflow.poa
 
 预期结果：Brainary 打印 PoA 的执行输出；包路径、清单或包格式无效时，在启动执行前报错。
 
+#### 日志输出
+
+普通运行时，PoA 的 `logger` 日志打印到标准错误输出，显示级别、文字和可选数据；同时显示执行编号和存储位置，程序结果仍从标准输出返回。
+
+使用 `--json` 时，标准输出包含 `poa.log`（日志）、`poa.execution_started`（执行编号与存储位置），以及其他执行事件和程序输出。可以保存给脚本处理：
+
+```bash
+brainary poa --json ./workflow.poa > events.jsonl
+```
+
+日志随所属会话保存在 `~/.brainary/sessions/` 下的 Rollout 文件中，随 `BRAINARY_HOME` 改变；`--ephemeral` 不保存会话记录。上面的重定向文件是另存的命令输出。
+
 ### 会话管理
 
 | 参数或子命令 | 类型或取值 | 说明 |
