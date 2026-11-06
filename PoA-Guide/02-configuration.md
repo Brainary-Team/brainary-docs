@@ -27,9 +27,9 @@ wire_api = "responses"
 
 [model_providers.deepseek]
 name = "DeepSeek"
-base_url = "https://api.deepseek.com/v1"
+base_url = "https://api.deepseek.com/anthropic/v1"
 env_key = "DEEPSEEK_API_KEY"
-wire_api = "responses"
+wire_api = "anthropic"
 
 [agents]
 max_depth = 2
