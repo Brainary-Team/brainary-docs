@@ -1,6 +1,6 @@
 # MessageItem
 
-MessageItem 是发给 agent 的一个消息项，用于 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms) 的 items 和 [SpawnSpec](03-agent-executor.md#spawnspec) 的 message_items。多个消息项按数组顺序发送。
+MessageItem 是发给 agent 的一个消息项，用于 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms-thread_id) 的 items 和 [SpawnSpec](03-agent-executor.md#spawnspec) 的 message_items。多个消息项按数组顺序发送。
 
 ### ImageDetail
 

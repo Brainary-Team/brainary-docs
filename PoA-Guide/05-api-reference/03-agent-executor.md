@@ -3,7 +3,7 @@
 AgentExecutor 创建、派发、等待、查询、关闭和恢复 agent，kind 为 "agent"。
 
 - [create_agent](#create_agentname-description-agent_config)：按 [AgentConfig](02-agent-config.md) 创建 agent，返回可以多次运行的 [Agent](01-agent.md)。
-- [spawn_agent](#spawn_agentspawn_spec)：沿用当前程序的配置派出 agent 并立即开始任务，再用 [acquire_agent_result](#acquire_agent_resultagent_id-timeout_ms) 获取结果。
+- [spawn_agent](#spawn_agentspawn_spec)：沿用当前程序的配置派出 agent 并立即开始任务，再用 [acquire_agent_result](#acquire_agent_resultthread_id-timeout_ms-turn_id) 获取结果。
 
 以下示例中的 handle 是 spawn_agent 返回的句柄：
 
@@ -44,8 +44,8 @@ type AgentStatus =
 | shutdown | 已停止 |
 | not_found | 不存在或已关闭 |
 
-处于 pending_init、interrupted、completed、errored 时，可以用 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms) 开始新一轮。
-completed 的最终回复和 errored 的错误信息用 [acquire_agent_result](#acquire_agent_resultagent_id-timeout_ms) 获取。"idle" 尚未实现。
+处于 pending_init、interrupted、completed、errored 时，可以用 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms-thread_id) 开始新一轮。
+completed 的最终回复和 errored 的错误信息用 [acquire_agent_result](#acquire_agent_resultthread_id-timeout_ms-turn_id) 获取。"idle" 尚未实现。
 
 **示例**：
 
@@ -219,7 +219,7 @@ text(usage.remaining_tokens);
 
 ### create_agent({name, description?, agent_config})
 
-**作用**：按配置创建一个 agent。创建后状态为 pending_init，用 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms) 开始任务。
+**作用**：按配置创建一个 agent。创建后状态为 pending_init，用 [Agent.run](01-agent.md#runmessage-items-output_schema-timeout_ms-thread_id) 开始任务。
 
 **输入类型**：spec: [CreateAgentSpec](#createagentspec)。
 
@@ -270,28 +270,40 @@ const review = await agentExecutor.spawn_agent({
 });
 ~~~
 
-### acquire_agent_result(agent_id, timeout_ms?)
+### acquire_agent_result(thread_id, timeout_ms?, turn_id?)
 
-**作用**：等待指定 agent 的当前一轮结束并返回结果。agent 的状态已是 completed、errored、shutdown 或 not_found 时立即返回。
+**作用**：等待指定会话的一轮结束并返回结果。不传 turn_id 时等待当前一轮，会话的状态已是 completed、errored、shutdown 或 not_found 时立即返回；传入 turn_id 时只等待这一轮，这一轮已结束时立即返回它的结果。
 
 **输入类型**：
 
-- agent_id: string，必填。
+- thread_id: string，必填，会话的 ID。[create_agent](#create_agentname-description-agent_config) 创建的 agent 取 [AgentResult](01-agent.md#agentresult) 或 [AgentResultTimeoutError](01-agent.md#agentresulttimeouterror) 的 thread_id；spawn_agent 派出的 agent 取 [Handle](#handle) 的 agent_id。
 - timeout_ms?: number，最长等待时间，单位毫秒，默认 30000。有效范围为 10000–3600000：小于 10000 按 10000 处理，大于 3600000 按 3600000 处理。
+- turn_id?: string，要等待的一轮，取自 AgentResultTimeoutError 或 AgentResult 的 turn_id。省略时等待当前一轮。
 
 **返回值类型**：Promise<[AgentResult](01-agent.md#agentresult)>。
 
 **异常**：
 
 - timeout_ms 不是正整数：抛出 RangeError。
-- 超时：抛出 [AgentResultTimeoutError](01-agent.md#agentresulttimeouterror)。agent 继续运行，可以再次调用本方法。
-- agent_id 格式无效：抛出 Error。
+- 超时：抛出 [AgentResultTimeoutError](01-agent.md#agentresulttimeouterror)。会话继续运行，可以再次调用本方法。
+- thread_id 格式无效，或 turn_id 不是该会话的一轮：抛出 Error。
 
 **示例**：
 
 ~~~js
+import { AgentResultTimeoutError } from "@brainary/poa-sdk";
+
 const result = await agentExecutor.acquire_agent_result(handle.agent_id, 120_000);
 text({ status: result.agent_status, answer: result.result, error: result.error });
+
+// run 超时后，接着等同一轮
+try {
+  text((await agent.run("全面审查 src/")).result);
+} catch (error) {
+  if (!(error instanceof AgentResultTimeoutError)) throw error;
+  const late = await agentExecutor.acquire_agent_result(error.thread_id, 300_000, error.turn_id);
+  text(late.result);
+}
 ~~~
 
 ### get_status(agent_id)
@@ -335,7 +347,7 @@ text(await agentExecutor.close(handle.agent_id)); // "completed"
 
 ### resume(agent_id)
 
-**作用**：按 ID 恢复已关闭的 agent，与 [Agent.resume()](01-agent.md#resume) 相同。恢复后的 agent 保留关闭前的对话记录，使用创建时的配置。agent 未关闭时不做任何操作。
+**作用**：按 ID 恢复已关闭的 agent，与 [Agent.resume(thread_id)](01-agent.md#resumethread_id) 相同。恢复后的 agent 保留关闭前的对话记录，使用创建时的配置。agent 未关闭时不做任何操作。
 
 **输入类型**：agent_id: string，必填。
 
