@@ -1,23 +1,21 @@
 # Working Memory
 
-Working Memory 是 PoA 程序侧的结构化状态容器。全局 `memory` 由宿主在业务 JS 执行前注入，不走 `tools.` 分发路径，
-程序拿到的是已连接的 owner 侧句柄。它的全部状态属于当前 Run，而不属于某个 cell、turn 或 thread。
+Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 class 声明有哪些集合，再把声明登记进 PoA 对象并载入整份数据，
+之后用声明里的字段读写。四类集合的读写都在 SDK 本地完成，整份文档在提交点写回一次。
 
-这组文档按对象拆分，与本章其余部分同一体例：类型按“作用、类型定义、示例”说明，
-函数和方法按“作用、输入类型、返回值类型、示例”说明。
+状态的作用域单位是 Run，但当前的存储按 thread、turn 和 kind 分桶，两者还不重合，由此带来两条限制，见[作用域与实例](10-working-memory/01-memory.md)。
 
 ## 文件索引
 
 | 文件 | 内容 |
 | --- | --- |
-| [memory](10-working-memory/01-memory.md) | 集合访问器、batch、close_run_memory，以及 Working Memory 的作用域与版本规则 |
+| [声明、登记与句柄](10-working-memory/01-memory.md) | 集合声明、register_schema 与 load_data、句柄与集合名，以及 Working Memory 的作用域、默认序与结果规模 |
 | [BGraph](10-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
 | [BList 与 BMap](10-working-memory/04-blist-bmap.md) | 有序项追加与键值读写 |
-| [元素与返回类型](10-working-memory/05-elements.md) | BNode、BEdge、BatchBuilder 与批次专用句柄、CommitResult、BPage 和三个项类型 |
+| [元素与返回类型](10-working-memory/05-elements.md) | BNode、BEdge、CommitResult、BPage 和三个项类型 |
 | [异常](10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError、WmTransportError 和错误码 |
 | [memory.snapshot](10-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 
-四类集合的句柄都由 [memory](10-working-memory/01-memory.md) 上的同名访问器取得，
-集合名取 schema 顶层 properties 下的声明名。写方法成功提交时推进一次版本，读方法不推进；
-失败分成三类：请求尚未发出的本地使用错误、后端拒绝的请求错误，以及请求发出之后的传输与帧失败，分流方式见 [异常](10-working-memory/06-errors.md)。
+四类集合的句柄都是[声明](10-working-memory/01-memory.md)里的字段，字段名就是集合名。
+失败分成三类：不带错误码的本地使用错误、带错误码的拒绝，以及请求发出之后的传输与帧失败，分流方式见 [异常](10-working-memory/06-errors.md)。
