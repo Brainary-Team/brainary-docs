@@ -132,4 +132,4 @@ Output:
 - [配置文件](02-configuration.md)：配置多个 provider、默认沙箱和 agent 层级。
 - [输入与输出](03-input-output.md)：接收业务输入，在 TUI 或 Python SDK 中运行。
 - [示例](04-examples.md)：完整的多 agent 程序。
-- [使用模板开发 PoA](10-template-workflow.md)：模板的目录结构、检查和测试命令，以及打包流程。
+- [使用模板开发 PoA](06-template-workflow.md)：模板的目录结构、检查和测试命令，以及打包流程。
