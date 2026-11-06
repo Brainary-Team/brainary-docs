@@ -1,7 +1,9 @@
 # Working Memory
 
 Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 class 声明有哪些集合，再把声明登记进 PoA 对象并载入整份数据，
-之后用声明里的字段读写。它的全部状态属于当前 Run，而不属于某个 cell、turn 或 thread。
+之后用声明里的字段读写。四类集合的读写都在 SDK 本地完成，整份文档在提交点写回一次。
+
+状态的作用域单位是 Run，但当前的存储按 thread、turn 和 kind 分桶，两者还不重合，由此带来两条限制，见[作用域与实例](10-working-memory/01-memory.md)。
 
 ## 文件索引
 
@@ -16,4 +18,4 @@ Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 cl
 | [memory.snapshot](10-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage，属下一阶段 |
 
 四类集合的句柄都是[声明](10-working-memory/01-memory.md)里的字段，字段名就是集合名。
-失败分成三类：请求尚未发出的本地使用错误、后端拒绝的请求错误，以及请求发出之后的传输与帧失败，分流方式见 [异常](10-working-memory/06-errors.md)。
+失败分成三类：不带错误码的本地使用错误、带错误码的拒绝，以及请求发出之后的传输与帧失败，分流方式见 [异常](10-working-memory/06-errors.md)。

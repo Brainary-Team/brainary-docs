@@ -1,6 +1,8 @@
 # WmError、WmUsageError、WmRequestError、WmTransportError 与 WmErrorCode
 
-本页描述 Working Memory 的异常类层级、错误码和捕获方式。登记、载入与四类集合句柄的失败分成三类：请求尚未发出的本地使用错误，请求已发出、由后端拒绝的请求错误，以及请求已发出之后的传输与帧失败。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](05-elements.md) 与 [BEdge](05-elements.md)。
+本页描述 Working Memory 的异常类层级、错误码和捕获方式。登记、载入与四类集合句柄的失败分成三类：不带错误码的本地使用错误，带错误码的拒绝，以及请求发出之后的传输与帧失败。下面的示例以 incidentGraph 指代一个 graph 集合的句柄，以 node 和 edge 指代已构造好的 [BNode](05-elements.md) 与 [BEdge](05-elements.md)。
+
+带码的拒绝有两个来源，catch 到的形状一样，产出它的位置不同。四类集合的读写全部在 SDK 的本地影子状态上执行，它们的拒绝由 SDK 在调用当场同步抛出，没有跨进程调用参与；register_schema 与 load_data 经工具边界到达 WM，它们的拒绝由 WM 带码返回。所以分流的判据是有没有 code 字段，不是请求有没有发出。
 
 ### WmError
 
@@ -14,7 +16,7 @@ interface WmError extends Error {
 }
 ~~~
 
-它只用于把三个子类归到同一个 catch 分支。四个异常类当前不作为沙箱全局暴露，分流时按 code 是否存在和 message 的内容判断，不要写 instanceof。
+它只用于把三个子类归到同一个 catch 分支。四个异常类当前不作为沙箱全局暴露，分流时按 code 是否存在判断，不要写 instanceof，也不要按 message 的内容判断。
 
 **示例**：
 
@@ -28,7 +30,7 @@ try {
 
 ### WmUsageError
 
-**作用**：表示 SDK 在本地拒绝了不符合使用约定的调用，请求尚未发出。
+**作用**：表示 SDK 在本地拒绝了不符合使用约定的调用，而且这次拒绝没有错误码。
 
 **类型定义**：
 
@@ -38,7 +40,7 @@ interface WmUsageError extends WmError {
 }
 ~~~
 
-它没有后端错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。两处本地失败抛这个类：访问句柄上未声明的字段；构造 [BEdge](05-elements.md) 时缺少端点。
+它没有错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。两处本地失败抛这个类：访问句柄上未声明的字段；构造 [BEdge](05-elements.md) 时缺少端点。集合方法的其余本地拒绝都带码，走 WmRequestError。
 
 **示例**：
 
@@ -53,7 +55,7 @@ try {
 
 ### WmRequestError
 
-**作用**：表示请求已经发出，但 WM 拒绝了它或执行失败。
+**作用**：表示一次带错误码的拒绝，无论这个码是 SDK 在本地抛出的，还是 WM 带回的。
 
 **类型定义**：
 
@@ -64,11 +66,13 @@ interface WmRequestError extends WmError {
 }
 ~~~
 
-约束失败一律抛这个类，没有一条后端拒绝走返回值。details 用于诊断，在协议层可定位到字段。定位路径从本次调用的参数算起，图与树形如 element.props.title，list 与 map 形如 value.title。
+约束失败一律抛这个类，没有一条拒绝走返回值。details 用于诊断。字段级定位只出现在 SDK 本地抛出的那批码上，定位路径从本次调用的参数算起，图与树形如 element.props.title，list 与 map 形如 value.title；WM 带回的码里没有字段级定位。
 
-details 的整体形状不作为调用依据，可据以分支的只是协议明文规定必返的那几项，它是一份白名单，而不是“凡 details 里有的都能读”。当前在册的是：CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、CONSTRAINT_VIOLATION 在三条内置检查上的约束标识、RESOURCE_EXHAUSTED 的 reason 与 metric、RESULT_TOO_LARGE 的 max_items 与 actual_at_least、SCHEMA_TOO_LARGE 与 DATA_TOO_LARGE 的 limit 与 actual_at_least、INVALID_SCHEMA 的 rule 与定位路径及定位状态、以及字段级的定位路径。本页各处写“协议层在 details 里返回究竟是哪一条”时说的都是这几项，不是允许按别的键写分支。这条限制与下面那条“产出信封的那一侧还没有实现”是两件事：后者说当前连 code 都还得不到，前者说即使得到了也只有白名单内的项可依赖。
+details 的整体形状不作为调用依据，可据以分支的只是明文规定必返的那几项，它是一份白名单，而不是“凡 details 里有的都能读”。当前在册的是：CONSTRAINT_VIOLATION 与 STRUCTURE_CONFLICT 的 reason、CONSTRAINT_VIOLATION 在三条内置检查上的 constraint_id、RESOURCE_EXHAUSTED 的 reason 与 metric、RESULT_TOO_LARGE 的 max_items 与 actual_at_least、SCHEMA_TOO_LARGE 与 DATA_TOO_LARGE 的 limit 与 actual_at_least、以及 INVALID_ARGUMENT 与 INVALID_STRUCTURE 的字段级定位路径。本页各处写“details 里返回究竟是哪一条”时说的都是这几项，不是允许按别的键写分支。
 
-CONSTRAINT_VIOLATION 的两个字段各管一批约束。reason 管由 schema 声明带来的那批；约束标识管三条不带参数的内置检查：边的端点必须存在、删节点不留悬空边、树节点的父节点必须存在。这三条有意不进 reason 的取值集合，约束标识因此是它们唯一的判别手段，缺它只能看到一个 CONSTRAINT_VIOLATION，分不出是哪一条；声明带来的那批则不占约束标识这个字段。
+WM 带回的九个码里只有两个带内容：SCHEMA_TOO_LARGE 与 DATA_TOO_LARGE 的 details 恰好是 { limit, actual_at_least }，按 UTF-8 字节计。其余七个恒为空对象。INVALID_SCHEMA 与 INVALID_DATA 都不带 rule、不带字段级定位，也没有说明定位是否精确的那一位。
+
+CONSTRAINT_VIOLATION 的两个字段各管一批约束。reason 管由 schema 声明带来的那批；constraint_id 管三条不带参数的内置检查，取值是 wm.edge_endpoints_exist（边的端点必须存在）、wm.node_delete_no_dangling_edges（删节点不留悬空边）、wm.tree_parent_exists（树节点的父节点必须存在）。这三条有意不进 reason 的取值集合，constraint_id 因此是它们唯一的判别手段，缺它只能看到一个 CONSTRAINT_VIOLATION，分不出是哪一条；声明带来的那批则不占 constraint_id 这个字段。
 
 **示例**：
 
@@ -92,9 +96,9 @@ interface WmTransportError extends WmError {
 }
 ~~~
 
-它不表示 WM 的业务拒绝，那是 WmRequestError；也不表示本地预检失败，那是 WmUsageError。因为没有后端业务判定参与，它没有错误码，catch 到的对象上没有 code 字段。三类成因：超出 IPC 帧上限（当前约为 64 MiB）、连接断开、信封不可解析。它以 Promise 拒绝的形式交付。
+它不表示带码的拒绝，那是 WmRequestError；也不表示不带码的本地拒绝，那是 WmUsageError。因为没有任何一侧的业务判定参与，它没有错误码，catch 到的对象上没有 code 字段。两类成因：超出 IPC 帧上限（当前约为 64 MiB）、连接断开。它以 Promise 拒绝的形式交付。信封本身坏掉不走这个类，那是一次结果未知的带码失败，见下面的失败的分流。
 
-请求发出之前命中的任何一道预检不走这个类。SDK 本地预检与发出前的最终字节检查都抛 WmUsageError，判据是请求根本没上线。
+本阶段只有整份提交会跨进程，所以只有提交点可能抛出这个类；四类集合的方法在本地执行，不经过传输。整份文档另受 5 MiB 上限约束，超限时得到的是 DATA_TOO_LARGE 这个带码拒绝，不是帧上限。
 
 **示例**：
 
@@ -108,7 +112,7 @@ try {
 
 ### WmErrorCode
 
-**作用**：标识 WmRequestError 的后端拒绝原因。
+**作用**：标识 WmRequestError 的拒绝原因。
 
 **类型定义**：
 
@@ -142,6 +146,8 @@ type WmErrorCode =
 
 上面是 WmErrorCode 当前的全部取值，逐码含义见下面的错误码。其中有十个本阶段不会出现，各自的条目里都标了出来，不必为它们写分支。本版没有这个集合之外的错误码；后续阶段启用新能力时可能增补，所以收到未列出的 code 应按未知值记录，不要写进分支。
 
+剩下十四个按产出位置分成两批。WM 带回九个：KIND_NOT_IMPLEMENTED、SCHEMA_TOO_LARGE、INVALID_SCHEMA、SCHEMA_ALREADY_REGISTERED、SCHEMA_NOT_REGISTERED、DATA_TOO_LARGE、INVALID_DATA，加上工具边界的 INVALID_ARGUMENT 与 INTERNAL_ERROR。SDK 在本地同步抛出五个：INVALID_STRUCTURE、STRUCTURE_CONFLICT、CONSTRAINT_VIOLATION、NOT_FOUND、RESULT_TOO_LARGE，以及本地那一层的 INVALID_ARGUMENT。INVALID_ARGUMENT 因此是同名两层，区分见下面该码的条目。
+
 **示例**：
 
 ~~~js
@@ -154,15 +160,17 @@ try {
 
 ## 失败的分流
 
-本地使用错误没有 code 字段，请求错误有。写方法的失败全部走异常，返回值不承载失败。
+本地使用错误没有 code 字段，带码的拒绝有。写方法的失败全部走异常，返回值不承载失败。
 
-第三类落在上面两类之外：请求发出之后的传输与帧失败抛 WmTransportError，它同样不带后端错误码，成因见上面该类的条目。没有 code 字段这一点本地使用错误与它相同，要进一步分辨得看请求有没有发出。
+第三类落在上面两类之外：请求发出之后的传输与帧失败抛 WmTransportError，它同样不带码，成因见上面该类的条目。没有 code 字段这一点本地使用错误与它相同，要进一步分辨得看失败是不是发生在整份提交那一步。
 
-code 与 details 怎么跨传输边界传到 JS 侧已经确定，但产出这个信封的那一侧还没有实现，所以两者当前仍不能作为可用的能力依赖，也不要提前写成稳定的分支条件。调用方应优先按 message 记录错误，并保留原始异常和请求上下文。
+WM 带回的码经一个信封跨传输边界到达，产出这一侧已经实现，code 与 details 可以作为分支依据。形状是一个裸字符串，不是 Error 对象，所以取 e 本身、不要取 e.message：字节位置 0 是固定前缀 `WMERR/1:`，随后是一段紧凑 JSON，内含 code、message 和 details，三个键恒在，details 没有内容时是空对象。SDK 只解析带这个前缀的字符串，宿主自己抛的普通字符串原样当作普通 JS 异常，不会按“看起来像 JSON”推断。
 
-约定的形状是一个裸字符串，固定前缀 `WMERR/1:` 加一段紧凑 JSON，内含 code、message 和 details。SDK 只解析带这个前缀的字符串，宿主自己抛的普通字符串原样当作普通 JS 异常，不会按“看起来像 JSON”推断。前缀存在而 JSON 无法解析时抛 WmRequestError、code 取 INTERNAL_ERROR、details.cause 标 malformed_error_envelope，语义是请求结果未知；SDK 不自动重试，是否重发由调用方按下面的确认流程决定。
+前缀存在而 JSON 无法解析时抛 WmRequestError、code 取 INTERNAL_ERROR、details.cause 标 malformed_error_envelope；成功返回的形状坏了同理，cause 标 malformed_response。两种都表示结果未知，不表示没发生，SDK 不自动重试也不自动回滚。
 
-各方法条目列出的是该方法的主要特定失败，不是完整错误码全集。任何副作用请求还可能遇到资源与后端故障。
+message 不可据以分支。它最多 1024 个 UTF-8 字节，含截断标记在内，只含结构性类型名、行列号、计数、长度和实现方自己的字段名，不含传进去的字符串值、自创的键名、由这些键名拼成的路径，也不含解析器的原生文字。
+
+各方法条目列出的是该方法的主要特定失败，不是完整错误码全集。
 
 ## 本地使用错误的抛出时点
 
@@ -172,22 +180,22 @@ code 与 details 怎么跨传输边界传到 JS 侧已经确定，但产出这�
 
 ## 错误码
 
-声明与载入一类由 register_schema 与 load_data 这两个调用产出，新写一个程序时最先遇到的是它们：
+声明与载入一类由 register_schema 与 load_data 这两个调用产出，全部由 WM 带回，新写一个程序时最先遇到的是它们：
 
 - KIND_NOT_IMPLEMENTED：kind 取了 "LTM"。本阶段只受理 "WM"，这是一次确定性拒绝，不会静默接受，改 kind 之外没有别的处理方式。message 只说明本阶段受理哪个 kind，不回显任何声明或数据内容。
-- SCHEMA_TOO_LARGE：声明原文的字节数超过上限，当前是 5 MiB。不可重试，只能改声明。details 必返 limit 与 actual_at_least。
-- SCHEMA_ALREADY_REGISTERED：同一个 kind 第二次登记声明。第二次一律拒绝，不覆盖也不合并，提交一份完全相同的声明同样被拒。message 回显当前生效的那份声明的 $id，这是本指南唯一会回显 $id 实际值的地方。
+- SCHEMA_TOO_LARGE：声明原文的字节数超过上限，缺省 5 MiB，可由运维配置。量的是 schema 这一个字符串自身的 UTF-8 字节数，不是 JS 的 String.length，也不是整个入参 JSON 转义之后的长度；边界是闭区间，恰好等于上限受理，多一个字节拒。不可重试，只能改声明。details 必返 limit 与 actual_at_least。
+- SCHEMA_ALREADY_REGISTERED：同一个 kind 第二次登记声明。第二次一律拒绝，不覆盖也不合并，提交一份完全相同的声明同样被拒。message 只提 kind，不回显已登记的那份声明的任何内容，`$id` 也不回显：WM 不读声明内部的键，而且同一个桶可能被另一个 Run 占着，见[作用域与实例](01-memory.md)，报出存着的那份声明会把另一个 Run 的内容泄出来。
 - SCHEMA_NOT_REGISTERED：该 kind 下还没有登记过声明，而这个数据操作要求先登记。读与删同样走这条拒绝：什么都没声明时的答案不是空结果。message 只说明 kind 与“必须先登记”，不回显任何声明内容，也不说明登记过什么。
-- INVALID_DATA：整份载入的数据不是合法 UTF-8、不是可解析的 JSON、或者最外层不是对象。message 只含结构性元数据，例如出错的行列与类型名，不含作者的键名与值。
-- DATA_TOO_LARGE：整份载入的数据超过上限，当前是 5 MiB。不可重试，只能减小数据。details 必返 limit 与 actual_at_least 两项。
+- INVALID_DATA：整份载入的数据不是合法 UTF-8、不是可解析的 JSON、最外层不是对象，或者第一份文档之后还跟着第二份。这些连同字节上限就是输入卫生的全部内容，所以这个码不表示数据与声明相符或不符 —— WM 不解析声明，也不按声明校验数据，数据与声明的符合性由 SDK 在发出前检查。message 只含结构性元数据，例如出错的行列与类型名，不含作者的键名与值。
+- DATA_TOO_LARGE：整份载入的数据超过上限，缺省 5 MiB，可由运维配置，度量与边界同 SCHEMA_TOO_LARGE。不可重试，只能减小数据。details 必返 limit 与 actual_at_least 两项。
 
-输入与状态断言一类判的是请求内容和它对状态的假设：
+输入与状态断言一类判的是调用内容和它对状态的假设。除 INVALID_SCHEMA、SCHEMA_CONFLICT 以及 INVALID_ARGUMENT 的工具边界那一层之外，其余都由 SDK 在方法调用当场同步抛出：
 
-- INVALID_ARGUMENT：请求字段缺失、类型不符、参数组合非法，或类别未在所选集合声明。节点 id、边 id 与 list 的 item_id 超过 256 个 UTF-8 字节也取这个码。单项或属性大小超过声明上限也取这个码，请求文本超过字节上限同样如此：那是请求自身形状的问题，资源状况改变也不会成功。
-- INVALID_STRUCTURE：集合不存在、集合种类与操作不符，已授权的写入目标、边端点、树父节点或邻接起点属于另一集合，以及 list 的 value 不符声明的 item_type、map 的 key 或 value 不符声明的类型、按未声明的字段排序。item_id 不在这一类里：它不由 item_type 约束，它的类型错判给 INVALID_ARGUMENT。
+- INVALID_ARGUMENT：同名两层，两层都是确定性失败，资源状况改变也不会成功。SDK 本地那一层管集合方法的用法：字段缺失、类型不符、参数组合非法、类别未在所选集合声明、节点 id 与边 id 与 list 的 item_id 超过 256 个 UTF-8 字节、limit 取 0 或负数或非整数或超过 10000。它带字段级定位路径，根是本地方法的参数根。WM 的工具边界那一层只说入参不符合工具的输入形状，例如 schema 或 data 不是字符串、缺 kind，它的 details 是空对象，没有字段级定位。
+- INVALID_STRUCTURE：集合不存在、集合种类与操作不符，写入目标、边端点、树父节点或邻接起点属于另一集合，以及 list 的 value 不符声明的 item_type、map 的 key 或 value 不符声明的类型。item_id 不在这一类里：它不由 item_type 约束，它的类型错判给 INVALID_ARGUMENT。
 - STRUCTURE_CONFLICT：断言“目标不存在”而它实际存在，按调用时的状态求值，包括元素或条目的 id 已存在、put 以 create 模式遇到已存在的 key。set_parent 的期望父节点与实际当前父不符也取这个码，details 的 reason 为 tree_parent_mismatch，并返回实际父节点。反方向的那一支不在这里：put 以 replace 模式遇到不存在的 key 属于“目标不存在”，取 NOT_FOUND。
 - CONSTRAINT_VIOLATION：图、树或 schema 约束在本次写入之后不满足。
-- INVALID_SCHEMA：声明本身不符规定的形状，由 register_schema 返回，不由单次集合读写的参数触发。不可重试，改声明。details 必返三项：rule 是原因标识、取一个封闭的取值集合，可以与 code 一起作为稳定的分支依据；定位路径指向声明文档里出错的位置；定位状态说明那个路径是精确位置、还是因输出预算或文档未取全而省略。rule 的取值集合与定位状态的三个取值本指南尚未逐个列出。
+- INVALID_SCHEMA：声明不是一份完整的 JSON 对象，由 register_schema 返回，不由单次集合读写的参数触发。判据与 INVALID_DATA 同一套：合法 UTF-8、可解析 JSON、最外层是对象、后面不跟第二份文档。它不判声明的内容对不对 —— WM 不解析声明，所以收到这个码不等于声明的形状有问题，只等于那串文本不是一份 JSON 对象。details 是空对象：没有 rule，也没有指向声明内部的定位路径。不可重试，改声明。
 - SCHEMA_CONFLICT：与 schema 切换有关。本阶段不会出现。
 
 存在性与授权一类不区分不存在和无权，以免被用来探测：
@@ -199,30 +207,34 @@ code 与 details 怎么跨传输边界传到 JS 侧已经确定，但产出这�
 
 资源与能力一类由请求规模或部署形态决定，重试同一个请求不会变好：
 
-- RESULT_TOO_LARGE：一次读的命中项数超过上限。它不可重试，同一个请求换个时候发还是同样的结果，处理方式是收窄 filter 或先减少数据；指定 limit 绕不过它，因为上限针对的是命中项数而不是返回项数。details 必返 max_items 与 actual_at_least 两项，前者是上限，后者只表示已确认超过这个数、不是实际命中数，不得当作计数展示。上限的取值与“字节超限没有对应出口”那处空隙见[默认序与结果规模](01-memory.md)。
-- RESOURCE_EXHAUSTED：只用于“同一个请求在资源恢复后可能成功”的那一类，三种成因是单实例的内存驻留上限、进程名额或进程预算用尽、读版本名额或读工作预算不足。请求大小超限不在这里，那是请求自身的形状问题，取 INVALID_ARGUMENT 或走传输层失败。details 返回 reason 与 metric 两项，前者说明是哪一类资源，后者说明是哪一个上限；重试条件按 metric 区分，不是一概可以重试。本阶段不会出现。
+- RESULT_TOO_LARGE：一次读的命中项数超过上限，由 SDK 在本地读的当场同步抛出。它不可重试，同一次读换个时候做还是同样的结果，处理方式是收窄 filter 或先减少数据；指定 limit 绕不过它，因为上限针对的是命中项数而不是返回项数。details 必返 max_items 与 actual_at_least 两项，前者是上限 10000，后者恒为 10001：数到这个界限就停，不再求精确总数，所以它只表示已确认超过上限，不是实际命中数，不得当作计数展示。上限的取值见[默认序与结果规模](01-memory.md)。
+- RESOURCE_EXHAUSTED：只用于“同一个请求在资源恢复后可能成功”的那一类，三种成因是单实例的内存驻留上限、进程名额或进程预算用尽、读版本名额或读工作预算不足。请求大小超限不在这里，那是请求自身的形状问题，整份文档超限取 DATA_TOO_LARGE，其余取 INVALID_ARGUMENT。details 返回 reason 与 metric 两项，前者说明是哪一类资源，后者说明是哪一个上限；重试条件按 metric 区分，不是一概可以重试。本阶段不会出现。
 - UNSUPPORTED_ACTION、UNSUPPORTED_FEATURE 与 UNSUPPORTED_VERSION：动作未知、字段取值当前不受理、或声明格式与方言的版本不受支持，属于请求与声明本身的问题，改客户端或改声明。三个码本阶段都不会出现。
 
-后端与实例一类是运行期故障，程序侧一般只需记录并把失败如实上报：
+运行期故障一类，程序侧一般只需记录并把失败如实上报：
 
 - WM_BUSY：实例当前无法受理请求。本阶段不会出现。
-- INTERNAL_ERROR：未归类的内部失败。结果未知时按下面的确认流程处理。
+- INTERNAL_ERROR：未归类的内部失败。WM 侧取这个码的情形是工具无法编码自己的输出；SDK 侧在信封或成功返回的形状坏了时也取它，并在 details.cause 里标出是哪一种。结果未知时按下面的确认流程处理。
 
 类别定位用集合名和类别名共同完成。类别未在所选集合声明返回 INVALID_ARGUMENT，其他集合存在同名类别也不回退。不可见对象先按授权规则返回 NOT_FOUND_OR_DENIED，不通过归属错误泄漏其存在性；这一步在本阶段不会触发，程序获得的是 owner 侧句柄，该码不会出现。普通查询的 filter 只在所选集合内筛选，未命中仍返回合法空结果，不改报集合归属错误。
 
 ## 提交结果未知时的确认流程
 
-连接中断、超时和进程退出都只表示提交结果未知，不表示提交失败。原 WM 进程与 Run 仍存在时，确认流程是用 query 按节点 id、边 id、item_id 或 map key 重读当前状态，看这一次写入的业务证据是否存在，确认未生效才重发。
+这一节只适用于整份提交那一步。四类集合的方法在本地执行、不跨进程，没有结果未知这个中间态；连接中断、超时和进程退出只会落在提交点上，而它们都只表示提交结果未知，不表示提交失败。
 
-盲目重发不安全：重发一个已经生效的新增会返回 STRUCTURE_CONFLICT，重发一个已经生效的删除会返回 NOT_FOUND，而这两个码都不表示上一次调用失败。所以要先重读，再决定。
+整份提交是替换而不是追加，所以重发同一份文档与只发一次等效，不会因为上一次其实已经生效而撞上 STRUCTURE_CONFLICT 或 NOT_FOUND。这是本阶段与元素级提交的主要差别：元素级提交必须先重读再决定，整份提交可以直接重发。
 
-SDK 不提供幂等键，不自动重试、也不自动回滚。一串写入中途失败时，之前已经提交的那些留在原处，补齐还是回退由调用方决定。WM 进程已退出时运行态与内存快照均已丢失，不能按上述流程重读原 Run。
+重发之后仍确认不了的是本地影子状态与 WM 里那份文档是否一致 —— 作者面当前没有整份读取的入口，见下面的当前未确定。SDK 不提供幂等键，不自动重试、也不自动回滚；一个 batch 在提交之前崩溃时这一批写全部丢失，影子状态里的改动不会被补发。该 turn 已结束或 WM 进程已退出时，那份文档连同声明一起丢弃，不能按上述办法重发。
 
 ## 当前未确定
 
-INVALID_SCHEMA 与 INTERNAL_ERROR 两个码的精确触发条件本指南尚未覆盖，上面给出的是它们所属的类别和调用方的处理方式。标了本阶段不会出现的那些同样没有逐条给出触发条件。
+INTERNAL_ERROR 的精确触发条件本指南尚未逐条覆盖，上面给出的是它所属的类别和调用方的处理方式。标了本阶段不会出现的那些同样没有逐条给出触发条件。
 
 上面有十个码在条目里标了本阶段不会出现。它们要不要从 WmErrorCode 的类型定义里去掉尚未确定，本页按保留处理。
+
+SDK 本地抛出的那批带码拒绝归到哪个异常类、怎么包装，尚未确定。本页按归入 WmRequestError 写，判据是作者分流看的就是有没有 code 字段而它们都有；异常类的名字与包装形状仍可能变，码名和 details 白名单里的各项不变。
+
+整份状态的读取与清除在作者面没有入口。WM 侧有这两个调用，挂到作者面的哪个对象上、叫什么名字尚未确定，所以提交结果未知时无法从作者侧重读那份文档。
 
 ## 相关文档
 

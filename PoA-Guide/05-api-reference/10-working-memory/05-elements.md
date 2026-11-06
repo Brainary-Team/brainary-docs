@@ -17,7 +17,7 @@ interface BNode {
 }
 ~~~
 
-实例由 new BNode({ id, node_class, props }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。props 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 WM 维护，不在构造器参数内。
+实例由 new BNode({ id, node_class, props }) 构造；普通 JS 对象表达不了类别归属，节点必须经该包装类构造。node_class 取所选集合内声明的节点类别名，不取值类型名。props 的字段由该类别引用的值类型声明。parent_id 只出现在树节点上，由 SDK 维护，不在构造器参数内。
 
 **示例**：
 
@@ -71,7 +71,7 @@ interface CommitResult {
 }
 ~~~
 
-得到这个对象就表示本次提交已经生效：写方法的失败一律以异常抛出，不靠判断返回值。position 只出现在 [BList](04-blist-bmap.md) 的 append 成功返回上，带出服务端分配的位置；append 以外的写方法没有这个字段，[BList](04-blist-bmap.md) 的 replace 与 delete 也没有，它们的返回体是一个空对象。
+得到这个对象就表示这次操作在本地已经生效：写方法的失败一律以异常抛出，不靠判断返回值。它不表示整份文档已经写回 —— 写回发生在提交点，见[提交点](01-memory.md)。position 只出现在 [BList](04-blist-bmap.md) 的 append 成功返回上，带出 SDK 分配的位置；append 以外的写方法没有这个字段，[BList](04-blist-bmap.md) 的 replace 与 delete 也没有，它们的返回体是一个空对象。
 
 **示例**：
 
@@ -117,7 +117,7 @@ interface BListItem {
 }
 ~~~
 
-三个字段在查询结果中必返。item_id 由调用方提供，服务端不生成该值。position 由 WM 分配，同一 list 从 0 开始。value 符合该 list 声明的 item_type；item_type 声明为内联标量时，value 就是裸标量本身，不需要包装类。
+三个字段在查询结果中必返。item_id 由调用方提供，不由 SDK 生成。position 由 SDK 分配，同一 list 从 0 开始。value 符合该 list 声明的 item_type；item_type 声明为内联标量时，value 就是裸标量本身，不需要包装类。
 
 **示例**：
 
@@ -172,7 +172,7 @@ text(page.items.map((item) => item.node?.id));
 
 ## id 与类别
 
-id 由调用方提供，必须是非空字符串，在整个实例内唯一，长度不超过 256 个 UTF-8 字节，超长返回 INVALID_ARGUMENT。这个上限同样适用于边 id 与 [BList](04-blist-bmap.md) 的 item_id。图的节点与树的节点不能重用同一个 id，节点与边各用一个命名空间。WM 不解析 id 的内部结构，也不做大小写或空白归一，T1 与 t1 是两个 id。
+id 由调用方提供，必须是非空字符串，长度不超过 256 个 UTF-8 字节，超长返回 INVALID_ARGUMENT。这个上限同样适用于边 id 与 [BList](04-blist-bmap.md) 的 item_id。节点 id 在该实例的全部 graph 与 tree 之间共用一个空间，图的节点与树的节点因此不能重用同一个 id；边 id 是另一个实例级空间；item_id 只在该 list 内唯一，map 的 key 只在该 map 内唯一，逐条见[作用域与实例](01-memory.md)。id 的内部结构不被解析，也不做大小写或空白归一，T1 与 t1 是两个 id。
 
 类别由集合名和类别名共同定位，别的集合里存在同名类别不会使本次写入有效。两个不同类别可以引用同一个值类型。缺端点这类构造期失败在构造处就抛出，不等到写入期。
 
@@ -182,15 +182,15 @@ props 的更新粒度是一层字段，嵌套对象与数组只能整体替换�
 
 ## 树节点的 parent_id
 
-parent_id 由 WM 维护，不在 BNode 的构造器参数内。建点时的位置由 [BTree](03-btree.md) 的 add_root 或 add_child 给出，改父走 set_parent，写进 update 的 set 或 unset 会返回 INVALID_ARGUMENT。它也不可用作排序字段。
+parent_id 由 SDK 维护，不在 BNode 的构造器参数内。建点时的位置由 [BTree](03-btree.md) 的 add_root 或 add_child 给出，改父走 set_parent，写进 update 的 set 或 unset 会返回 INVALID_ARGUMENT。它也不可用作排序字段。
 
 写入时不传它，读回树节点时它必定带回。没有 parent_id，query 的结果之间就没有任何关系信息，调用方无法还原树的形状。图节点不携带该字段。
 
 ## 提交结果
 
-每个写方法都返回 CommitResult，一次调用就是一次提交。约束失败与后端拒绝一律抛 [WmRequestError](06-errors.md)，失败不通过返回值传递。SDK 不自动合并、也不自动重试。
+每个写方法都返回 CommitResult，但一次调用不等于一次提交：写方法只改本地影子状态，整份写回发生在提交点，见[提交点](01-memory.md)。带码的拒绝一律抛 [WmRequestError](06-errors.md)，失败不通过返回值传递。SDK 不自动合并、也不自动重试。
 
-写多处时每一次调用各自提交：往返次数等于调用次数，中间状态对并发读可见，中途失败时前面已经提交的写入不会回滚，由调用方决定是补齐还是回退。
+一个 batch 里写多处只写回一次，往返次数与调用次数无关。不放进 batch 的单发调用各自成一个隐式 batch、各自写回一次，中间状态对并发读可见；中途失败时前面已经写回的内容不会回滚，由调用方决定是补齐还是回退。
 
 ## 读结果
 
@@ -204,7 +204,7 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 
 整数 key 使用无前导零的十进制表示，写 401 不写 "401"，写成字符串按 INVALID_STRUCTURE 拒绝。字符串 key 不做 Unicode 归一化，按原始 Unicode 标量序列比较，大小写不折叠。布尔 key 只接受 true 和 false。
 
-节点 id 与 item_id 不同，WM 对它们不做任何归一。
+节点 id 与 item_id 不同，它们不做任何归一。
 
 ## 当前未确定
 

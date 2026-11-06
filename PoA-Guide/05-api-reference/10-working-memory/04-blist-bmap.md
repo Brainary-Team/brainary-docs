@@ -12,7 +12,7 @@
 
 **输入类型**：item_id: string，非空；value: unknown，符合该 list 声明的 item_type。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>，成功时返回体上带出服务端分配的 position。
+**返回值类型**：Promise<[CommitResult](05-elements.md)>，成功时返回体上带出 SDK 分配的 position。
 
 **示例**：
 
@@ -21,7 +21,7 @@ const result = await evidenceList.append("ev-1", { note: "网关时间快 31 秒
 text(result.position);
 ~~~
 
-这是四类集合里唯一会带 position 的方法，该值由服务端分配，不能自行指定；replace 与 delete 的返回体没有这个字段。追加失败时不分配位置，失败一律以异常抛出，所以得到返回值就意味着该字段存在。
+这是四类集合里唯一会带 position 的方法，该值由 SDK 分配，不能自行指定；replace 与 delete 的返回体没有这个字段。追加失败时不分配位置，失败一律以异常抛出，所以得到返回值就意味着该字段存在。
 
 item_id 已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 返回 INVALID_STRUCTURE，item_id 不是非空字符串则返回 INVALID_ARGUMENT，两者不是同一个码。
 
@@ -80,11 +80,11 @@ if (page.items.length > 0) text(page.items[0].value);
 
 ## BList 的项与顺序
 
-list 的每个项由三部分组成：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 WM 分配的非负整数 position，字段说明见 [BListItem](05-elements.md)。服务端不生成 item_id。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
+list 的每个项由三部分组成：由调用方提供的非空字符串 item_id、符合 item_type 的 value、由 SDK 分配的非负整数 position，字段说明见 [BListItem](05-elements.md)。item_id 不由 SDK 生成。list 没有按下标的读取方法，也没有独立的单项读方法，replace 与 delete 全靠这个键定位，调用方需要保存它。
 
 当前只支持末尾追加、按 item_id 替换完整 value、按 item_id 删除。不支持任意位置插入、链表指针、自动去重或隐式重排。
 
-position 按调用先后递增，取每个 list 的单调高水位加一，所以两次 append 的相对次序就是调用次序。只有成功的追加才分配，失败不消耗；删除后不复用并允许出现间隔；在实例、快照和恢复后保持不变。
+position 按调用先后递增，取每个 list 的单调高水位加一，所以两次 append 的相对次序就是调用次序。只有成功的追加才分配，失败不消耗；删除后不复用并允许出现间隔；在实例、快照和恢复后保持不变。高水位随整份文档一起写回，重建影子状态之后继续沿用，不按当前最大 position 重算 —— 那样会在删掉尾号之后把已删的号重新发出去。
 
 三条前置条件都按调用时的状态求值：追加一个已存在的 item_id 被拒绝；先删再追加通过，该项得到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id。
 
