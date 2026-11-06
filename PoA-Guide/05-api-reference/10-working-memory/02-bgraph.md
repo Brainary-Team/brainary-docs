@@ -18,7 +18,7 @@ const result = await incidentGraph.add_node(
 );
 ~~~
 
-新增不会覆盖已有节点。id 已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、props 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT；违反 schema 声明的 unique_property 返回 CONSTRAINT_VIOLATION。
+新增不会覆盖已有节点。id 已存在时返回 STRUCTURE_CONFLICT；node_class 未在当前 graph 声明、props 不符声明的值类型、或写入未声明的属性返回 INVALID_ARGUMENT。
 
 ### add_edge(edge)
 
@@ -97,7 +97,7 @@ const result = await incidentGraph.delete_node("node-1");
 const result = await incidentGraph.update_edge("edge-1", { set: { weight: 3 } });
 ~~~
 
-形状与粒度同 update_node。改类别或改端点不在本方法的能力内，需要删除后重建。本方法以该边类别声明了属性类型为前提，而边的属性类型在声明里还没有对应的位置，所以示例里的 weight 只是形状示意，本阶段写不出带属性的边，见下面的当前未确定。
+形状与粒度同 update_node。本方法以该边类别声明了属性类型为前提。改类别或改端点不在本方法的能力内，需要删除后重建。
 
 ### delete_edge(id)
 
@@ -175,12 +175,6 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 删除要求目标存在，删一个不存在的目标返回 NOT_FOUND。add_node 遇到已存在的 id 返回 STRUCTURE_CONFLICT。
 
 更换一个元素的类别没有专门动作：node_class 不在 update 的作用范围内，要换类别需要先删再建。这两步不是原子的 —— 放进一个 batch 能让中间状态不被写回，但 batch 本身不回滚，中途失败时影子状态停在半程。删之前还要先处理它的关联边：删节点不级联删边，留下关联边就会被拒绝。
-
-## 当前未确定
-
-上面八个方法的签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定，遇到本页未写明的取值规则不要自行推定。
-
-两处的声明依据尚未确定，见[当前未确定](01-memory.md)：边的属性类型在声明里没有对应的位置，所以 update_edge 和带 props 的边本阶段写不出来；unique_property 也没有对应的位置，add_node 那条拒绝因此暂时没有对应的声明手段。
 
 ## 相关文档
 

@@ -4,10 +4,10 @@ Working Memory 在程序侧分三步使用：用一个 class 声明有哪些集�
 
 ## 声明
 
-集合写成一个 class 上的字段类型标注：字段名就是集合名，字段的类型说明它是哪一类集合，以及里面有哪些类别和值类型。schema 由打包期从这些类型里提取，程序运行时这个 class 上没有任何成员。打包期提取尚未实现，本节描述的是目标形状，见下面的当前未确定。
+集合写成一个 class 上的字段类型标注：字段名就是集合名，字段的类型说明它是哪一类集合，以及里面有哪些类别和值类型。schema 由打包期从这些类型里提取，程序运行时这个 class 上没有任何成员。
 
 ~~~typescript
-// 标记类型 Graph、Tree、List、KvMap 与具名标量 Int 由 SDK 提供，它们的名字尚未确定，见下面的当前未确定
+// 标记类型 Graph、Tree、List、KvMap 与具名标量 Int 由 SDK 提供
 interface Task {
   /** @minLength 1 */
   title: string;
@@ -55,7 +55,7 @@ class MyWorkingMemory {
 ~~~typescript
 // PoA 与 Kind 由 SDK 提供；agent_id 由宿主提供
 const poa = new PoA({ agent_id });
-// schema 由打包期从上面那些类型提取；它怎么回到程序里尚未确定，见下面的当前未确定
+// schema 由打包期从上面那些类型提取
 await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 
 const wm_data = {
@@ -70,7 +70,7 @@ const wm_data = {
   retry_by_status_code: { entries: [{ key: 401, value: 2 }] },
   goal: "排查移动端 401",
 };
-const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);   // 句柄由哪个调用返回尚未确定，见下面的当前未确定
+const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);
 ~~~
 
 register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明写入。未登记声明就载入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记同样被拒绝，不覆盖也不合并；清掉数据也不解除登记。
@@ -102,7 +102,7 @@ await mem.retry_by_status_code.put(503, 1, "upsert");
 
 句柄对象上只有声明过的集合字段。访问未声明的名字抛 [WmUsageError](06-errors.md)，不会得到 undefined：集合名拼错时报的是这个名字没有声明，而不是在调用方法时得到一个原生 TypeError。
 
-顶层的标量字段在本阶段没有元素级的读写入口，只随整份数据一起载入，句柄上没有单独读写它们的方法。
+顶层的标量字段没有元素级的读写入口，只随整份数据一起载入，句柄上没有单独读写它们的方法。
 
 ## 作用域与实例
 
@@ -110,17 +110,17 @@ Run 是 Working Memory 的作用域单位，由一个 PoA cell 发起。它与 c
 
 一个 Run 对应一个实例。实例是 id 唯一性的作用域，但四类 id 的作用域不是同一个：节点 id 在该实例的全部 graph 与 tree 之间共用一个空间，图节点与树节点因此不能重用同一个 id；边 id 是另一个实例级空间；list 的 item_id 只在该 list 内唯一；map 的 key 只在该 map 内唯一。
 
-存储按 thread、turn 和 kind 分桶，还不是一个 Run 一桶 —— 宿主交给工具的是 turn 的 id，拿不到 Run 级标识。下面两条限制都由此而来。收口要靠宿主交出 Run 级标识，当前没有结论；不要自己加参数绕开它，那修不了桶的身份。
+存储按 thread、turn 和 kind 分桶，还不是一个 Run 一桶 —— 宿主交给工具的是 turn 的 id，拿不到 Run 级标识。下面两条限制都由此而来。收口要靠宿主交出 Run 级标识，不要自己加参数绕开它，那修不了桶的身份。
 
 同一个模型 turn 里起两个 Run 会共用一份状态。第二个 Run 的登记被当作重复登记拒掉；它第一次 load_data 会覆盖另一个 Run 的文档，而且报告的是“覆盖了一份已有文档”，尽管它自己从没写过；它即使没登记过也能读、能清那份文档，因为准入判的是这个桶里有没有声明，而声明是另一个 Run 放进去的；两个 Run 属于不同包时，这就是把一个包的文档交给了另一个包。
 
 turn 结束会连数据一起丢掉。turn stop 与 turn abort 都丢弃该桶的条目，声明和数据一起丢。一个在自己的 turn 停止之后仍在派发的 cell 会在运行中失去数据：它下一次操作因没有声明被拒，照提示重新登记只会得到一个空槽，再读就是一份普通的空记忆，而不是一次可以辨认的丢失。
 
-子 agent 不在这条作用域里。设计上 Run 要覆盖该 cell 沿派发链派出的全部子 agent，当前的分桶做不到，子 agent 侧怎么拿到句柄也还没写，见下面的可用范围。
+子 agent 不在这条作用域里。设计上 Run 要覆盖该 cell 沿派发链派出的全部子 agent，当前的分桶做不到；子 agent 侧的入口不在本页范围内，见下面的可用范围。
 
 ## 可用范围
 
-本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。执行 PoA 另有一条路径，即注册为 poa 工具后由模型在普通 turn 里执行一个完整程序。那条路径的作用域锚点与身份派生都与本页这条不同，当前尚未确定，本页不覆盖它，也不要默认两条同构。子 agent 的 Working Memory 入口同样尚未确定。这几处都不表示“确定没有入口”，而是还没有结论。
+本页只覆盖一条执行路径：app-server 的 thread/codeMode/exec 启动的 PoA cell。注册为 poa 工具后由模型在普通 turn 里执行一个完整程序是另一条路径，它的作用域锚点与身份派生都与本页这条不同，本页不覆盖，也不要默认两条同构；子 agent 的 Working Memory 入口也不在本页范围内。
 
 可选工具组 memories 和 [tools](../06-brainary-tool.md) 枚举里的 memory 工具类别是模型可见的工具，与本页的 Working Memory 同名不同物。
 
@@ -128,17 +128,17 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 持久化
 
-当前使用内存存储。进程退出后运行态和变更历史都会丢失。本阶段没有跨进程保留数据的手段：导出快照属下一阶段，见 [memory.snapshot](07-snapshot.md)。
+当前使用内存存储。进程退出后运行态和变更历史都会丢失，跨进程保留数据要靠导出快照，见 [memory.snapshot](07-snapshot.md)。
 
 ## 集合名
 
-集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。中文这类非 ASCII 字母可以直接用作字段名；含连字符或空格的名字不是合法标识符，写法见下面的当前未确定。本文档对函数和方法的 snake_case 约定不约束集合名。
+集合名就是声明里的字段名。四类集合共用一个命名空间，不得重名。中文这类非 ASCII 字母可以直接用作字段名；含连字符或空格的名字不是合法标识符。本文档对函数和方法的 snake_case 约定不约束集合名。
 
 ## 默认序与结果规模
 
-四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。[BPage](05-elements.md) 的 next_cursor 是一个可选字段，本阶段不会出现。
+四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。[BPage](05-elements.md) 的 next_cursor 是一个可选字段，当前版本不会出现。
 
-读和排序都在 SDK 本地完成。默认序是固定的，不由调用方选：graph 按元素 id 升序，tree 按 id 升序，list 按 position 升序，map 按规范化 key 升序。graph 与 tree 的 id 按原始 Unicode 标量序列比较，graph 的边按边 id；map 的整数 key 按数值比较，9 排在 401 之前。邻接读取也有稳定序。本阶段需要其他顺序时在客户端自行排序。
+读和排序都在 SDK 本地完成。默认序是固定的，不由调用方选：graph 按元素 id 升序，tree 按 id 升序，list 按 position 升序，map 按规范化 key 升序。graph 与 tree 的 id 按原始 Unicode 标量序列比较，graph 的边按边 id；map 的整数 key 按数值比较，9 排在 401 之前。邻接读取也有稳定序。需要其他顺序时在客户端自行排序。
 
 limit 省略时返回全部命中项，给出时按默认序取前 N 项。合法范围是 1 到 10000：取 0、负数、非整数或超过 10000 都返回 INVALID_ARGUMENT，不会被截到边界上。
 
@@ -146,7 +146,7 @@ limit 取的是默认序的前 N 项。要“按某个字段排序的前 N 项�
 
 命中项数的上限是 10000。它针对的是命中项数而不是返回项数，所以指定 limit 不能绕过它：limit 为 10 而 filter 命中 5 万项时同样被拒绝。超限是确定性拒绝，返回 RESULT_TOO_LARGE，处理方式是收窄 filter 或先减少数据。
 
-整份文档另有一个字节上限，与上面的命中项数上限各管一侧：提交时那份文档的 JSON 文本超过上限会被拒绝，缺省 5 MiB，可由运维配置，返回 DATA_TOO_LARGE，见 [WmRequestError](06-errors.md)。它量的是那一个字符串自身的 UTF-8 字节数，不是 JS 的 String.length。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB，远在 5 MiB 的文档上限之上，所以帧超限这一支本阶段实际碰不到。
+整份文档另有一个字节上限，与上面的命中项数上限各管一侧：提交时那份文档的 JSON 文本超过上限会被拒绝，缺省 5 MiB，可由运维配置，返回 DATA_TOO_LARGE，见 [WmRequestError](06-errors.md)。它量的是那一个字符串自身的 UTF-8 字节数，不是 JS 的 String.length。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB，远在 5 MiB 的文档上限之上，所以帧超限这一支实际碰不到。
 
 两项上限互不替代。命中项数在 10000 以内而读回来的对象很大时 RESULT_TOO_LARGE 不会触发，字节一侧也没有对应的错误码 —— 那一侧的闸门只在提交时才有。读取大对象时应当先用 filter 收窄范围，不能只按项数估算。
 
@@ -154,13 +154,13 @@ limit 取的是默认序的前 N 项。要“按某个字段排序的前 N 项�
 
 句柄上的写方法不各自跨进程。它们只改本地影子状态，到提交点才把整份文档写回一次。
 
-提交点是一个 batch 的结束：batch 里的 N 次写只改影子状态，batch 结束时整份写回一次。不放进 batch 的单发调用各自成一个隐式 batch，所以写一处就写回一次 —— 把本该一个 batch 的写拆成多个单发，就把一次整份提交变成了 N 次，并发读者会看到中间状态。batch 这个入口挂在哪个对象上、叫什么名字尚未确定，见下面的当前未确定。
+提交点是一个 batch 的结束：batch 里的 N 次写只改影子状态，batch 结束时整份写回一次。不放进 batch 的单发调用各自成一个隐式 batch，所以写一处就写回一次 —— 把本该一个 batch 的写拆成多个单发，就把一次整份提交变成了 N 次，并发读者会看到中间状态。
 
 batch 不是原子的，也不回滚：回调里每个操作仍逐个检查，不放行批内的非法中间态；本地失败不会自动撤回已经改掉的影子状态；提交之前崩溃时这一批写全部丢失。
 
-## 本阶段不提供
+## 不提供的能力
 
-把多个写入合并成一次原子提交属下一阶段 —— batch 给的是一个提交边界，不是原子性。BatchBuilder 这个登记器不提供。
+当前不提供把多个写入合并成一次原子提交 —— batch 给的是一个提交边界，不是原子性。BatchBuilder 这个登记器不提供。
 
 ## 完整示例
 
@@ -180,12 +180,11 @@ class MyWorkingMemory {
 }
 
 const poa = new PoA({ agent_id });
-// to_schema() 只是示意，schema 怎么回到程序里尚未确定
 await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, {
   incident_graph: { nodes: [], edges: [] },
   evidence_list: { entries: [] },
-});                                            // 句柄由哪个调用返回尚未确定
+});
 
 // 边不能先于端点存在：两个端点先写，边后写
 await mem.incident_graph.add_node(
@@ -208,38 +207,6 @@ text(titles);
 
 上面的写都没放进 batch，所以每个 await 各自成一个隐式 batch、各自整份写回一次；任何一次失败都以异常抛出，前面几次写回的内容不会回滚，中间状态对并发读可见。最后的 query 在本地执行，不带 limit，取回全部命中项之后在客户端按 title 排序；默认序只给 id 升序。
 
-## 当前未确定
-
-打包期从类型提取 schema 尚未实现：现在的打包链不受理 class 声明，也不受理带类型参数的字段，上面的声明一节描述的是目标形状。
-
-提取出来的 schema 怎么回到程序里尚未确定。两种做法是提取器另生成一个模块、由作者 import 进来，或者打包器把那个调用点替换成字面量。示例里的 MyWorkingMemory.to_schema() 只是示意：这种写法下那个 class 没有运行期成员，承载不了静态方法。
-
-边的属性类型在声明里没有对应的位置。边类别带一个可选的属性类型，声明了它的边才能带 props，而声明里 graph 的第二个类型参数只有边类别到两端类别的映射，边的属性写在哪里尚未确定。[BGraph](02-bgraph.md) 的 update_edge 和 [BEdge](05-elements.md) 的 props 都以这个声明为前提，所以本阶段只按空 props 的边来写。
-
-唯一属性约束同样没有对应的声明位置。[BGraph](02-bgraph.md) 的 add_node 会因违反它返回 CONSTRAINT_VIOLATION，而声明里没有写它的位置，这一类约束本阶段是否支持也尚未确定。
-
-不是合法标识符的集合名怎么写尚未确定。集合名在数据与声明里只是一个 JSON 键，而在程序里它要写成一个字段名，含连字符或空格的名字需要加引号声明、调用处按键访问，打包期提取是否受理这种写法尚未确定。使用这类名字之前请先确认。
-
-类别名在类型参数里是字符串字面量的键，写错一个类别名编译器未必报得出来：结构化类型下两个同形状的类型可以互相赋值，这一项要靠提取期校验，当前没有实现。
-
-由哪个调用返回句柄尚未确定。当前倾向是由 load_data 返回，上面的示例按这个写法示意；它的签名还没有定稿，不要当作稳定的调用方式。同一个 Run 内不重新载入就取回句柄的入口同样尚未确定。
-
-标记类型与具名标量类型的名字尚未确定，示例里的 Graph、Tree、List、KvMap 和 Int 都只是示意写法。map 不写成 Map，那个名字与 TypeScript 的内置类型冲突。标量精度用哪一种表达也尚未确定：具名标量类型，还是类型实参上的其他标注手段；类型实参位置无法使用 JSDoc。
-
-agent_id 的类型、来源与唯一性尚未确定，示例里的 new PoA({ agent_id }) 只说明它是 PoA 上唯一要给的东西。
-
-整份载入时 list 的 position 从哪里来尚未确定：由调用方在 entries 的元素里提供，还是载入时按数组顺序从 0 重排。正常写入时这个值由 SDK 分配，上面的示例没有写它。
-
-batch 这个提交入口挂在哪个对象上、叫什么名字尚未确定。它收一个回调、回调结束即提交这一点已定，见上面的提交点；调用处写成什么样还不能写死。
-
-整份状态的读取与清除在作者面没有入口。WM 侧有这两个调用，挂到作者面哪个对象上、叫什么名字尚未确定；在它定下来之前，提交结果未知时无法从作者侧重读那份文档。
-
-顶层标量字段怎么读写尚未确定。本阶段它们只随整份载入的数据一起写入，没有元素级的入口。
-
-tree、list 与 map 的 query 是否仍需要 target 尚未确定。graph 侧按节点与边区分是确定的，它的 target 取 nodes 或 edges。
-
-四类集合的方法签名已稳定，参数个数、位置与名字可以照着写，但写方法仍有一些参数细节尚未确定。query 统一取单个 options 对象，可含 filter 和 limit；filter 是按 id、key、类别名或已声明属性的精确匹配条件。四类集合的默认顺序都已确定，见上面的默认序与结果规模。
-
 ## 相关文档
 
 - [BGraph](02-bgraph.md)：图的节点与边读写、一跳邻接和查询。
@@ -247,4 +214,4 @@ tree、list 与 map 的 query 是否仍需要 target 尚未确定。graph 侧按
 - [BList 与 BMap](04-blist-bmap.md)：有序项追加与键值读写。
 - [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
-- [memory.snapshot](07-snapshot.md)：快照创建、列举和只读查询，属下一阶段。
+- [memory.snapshot](07-snapshot.md)：快照创建、列举和只读查询。

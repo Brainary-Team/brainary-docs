@@ -45,7 +45,7 @@ interface BEdge {
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了属性类型时 props 必填，未声明时必须是空对象或省略；而边的属性类型在声明里还没有对应的位置，见[当前未确定](01-memory.md)，所以本阶段 props 一律传空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了属性类型时 props 必填，未声明时必须是空对象或省略。
 
 **示例**：
 
@@ -94,7 +94,7 @@ interface BPage {
 }
 ~~~
 
-两个字段就是字段全集，没有第三个，也没有 complete 字段。items 是全部命中项。next_cursor 有值表示还有下一页，本阶段它不会出现。
+两个字段就是字段全集，没有第三个，也没有 complete 字段。items 是全部命中项。next_cursor 有值表示还有下一页，当前版本不会出现。
 
 **示例**：
 
@@ -205,10 +205,6 @@ items 的元素类型由调用的方法与查询目标决定：[BGraph](02-bgrap
 整数 key 使用无前导零的十进制表示，写 401 不写 "401"，写成字符串按 INVALID_STRUCTURE 拒绝。字符串 key 不做 Unicode 归一化，按原始 Unicode 标量序列比较，大小写不折叠。布尔 key 只接受 true 和 false。
 
 节点 id 与 item_id 不同，它们不做任何归一。
-
-## 当前未确定
-
-上面七个类型的类名与字段名都已稳定，可以写进自己的函数签名；未列出的字段不能作为调用依据。边的属性类型在声明里还没有对应的位置，所以 BEdge 的 props 本阶段一律是空对象或省略，见[当前未确定](01-memory.md)。
 
 ## 相关文档
 
