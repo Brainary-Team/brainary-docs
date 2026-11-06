@@ -3,31 +3,31 @@
 以下示例从 `/global` 入口导入，也可以从根入口 `@brainary/poa-sdk` 导入：
 
 ~~~js
-import { clearTimeout, exit, setTimeout, timed } from "@brainary/poa-sdk/global";
+import { Logger, clear_timeout, exit, set_timeout, timed } from "@brainary/poa-sdk/global";
 import { POA_INPUT, text } from "@brainary/poa-sdk/io";
 ~~~
 
-### setTimeout(callback, delayMs?)
+### set_timeout(callback, delay_ms?)
 
-**作用**：在 delayMs 毫秒后执行一次 callback。
+**作用**：在 delay_ms 毫秒后执行一次 callback。
 
-**输入类型**：callback: () => void，必填；delayMs?: number，单位毫秒，默认 0。
+**输入类型**：callback: () => void，必填；delay_ms?: number，单位毫秒，默认 0。
 
 程序运行到末尾时，尚未触发的回调不再执行。需要等待回调时，await 一个在回调中 resolve 的 Promise。
 
-**返回值类型**：TimeoutId，即 number，用于 clearTimeout。
+**返回值类型**：TimeoutId，即 number，用于 clear_timeout。
 
 **异常**：callback 不是函数时抛出 TypeError。
 
 **示例**：
 
 ~~~js
-await new Promise((resolve) => setTimeout(resolve, 1000));  // 等待 1 秒
+await new Promise((resolve) => set_timeout(resolve, 1000));  // 等待 1 秒
 
-const timeout_id = setTimeout(() => text("超时"), 60_000);
+const timeout_id = set_timeout(() => text("超时"), 60_000);
 ~~~
 
-### clearTimeout(timeout_id?)
+### clear_timeout(timeout_id?)
 
 **作用**：取消尚未触发的回调。timeout_id 省略、为 null 或对应的回调已触发时不做任何操作。
 
@@ -38,7 +38,7 @@ const timeout_id = setTimeout(() => text("超时"), 60_000);
 **示例**：
 
 ~~~js
-clearTimeout(timeout_id);
+clear_timeout(timeout_id);
 ~~~
 
 ### timed(fn)
@@ -81,5 +81,38 @@ exit() 通过抛出异常结束程序。在 try 块中调用时，catch 须把�
 if (POA_INPUT.dry_run) {
   text("dry run，不执行修改");
   exit();
+}
+~~~
+
+### Logger
+
+**作用**：记录开发者日志，分 debug、info、warn、error 四个级别。日志随会话保存，在 CLI 和 TUI 中显示，不进入程序输出和模型上下文。
+
+~~~ts
+interface Logger {
+  debug(message: string, data?: unknown): void;
+  info(message: string, data?: unknown): void;
+  warn(message: string, data?: unknown): void;
+  error(message: string, data?: unknown): void;
+}
+
+type LogLevel = "debug" | "info" | "warn" | "error";
+~~~
+
+**输入类型**：message: string，必填；data?: unknown，可选，须能被 JSON 序列化。
+
+**返回值类型**：void。Logger.error 只记录日志，不抛出异常。
+
+**异常**：message 不是字符串，或 data 不能被 JSON 序列化时抛出异常。
+
+**示例**：
+
+~~~js
+Logger.info("开始处理", { files: 3 });
+
+try {
+  JSON.parse(raw);
+} catch (error) {
+  Logger.error("解析失败", { error: String(error) });
 }
 ~~~
