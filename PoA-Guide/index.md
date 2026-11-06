@@ -32,4 +32,4 @@ text(rows);
 | [输入与输出](03-input-output.md) | 接收业务输入、输出结果、向用户提问，以及 CLI、TUI 和 Python SDK 三种运行方式 |
 | [示例](04-examples.md) | 完整程序：代码审查（业务输入 + `create_agent`）、随包携带 MCP 工具 |
 | [API 参考](05-api-reference.md) | 全部对象、方法和类型 |
-| [使用模板开发 PoA](10-template-workflow.md) | 克隆独立模板，检查、打包和运行 PoA，以及模板目录和内部流程 |
+| [使用模板开发 PoA](06-template-workflow.md) | 克隆独立模板，检查、打包和运行 PoA，以及模板目录和内部流程 |
