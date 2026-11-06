@@ -3,31 +3,31 @@
 以下示例从 `/global` 入口导入，也可以从根入口 `@brainary/poa-sdk` 导入：
 
 ~~~js
-import { Logger, clearTimeout, exit, setTimeout, timed } from "@brainary/poa-sdk/global";
+import { Logger, clear_timeout, exit, set_timeout, timed } from "@brainary/poa-sdk/global";
 import { POA_INPUT, text } from "@brainary/poa-sdk/io";
 ~~~
 
-### setTimeout(callback, delayMs?)
+### set_timeout(callback, delay_ms?)
 
-**作用**：在 delayMs 毫秒后执行一次 callback。
+**作用**：在 delay_ms 毫秒后执行一次 callback。
 
-**输入类型**：callback: () => void，必填；delayMs?: number，单位毫秒，默认 0。
+**输入类型**：callback: () => void，必填；delay_ms?: number，单位毫秒，默认 0。
 
 程序运行到末尾时，尚未触发的回调不再执行。需要等待回调时，await 一个在回调中 resolve 的 Promise。
 
-**返回值类型**：TimeoutId，即 number，用于 clearTimeout。
+**返回值类型**：TimeoutId，即 number，用于 clear_timeout。
 
 **异常**：callback 不是函数时抛出 TypeError。
 
 **示例**：
 
 ~~~js
-await new Promise((resolve) => setTimeout(resolve, 1000));  // 等待 1 秒
+await new Promise((resolve) => set_timeout(resolve, 1000));  // 等待 1 秒
 
-const timeout_id = setTimeout(() => text("超时"), 60_000);
+const timeout_id = set_timeout(() => text("超时"), 60_000);
 ~~~
 
-### clearTimeout(timeout_id?)
+### clear_timeout(timeout_id?)
 
 **作用**：取消尚未触发的回调。timeout_id 省略、为 null 或对应的回调已触发时不做任何操作。
 
@@ -38,7 +38,7 @@ const timeout_id = setTimeout(() => text("超时"), 60_000);
 **示例**：
 
 ~~~js
-clearTimeout(timeout_id);
+clear_timeout(timeout_id);
 ~~~
 
 ### timed(fn)

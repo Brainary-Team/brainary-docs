@@ -6,7 +6,7 @@
 | --- | --- |
 | `@brainary/poa-sdk` | 全部 API |
 | `@brainary/poa-sdk/io` | POA_INPUT、text、image、audio、yield_control、notify、ask 及其类型 |
-| `@brainary/poa-sdk/global` | setTimeout、clearTimeout、timed、exit、Logger 及其类型 |
+| `@brainary/poa-sdk/global` | set_timeout、clear_timeout、timed、exit、Logger 及其类型 |
 | `@brainary/poa-sdk/helper` | parse_json_reply、map_limit、shape_of |
 | `@brainary/poa-sdk/executor` | AgentExecutor、FileExecutor、TerminalExecutor、McpExecutor、BrainaryTool、ShellCommandError 及其类型 |
 
@@ -29,7 +29,7 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | [Executor](05-api-reference/05-executors.md) | FileExecutor、TerminalExecutor、McpExecutor、ShellCommandError、McpToolResult 和 tools；执行器上下文与 Hooks 尚未实现 |
 | [BrainaryTool](05-api-reference/06-brainary-tool.md) | 宿主工具枚举 |
 | [IO](05-api-reference/07-io.md) | POA_INPUT、text、image、audio、yield_control、notify、ask |
-| [global](05-api-reference/08-global.md) | setTimeout、clearTimeout、timed、exit、Logger |
+| [global](05-api-reference/08-global.md) | set_timeout、clear_timeout、timed、exit、Logger |
 | [helper](05-api-reference/09-helper.md) | parse_json_reply、map_limit、shape_of |
 
 ### Working Memory
