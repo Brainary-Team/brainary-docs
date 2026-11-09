@@ -1,7 +1,6 @@
 # Working Memory
 
-Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 class 声明有哪些集合，再把声明登记进 PoA 对象并载入整份数据，
-之后用声明里的字段读写。四类集合的读写都在 SDK 本地完成，整份文档在提交点写回一次。
+Working Memory 是 PoA 程序使用的结构化状态容器。作者先用一个 class 声明集合，再把声明登记进 PoA 对象并载入整份数据，之后通过声明里的字段读写。四类集合的读写都在 SDK 本地完成，整份文档在提交点写回一次。
 
 状态的作用域单位是 Run，但当前的存储按 thread、turn 和 kind 分桶，两者还不重合，由此带来两条限制，见[作用域与实例](10-working-memory/01-memory.md)。
 
