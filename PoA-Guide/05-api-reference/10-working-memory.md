@@ -3,13 +3,14 @@
 Working Memory 是 PoA 程序侧的结构化状态容器。全局 `memory` 由宿主在业务 JS 执行前注入，不走 `tools.` 分发路径，
 程序拿到的是已连接的 owner 侧句柄。它的全部状态属于当前 Run，而不属于某个 cell、turn 或 thread。
 
-这组文档按对象拆分，与本章其余部分同一体例：类型按“作用、类型定义、示例”说明，
+[quickstart](10-working-memory/00-quickstart.md) 是最短使用路径。其余各篇按对象拆分，与本章其余部分同一体例：类型按“作用、类型定义、示例”说明，
 函数和方法按“作用、输入类型、返回值类型、示例”说明。
 
 ## 文件索引
 
 | 文件 | 内容 |
 | --- | --- |
+| [quickstart](10-working-memory/00-quickstart.md) | 声明、生成、装载和一次 List 读写 |
 | [memory](10-working-memory/01-memory.md) | 集合访问器、batch、close_run_memory，以及 Working Memory 的作用域与版本规则 |
 | [BGraph](10-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |

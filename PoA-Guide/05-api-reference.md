@@ -34,7 +34,7 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 
 ### Working Memory
 
-入口页 [Working Memory](05-api-reference/10-working-memory.md) 汇总以下七篇的共同约定。
+使用步骤见 [quickstart](05-api-reference/10-working-memory/00-quickstart.md)。入口页 [Working Memory](05-api-reference/10-working-memory.md) 汇总以下七篇的共同约定。
 
 | 文件 | 内容 |
 | --- | --- |
