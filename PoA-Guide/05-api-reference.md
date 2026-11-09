@@ -1,12 +1,12 @@
 # PoA SDK API 参考
 
-`@brainary/poa-sdk` 是 ESM 包。全部 API 都可以从根入口导入，部分 API 也可以从子入口导入：
+`@brainary/poa-sdk` 是 ESM 包，用 `npm install @brainary/poa-sdk` 安装；从 [PoA 模板](https://github.com/Brainary-Team/brainary-poa-template) 创建的项目已包含它。全部 API 都可以从根入口导入，部分 API 也可以从子入口导入：
 
 | 入口 | 导出 |
 | --- | --- |
 | `@brainary/poa-sdk` | 全部 API |
 | `@brainary/poa-sdk/io` | POA_INPUT、text、image、audio、yield_control、notify、ask 及其类型 |
-| `@brainary/poa-sdk/global` | setTimeout、clearTimeout、timed、exit |
+| `@brainary/poa-sdk/global` | set_timeout、clear_timeout、timed、exit、Logger 及其类型 |
 | `@brainary/poa-sdk/helper` | parse_json_reply、map_limit、shape_of |
 | `@brainary/poa-sdk/executor` | AgentExecutor、FileExecutor、TerminalExecutor、McpExecutor、BrainaryTool、ShellCommandError 及其类型 |
 
@@ -29,7 +29,7 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | [Executor](05-api-reference/05-executors.md) | FileExecutor、TerminalExecutor、McpExecutor、ShellCommandError、McpToolResult 和 tools；执行器上下文与 Hooks 尚未实现 |
 | [BrainaryTool](05-api-reference/06-brainary-tool.md) | 宿主工具枚举 |
 | [IO](05-api-reference/07-io.md) | POA_INPUT、text、image、audio、yield_control、notify、ask |
-| [global](05-api-reference/08-global.md) | setTimeout、clearTimeout、timed、exit |
+| [global](05-api-reference/08-global.md) | set_timeout、clear_timeout、timed、exit、Logger |
 | [helper](05-api-reference/09-helper.md) | parse_json_reply、map_limit、shape_of |
 
 ### Working Memory
@@ -38,17 +38,17 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 
 | 文件 | 内容 |
 | --- | --- |
-| [memory](05-api-reference/10-working-memory/01-memory.md) | 集合访问器、batch、close_run_memory，以及 Working Memory 的作用域与版本规则 |
+| [quickstart](05-api-reference/10-working-memory/00-quickstart.md) | 声明、生成、装载和一次 List 读写 |
+| [声明、登记与句柄](05-api-reference/10-working-memory/01-memory.md) | 集合声明、register_schema 与 load_data、句柄与集合名，以及 Working Memory 的作用域、默认序与结果规模 |
 | [BGraph](05-api-reference/10-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](05-api-reference/10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
 | [BList 与 BMap](05-api-reference/10-working-memory/04-blist-bmap.md) | 有序项追加与键值读写 |
-| [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) | BNode、BEdge、BatchBuilder 与批次专用句柄、CommitResult、BPage 和三个项类型 |
-| [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError 和错误码 |
-| [memory.snapshot](05-api-reference/10-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
+| [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) | BNode、BEdge、BPage 和三个项类型 |
+| [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError、WmTransportError 和错误码 |
 
 ### Episodic Memory（设计预览）
 
-[Episodic Memory](05-api-reference/11-episodic-memory.md) 介绍情景记录与 Working Memory 快照的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
+[Episodic Memory](05-api-reference/11-episodic-memory.md) 介绍情景记录与 Working Memory 的关系，以及七个 operator 的设计职责。目前没有可调用的 PoA API。
 
 ## 类型索引
 
@@ -78,11 +78,10 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | AskQuestionOption、AskQuestion、AskRequest | [AskRequest 类型](05-api-reference/07-io.md#askrequest-类型) |
 | AskAnswer、AskResult | [AskResult 类型](05-api-reference/07-io.md#askresult-类型) |
 | TimeoutId、TimedResult | [global](05-api-reference/08-global.md) |
+| Logger、LogLevel | [Logger](05-api-reference/08-global.md#logger) |
 | JsonReply | [helper](05-api-reference/09-helper.md) |
-| memory | [memory](05-api-reference/10-working-memory/01-memory.md) |
 | BGraph | [BGraph](05-api-reference/10-working-memory/02-bgraph.md) |
 | BTree | [BTree](05-api-reference/10-working-memory/03-btree.md) |
 | BList、BMap | [BList 与 BMap](05-api-reference/10-working-memory/04-blist-bmap.md) |
-| BNode、BEdge、BatchBuilder、BatchGraph、BatchTree、BatchList、BatchMap、CommitResult、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) |
-| WmError、WmUsageError、WmRequestError、WmErrorCode | [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) |
-| SnapshotPage | [memory.snapshot](05-api-reference/10-working-memory/07-snapshot.md) |
+| BNode、BEdge、BPage、BListItem、BMapItem、BNeighborItem | [Working Memory 元素与返回类型](05-api-reference/10-working-memory/05-elements.md) |
+| WmError、WmUsageError、WmRequestError、WmTransportError、WmErrorCode | [Working Memory 异常](05-api-reference/10-working-memory/06-errors.md) |

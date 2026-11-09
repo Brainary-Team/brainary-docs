@@ -27,9 +27,9 @@ wire_api = "responses"
 
 [model_providers.deepseek]
 name = "DeepSeek"
-base_url = "https://api.deepseek.com/v1"
+base_url = "https://api.deepseek.com/anthropic/v1"
 env_key = "DEEPSEEK_API_KEY"
-wire_api = "responses"
+wire_api = "anthropic"
 
 [agents]
 max_depth = 2
@@ -131,7 +131,7 @@ default_subagent_model = "gpt-5.6-terra"
 运行 `brainary poa` 时，命令行参数优先于 `config.toml`：
 
 ```bash
-brainary poa my-poa.poa -s workspace-write -c agents.max_depth=2
+brainary poa dist/my-poa.poa -s workspace-write -c agents.max_depth=2
 ```
 
 | 参数 | 说明 |
@@ -153,7 +153,7 @@ brainary poa my-poa.poa -s workspace-write -c agents.max_depth=2
 
 ## manifest.toml
 
-`manifest.toml` 放在项目根目录，`brainary poa pack` 按它打包：
+`manifest.toml` 放在项目根目录，`pnpm package` 按它打包：
 
 ```toml
 [poa]
@@ -163,7 +163,7 @@ version = "0.1.0"
 description = "扫描仓库并汇总每个目录的用途"
 runtime = "codex-v8"
 poa_api_version = 1
-entry = "src/main.ts"
+entry = "main.js"
 
 [[capabilities.mcp]]
 name = "echo"
@@ -179,7 +179,7 @@ description = "回显消息"
 | `description` | 否 | 包的说明；PoA 作为工具提供给模型时，它就是工具说明 |
 | `runtime` | 是 | 固定为 `"codex-v8"` |
 | `poa_api_version` | 是 | 固定为 `1` |
-| `entry` | 是 | 程序入口的源文件，相对于项目根目录 |
+| `entry` | 是 | 包内的入口文件，固定为 `"main.js"`，由 `pnpm package` 从 `src/main.ts` 构建 |
 | `[[capabilities.mcp]]` | 否 | 随包携带的 MCP server，可以写多个 |
 
 程序接收业务输入时，在项目根目录放一个 `input_schema.ts`，打包时会自动编译并写入包中，不用在 manifest 中声明，见 [输入与输出](03-input-output.md#接收输入)。

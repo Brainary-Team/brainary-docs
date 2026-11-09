@@ -15,8 +15,8 @@ Brainary Python SDK 把 `.poa` 包和业务输入提交到开启了 code mode �
   Windows 对应文件带 `.exe` 后缀。
 - 已按[快速开始](../../PoA-Guide/01-quickstart.md)配置模型、认证信息与
   `~/.brainary/config.toml`；设置 `BRAINARY_HOME` 后改用该目录中的 `config.toml`。
-- 一个已打包的 `.poa` 文件。SDK 不接受包目录；请先用
-  [`brainary poa pack`](../../PoA-Guide/01-quickstart.md#6-打包) 打包。
+- 一个已打包的 `.poa` 文件。SDK 不接受包目录；请先在 PoA 项目中用
+  [`pnpm package`](../../PoA-Guide/01-quickstart.md#5-打包) 打包。
 
 ## 安装 SDK
 
