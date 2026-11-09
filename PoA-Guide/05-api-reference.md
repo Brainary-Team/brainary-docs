@@ -34,10 +34,11 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 
 ### Working Memory
 
-入口页 [Working Memory](05-api-reference/10-working-memory.md) 汇总以下六篇的共同约定。
+使用步骤见 [quickstart](05-api-reference/10-working-memory/00-quickstart.md)。入口页 [Working Memory](05-api-reference/10-working-memory.md) 汇总以下七篇的共同约定。
 
 | 文件 | 内容 |
 | --- | --- |
+| [quickstart](05-api-reference/10-working-memory/00-quickstart.md) | 声明、生成、装载和一次 List 读写 |
 | [声明、登记与句柄](05-api-reference/10-working-memory/01-memory.md) | 集合声明、register_schema 与 load_data、句柄与集合名，以及 Working Memory 的作用域、默认序与结果规模 |
 | [BGraph](05-api-reference/10-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](05-api-reference/10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
