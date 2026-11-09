@@ -45,7 +45,7 @@ interface BEdge {
 }
 ~~~
 
-实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填，缺端点时在构造处同步抛 [WmUsageError](06-errors.md)。该边类别声明了属性类型时 props 必填，未声明时必须是空对象或省略。
+实例由 new BEdge({ id, edge_class, from_id, to_id, props }) 构造。edge_class 取所选 graph 内声明的边类别名。from_id 与 to_id 取节点实例 id，不取类别名，两者必填；参数缺失或不是合法 ID 时在构造处同步抛带码错误。端点是否存在、是否属于当前 graph，在 add_edge 时检查。该边类别声明了属性类型时 props 必填，未声明时必须是空对象或省略。
 
 **示例**：
 
@@ -59,19 +59,9 @@ const edge = new BEdge({
 });
 ~~~
 
-### CommitResult
+### 写方法的返回值
 
-**作用**：表示一次提交的结果。
-
-**类型定义**：
-
-~~~ts
-interface CommitResult {
-  position?: number;
-}
-~~~
-
-得到这个对象就表示这次操作在本地已经生效：写方法的失败一律以异常抛出，不靠判断返回值。它不表示整份文档已经写回 —— 写回发生在提交点，见[提交点](01-memory.md)。position 只出现在 [BList](04-blist-bmap.md) 的 append 成功返回上，带出 SDK 分配的位置；append 以外的写方法没有这个字段，[BList](04-blist-bmap.md) 的 replace 与 delete 也没有，它们的返回体是一个空对象。
+图与树的写方法、list 的 replace/delete 和 map 的 delete 返回 `Promise<void>`。list 的 append 返回 `{ position }`，map 的 put 返回 `{ created }`。写方法的失败一律以异常抛出，不靠返回值传递。所有写入都在本地影子状态上完成，整份文档在提交点写回，见[提交点](01-memory.md)。
 
 **示例**：
 
@@ -79,6 +69,8 @@ interface CommitResult {
 await incidentGraph.add_node(node);
 const appended = await evidenceList.append("ev-1", { note: "网关时间快 31 秒" });
 text(appended.position);
+const put = await retryByStatusCodeMap.put(503, 1, "upsert");
+text(put.created);
 ~~~
 
 ### BPage
@@ -90,11 +82,10 @@ text(appended.position);
 ~~~ts
 interface BPage {
   items: unknown[];
-  next_cursor?: unknown;
 }
 ~~~
 
-两个字段就是字段全集，没有第三个，也没有 complete 字段。items 是全部命中项。next_cursor 有值表示还有下一页，当前版本不会出现。
+`items` 是当前版本的字段全集，包含全部命中项；当前版本不提供游标分页字段。
 
 **示例**：
 
@@ -112,7 +103,7 @@ text(page.items.length);
 ~~~ts
 interface BListItem {
   item_id: string;
-  position: number;
+  position: number | bigint;
   value: unknown;
 }
 ~~~
@@ -122,7 +113,7 @@ interface BListItem {
 **示例**：
 
 ~~~js
-const page = await evidenceList.query({ target: "list" });
+const page = await evidenceList.query();
 text(page.items.map((item) => item.position));
 ~~~
 
@@ -134,7 +125,7 @@ text(page.items.map((item) => item.position));
 
 ~~~ts
 interface BMapItem {
-  key: string | number | boolean;
+  key: string | number | bigint | boolean;
   value: unknown;
 }
 ~~~
@@ -144,7 +135,7 @@ interface BMapItem {
 **示例**：
 
 ~~~js
-const page = await retryByStatusCodeMap.query({ target: "map", filter: { key: 429 } });
+const page = await retryByStatusCodeMap.query({ filter: { key: 429 } });
 if (page.items.length > 0) text(page.items[0].value);
 ~~~
 
@@ -188,7 +179,7 @@ parent_id 由 SDK 维护，不在 BNode 的构造器参数内。建点时的位�
 
 ## 提交结果
 
-每个写方法都返回 CommitResult，但一次调用不等于一次提交：写方法只改本地影子状态，整份写回发生在提交点，见[提交点](01-memory.md)。带码的拒绝一律抛 [WmRequestError](06-errors.md)，失败不通过返回值传递。SDK 不自动合并、也不自动重试。
+写方法的返回类型按上面的定义区分：大多数写方法返回 `void`，list append 返回位置，map put 返回是否新建。一次调用不等于一次提交：写方法只改本地影子状态，整份写回发生在提交点，见[提交点](01-memory.md)。带码的拒绝一律抛 [WmRequestError](06-errors.md)，失败不通过返回值传递。SDK 不自动合并、也不自动重试。整份数据的读回、恢复和删除由已登记的 owner 提供，不属于集合句柄上的写方法。
 
 一个 batch 里写多处只写回一次，往返次数与调用次数无关。不放进 batch 的单发调用各自成一个隐式 batch、各自写回一次，中间状态对并发读可见；中途失败时前面已经写回的内容不会回滚，由调用方决定是补齐还是回退。
 

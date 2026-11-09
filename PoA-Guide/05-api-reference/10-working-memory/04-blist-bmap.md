@@ -12,7 +12,7 @@
 
 **输入类型**：item_id: string，非空；value: unknown，符合该 list 声明的 item_type。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>，成功时返回体上带出 SDK 分配的 position。
+**返回值类型**：Promise<{ position: number | bigint }>。
 
 **示例**：
 
@@ -33,7 +33,7 @@ item_id 已存在时返回 STRUCTURE_CONFLICT；value 不符声明的 item_type 
 
 **参数约束**：按 item_id 定位，不接收数组下标或 position，也不接收排序字段。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -49,7 +49,7 @@ replace 替换完整 value，item_id 与 position 保持不变。它与先删再
 
 **输入类型**：item_id: string。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -63,16 +63,16 @@ const result = await evidenceList.delete("ev-1");
 
 **作用**：按条件查询当前 list 的项。
 
-**输入类型**：options: object，必须含 target，可含 filter 和 limit。
+**输入类型**：options?: object，可含 filter 和 limit。
 
-**参数约束**：target 取 list。collection 由句柄自动注入，不作为业务查询选项传入。
+**参数约束**：collection 由句柄自动注入，不作为业务查询选项传入。
 
 **返回值类型**：Promise<[BPage](05-elements.md)>，项是 [BListItem](05-elements.md)。
 
 **示例**：
 
 ~~~js
-const page = await evidenceList.query({ target: "list", filter: { item_id: "ev-1" } });
+const page = await evidenceList.query({ filter: { item_id: "ev-1" } });
 if (page.items.length > 0) text(page.items[0].value);
 ~~~
 
@@ -84,7 +84,7 @@ list 的每个项由三部分组成：由调用方提供的非空字符串 item_
 
 当前只支持末尾追加、按 item_id 替换完整 value、按 item_id 删除。不支持任意位置插入、链表指针、自动去重或隐式重排。
 
-position 按调用先后递增，取每个 list 的单调高水位加一，所以两次 append 的相对次序就是调用次序。只有成功的追加才分配，失败不消耗；删除后不复用并允许出现间隔；在实例、快照和恢复后保持不变。高水位随整份文档一起写回，重建影子状态之后继续沿用，不按当前最大 position 重算 —— 那样会在删掉尾号之后把已删的号重新发出去。
+position 按调用先后递增，取每个 list 的单调高水位加一，所以两次 append 的相对次序就是调用次序。只有成功的追加才分配，失败不消耗；删除后不复用并允许出现间隔；在同一实例中保持不变。高水位随整份文档一起写回，重建影子状态之后继续沿用，不按当前最大 position 重算 —— 那样会在删掉尾号之后把已删的号重新发出去。
 
 三条前置条件都按调用时的状态求值：追加一个已存在的 item_id 被拒绝；先删再追加通过，该项得到新的 position；先追加再替换通过。list 允许删除后重新使用同一个 item_id。
 
@@ -98,11 +98,11 @@ position 按调用先后递增，取每个 list 的单调高水位加一，所�
 
 **作用**：按 key 写入一个完整 value。
 
-**输入类型**：key: string | number | boolean，符合该 map 声明的 key_type；value: unknown，符合 value_type；mode: "create" | "replace" | "upsert"。
+**输入类型**：key: string | number | bigint | boolean，符合该 map 声明的 key_type；value: unknown，符合 value_type；mode: "create" | "replace" | "upsert"。
 
 **参数约束**：三个参数全部必填，mode 必须明确给出。create 只允许新 key，replace 只允许已有 key，upsert 两者都允许。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<{ created: boolean }>。
 
 **示例**：
 
@@ -118,11 +118,11 @@ await retryByStatusCodeMap.put(503, 2, "replace");                 // 503 不存
 
 **作用**：按 key 删除一条记录。
 
-**输入类型**：key: string | number | boolean，符合该 map 声明的 key_type。
+**输入类型**：key: string | number | bigint | boolean，符合该 map 声明的 key_type。
 
 **参数约束**：按 key 定位，不需要传入 value 或写入模式。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -136,16 +136,16 @@ const result = await retryByStatusCodeMap.delete(503);
 
 **作用**：按条件查询当前 map 的记录。
 
-**输入类型**：options: object，必须含 target，可含 filter 和 limit。
+**输入类型**：options?: object，可含 filter 和 limit。
 
-**参数约束**：target 取 map。collection 由句柄自动注入，不作为业务查询选项传入。
+**参数约束**：collection 由句柄自动注入，不作为业务查询选项传入。
 
 **返回值类型**：Promise<[BPage](05-elements.md)>，项是 [BMapItem](05-elements.md)。
 
 **示例**：
 
 ~~~js
-const page = await retryByStatusCodeMap.query({ target: "map", filter: { key: 429 } });
+const page = await retryByStatusCodeMap.query({ filter: { key: 429 } });
 if (page.items.length > 0) text(page.items[0].value);
 ~~~
 
@@ -161,10 +161,10 @@ mode 比对是前置条件，按调用时的状态求值：先 create 再 replac
 
 默认按规范化 key 升序，比较按 key_type 声明的标量类型进行。整数 key 按数值比，9 排在 401 之前，不按字典序。limit 的语义与命中项数上限见[默认序与结果规模](01-memory.md)。
 
-map 的历史不另建一套接口，对快照使用同样的 query，见 [memory.snapshot](07-snapshot.md)。
+map 没有单独的历史接口。整份数据的读回、恢复和删除通过 owner 方法完成，见[声明、登记与句柄](01-memory.md)。
 
 ## 相关文档
 
 - [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
-- [BListItem 与 BMapItem](05-elements.md)：项类型、提交结果和读结果体。
+- [BListItem 与 BMapItem](05-elements.md)：项类型、写方法返回值和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

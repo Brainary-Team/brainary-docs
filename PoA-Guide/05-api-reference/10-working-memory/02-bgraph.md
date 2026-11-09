@@ -8,7 +8,7 @@
 
 **输入类型**：node: [BNode](05-elements.md)。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -26,7 +26,7 @@ const result = await incidentGraph.add_node(
 
 **输入类型**：edge: [BEdge](05-elements.md)。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -54,7 +54,7 @@ const result = await incidentGraph.add_edge(
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。unset 是属性名的数组，其中的名字必须是已声明的非必填属性，且不得与 set 的键相交；违反这几条都返回 INVALID_ARGUMENT。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -71,7 +71,7 @@ await incidentGraph.update_node("node-1", { unset: ["priority"] });
 
 **输入类型**：id: string。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -89,7 +89,7 @@ const result = await incidentGraph.delete_node("node-1");
 
 **参数约束**：set 与 unset 至少一个非空。edge_class、from_id 和 to_id 都不在两者的作用范围内。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -105,7 +105,7 @@ const result = await incidentGraph.update_edge("edge-1", { set: { weight: 3 } })
 
 **输入类型**：id: string。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -179,5 +179,5 @@ filter 按 id、node_class 或 edge_class、以及已声明属性做精确匹配
 ## 相关文档
 
 - [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
-- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和读结果体。
+- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、写方法返回值和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

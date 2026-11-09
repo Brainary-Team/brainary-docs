@@ -8,7 +8,7 @@
 
 **输入类型**：node: [BNode](05-elements.md)，不含 parent_id。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -26,7 +26,7 @@ const result = await taskTree.add_root(
 
 **输入类型**：parent_id: string；node: [BNode](05-elements.md)，不含 parent_id。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -47,7 +47,7 @@ const result = await taskTree.add_child(
 
 **参数约束**：三个参数全部必填。node_id 不接受 null；另两个都接受 null。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -65,7 +65,7 @@ const result = await taskTree.set_parent("subtask-1", "ms-2", "ms-1");
 
 **参数约束**：set 与 unset 至少一个非空。node_class 与 parent_id 都不在两者的作用范围内。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -81,7 +81,7 @@ const result = await taskTree.update("ms-2", { set: { priority: 2 } });
 
 **输入类型**：node_id: string。
 
-**返回值类型**：Promise<[CommitResult](05-elements.md)>。
+**返回值类型**：Promise<void>。
 
 **示例**：
 
@@ -157,16 +157,16 @@ text(childPage.items.map((child) => child.id));
 
 **作用**：按条件查询当前 tree 的节点。
 
-**输入类型**：options: object，必须含 target，可含 filter 和 limit。
+**输入类型**：options: object，可含 filter 和 limit。
 
-**参数约束**：target 取 tree。无 mode 字段。collection 由句柄自动注入，不作为业务查询选项传入。filter 出现 child_id 时不得同时给 parent_id 或 id。
+**参数约束**：无 mode 或 target 字段。collection 由句柄自动注入，不作为业务查询选项传入。filter 出现 child_id 时不得同时给 parent_id 或 id。
 
 **返回值类型**：Promise<[BPage](05-elements.md)>，项是树节点，比图节点多一个 parent_id。
 
 **示例**：
 
 ~~~js
-const page = await taskTree.query({ target: "tree", filter: { node_class: "Milestone" } });
+const page = await taskTree.query({ filter: { node_class: "Milestone" } });
 text(page.items.map((node) => node.parent_id));
 ~~~
 
@@ -255,5 +255,5 @@ child_id 是一条反向关系谓词，不是字段过滤，返回的那个父�
 ## 相关文档
 
 - [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
-- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和读结果体。
+- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、写方法返回值和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。

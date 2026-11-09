@@ -40,7 +40,7 @@ interface WmUsageError extends WmError {
 }
 ~~~
 
-它没有错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。两处本地失败抛这个类：访问句柄上未声明的字段；构造 [BEdge](05-elements.md) 时缺少端点。集合方法的其余本地拒绝都带码，走 WmRequestError。
+它没有错误码，catch 到的对象上没有 code 字段，这是与 WmRequestError 的区分点。访问句柄上未声明的字段会抛这个类。集合方法的其余本地拒绝都带码，走 WmRequestError。
 
 **示例**：
 
@@ -96,7 +96,7 @@ interface WmTransportError extends WmError {
 }
 ~~~
 
-它不表示带码的拒绝，那是 WmRequestError；也不表示不带码的本地拒绝，那是 WmUsageError。因为没有任何一侧的业务判定参与，它没有错误码，catch 到的对象上没有 code 字段。两类成因：超出 IPC 帧上限（当前约为 64 MiB）、连接断开。它以 Promise 拒绝的形式交付。信封本身坏掉不走这个类，那是一次结果未知的带码失败，见下面的失败的分流。
+它不表示带码的拒绝，那是 WmRequestError；也不表示不带码的本地拒绝，那是 WmUsageError。因为没有任何一侧的业务判定参与，它没有错误码，catch 到的对象上没有 code 字段。两类成因是连接断开或传输层拒绝请求。它以 Promise 拒绝的形式交付。信封本身坏掉不走这个类，那是一次结果未知的带码失败，见下面的失败的分流。
 
 只有整份提交会跨进程，所以只有提交点可能抛出这个类；四类集合的方法在本地执行，不经过传输。整份文档另受 5 MiB 上限约束，超限时得到的是 DATA_TOO_LARGE 这个带码拒绝，不是帧上限。
 
@@ -229,4 +229,4 @@ message 不可据以分支。它最多 1024 个 UTF-8 字节，含截断标记�
 ## 相关文档
 
 - [声明、登记与句柄](01-memory.md)：集合声明、登记与载入、句柄，以及默认序与结果规模。
-- [CommitResult](05-elements.md)：提交结果、读结果体和构造类型。
+- [BNode、BEdge 与读结果类型](05-elements.md)：构造类型、写方法返回值和读结果体。

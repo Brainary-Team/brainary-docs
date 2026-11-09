@@ -37,16 +37,12 @@ class MyWorkingMemory {
   evidence_list: List<Evidence>;
 
   retry_by_status_code: KvMap<Int, Int>;
-
-  goal: string;
 }
 ~~~
 
 值类型用 interface 写，字段上的标量精度与取值范围用 JSDoc 标注，写法与 input_schema 相同。类别名是第一个类型参数里的键：类别名与值类型是两回事，多个类别可以引用同一个值类型，例如上面 task_tree 的 Plan、Milestone 与 Task 三个类别都引用 Task 这一个值类型。
 
 两个类型参数的含义按集合种类定：graph 的第二个参数是边类别到起点与终点类别的映射；tree 的第二个参数是每个类别允许的子类别，写成空数组表示这个类别不接受子节点；list 只有一个参数，就是项的值类型；map 的两个参数分别是 key 与 value 的类型，key 只能是标量。
-
-顶层也允许声明非集合的标量字段，例如 goal: string。
 
 ## 登记与载入
 
@@ -56,7 +52,7 @@ class MyWorkingMemory {
 // PoA 与 Kind 由 SDK 提供；agent_id 由宿主提供
 const poa = new PoA({ agent_id });
 // schema 由打包期从上面那些类型提取
-await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
+const owner = await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
 
 const wm_data = {
   incident_graph: {
@@ -68,20 +64,19 @@ const wm_data = {
   },
   evidence_list: { entries: [{ item_id: "ev-1", value: { note: "移动端复现" } }] },
   retry_by_status_code: { entries: [{ key: 401, value: 2 }] },
-  goal: "排查移动端 401",
 };
-const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, wm_data);
+const mem = await owner.load_data(Kind.WM, wm_data);
 ~~~
 
 register_schema 把一份 schema 登记到 Kind.WM 名下，load_data 把一批数据按已登记的声明写入。未登记声明就载入数据一律被拒绝。同一个 kind 只能登记一次，第二次登记同样被拒绝，不覆盖也不合并；清掉数据也不解除登记。
 
 数据这一侧相反，可以反复写：再调一次 load_data 就整份替换上一次，所以没有单独的更新调用。句柄上的写方法也走这条路 —— 它们只改本地影子状态，到提交点把整份文档写回，见下面的提交点。
 
-数据必须带齐声明里的全部集合。声明把每个没带 ? 的字段都算必填，缺任何一个都会在发出之前被拒绝，所以上面那段把四个集合和那个标量字段逐个写了出来，空集合也要写出空容器。
+数据必须带齐声明里的全部集合。声明把每个字段都算必填，缺任何一个都会在发出之前被拒绝，所以上面那段把四个集合逐个写了出来，空集合也要写出空容器。
 
 数据与声明的符合性由 SDK 在发出之前检查。WM 不做这一层，它只做四项输入卫生：合法 UTF-8、可解析 JSON、最外层是对象、不超过字节上限。code mode 里绕过 SDK 直接调原生工具时这一层检查就没有了，不符声明的数据会被原样收下且不报错。
 
-整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形：list 的元素是 item_id 与 value，map 的元素是 key 与 value。顶层的标量字段直接给值，上面的 goal 就是这样写的。
+整份数据按集合名分组，每组的形状随集合种类而定：graph 是 { nodes, edges }，tree 是 { nodes }（树没有边，父子关系写在节点的 parent_id 上，根的 parent_id 是 null），list 与 map 都是 { entries }，但元素不同形：list 的元素是 item_id 与 value，map 的元素是 key 与 value。
 
 ## 句柄
 
@@ -101,8 +96,6 @@ await mem.retry_by_status_code.put(503, 1, "upsert");
 字段的种类在声明里已经确定：声明为 graph 的字段是 [BGraph](02-bgraph.md)，tree 是 [BTree](03-btree.md)，list 是 [BList](04-blist-bmap.md)，map 是 [BMap](04-blist-bmap.md)。集合名绑在句柄上，业务代码不重复传入它。它只用于 SDK 本地寻址与分派，不是工具参数 —— WM 侧那四个整份接口没有 collection 这一位。
 
 句柄对象上只有声明过的集合字段。访问未声明的名字抛 [WmUsageError](06-errors.md)，不会得到 undefined：集合名拼错时报的是这个名字没有声明，而不是在调用方法时得到一个原生 TypeError。
-
-顶层的标量字段没有元素级的读写入口，只随整份数据一起载入，句柄上没有单独读写它们的方法。
 
 ## 作用域与实例
 
@@ -128,7 +121,18 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 持久化
 
-当前使用内存存储。进程退出后运行态和变更历史都会丢失，跨进程保留数据要靠导出快照，见 [memory.snapshot](07-snapshot.md)。
+当前使用内存存储。进程退出后运行态和变更历史都会丢失。已登记的 owner 提供整份数据的读回、恢复和删除方法；这些方法使用显式的 `Kind.WM` 参数，不通过单独的 `memory.snapshot` 对象调用。
+
+~~~js
+const stored = await owner.read_data(Kind.WM);
+if (stored !== null) {
+  const restored = await owner.restore_data(Kind.WM, stored);
+  await restored.evidence_list.append("ev-2", { note: "恢复后继续记录" });
+}
+await owner.delete_data(Kind.WM);
+~~~
+
+`read_data` 返回当前已提交的整份数据或 `null`。`restore_data` 成功后返回新的句柄，之前句柄不再继续使用；`delete_data` 删除数据但保留已登记的声明。
 
 ## 集合名
 
@@ -136,7 +140,7 @@ WM schema 与 input_schema 是两份不同的 schema，用途与可见性都不�
 
 ## 默认序与结果规模
 
-四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。[BPage](05-elements.md) 的 next_cursor 是一个可选字段，当前版本不会出现。
+四类集合的 query 和 [BGraph](02-bgraph.md) 的 neighbors 一次调用返回全部命中项。返回体只有 `items` 字段。
 
 读和排序都在 SDK 本地完成。默认序是固定的，不由调用方选：graph 按元素 id 升序，tree 按 id 升序，list 按 position 升序，map 按规范化 key 升序。graph 与 tree 的 id 按原始 Unicode 标量序列比较，graph 的边按边 id；map 的整数 key 按数值比较，9 排在 401 之前。邻接读取也有稳定序。需要其他顺序时在客户端自行排序。
 
@@ -146,7 +150,7 @@ limit 取的是默认序的前 N 项。要“按某个字段排序的前 N 项�
 
 命中项数的上限是 10000。它针对的是命中项数而不是返回项数，所以指定 limit 不能绕过它：limit 为 10 而 filter 命中 5 万项时同样被拒绝。超限是确定性拒绝，返回 RESULT_TOO_LARGE，处理方式是收窄 filter 或先减少数据。
 
-整份文档另有一个字节上限，与上面的命中项数上限各管一侧：提交时那份文档的 JSON 文本超过上限会被拒绝，缺省 5 MiB，可由运维配置，返回 DATA_TOO_LARGE，见 [WmRequestError](06-errors.md)。它量的是那一个字符串自身的 UTF-8 字节数，不是 JS 的 String.length。传输帧上限由宿主和传输层决定，当前实现约为 64 MiB，远在 5 MiB 的文档上限之上，所以帧超限这一支实际碰不到。
+整份文档另有一个字节上限，与上面的命中项数上限各管一侧：提交时那份文档的 JSON 文本超过上限会被拒绝，缺省 5 MiB，可由运维配置，返回 DATA_TOO_LARGE，见 [WmRequestError](06-errors.md)。它量的是那一个字符串自身的 UTF-8 字节数，不是 JS 的 String.length。
 
 两项上限互不替代。命中项数在 10000 以内而读回来的对象很大时 RESULT_TOO_LARGE 不会触发，字节一侧也没有对应的错误码 —— 那一侧的闸门只在提交时才有。读取大对象时应当先用 filter 收窄范围，不能只按项数估算。
 
@@ -180,8 +184,8 @@ class MyWorkingMemory {
 }
 
 const poa = new PoA({ agent_id });
-await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
-const mem = await poa.load_data<MyWorkingMemory>(Kind.WM, {
+const owner = await poa.register_schema(Kind.WM, MyWorkingMemory.to_schema());
+const mem = await owner.load_data(Kind.WM, {
   incident_graph: { nodes: [], edges: [] },
   evidence_list: { entries: [] },
 });
@@ -212,6 +216,5 @@ text(titles);
 - [BGraph](02-bgraph.md)：图的节点与边读写、一跳邻接和查询。
 - [BTree](03-btree.md)：树的读写、约束模型和层级查询。
 - [BList 与 BMap](04-blist-bmap.md)：有序项追加与键值读写。
-- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、提交结果和读结果体。
+- [BNode、BEdge 与读写返回类型](05-elements.md)：构造类型、写方法返回值和读结果体。
 - [WmError](06-errors.md)：异常类层级、错误码和捕获方式。
-- [memory.snapshot](07-snapshot.md)：快照创建、列举和只读查询。

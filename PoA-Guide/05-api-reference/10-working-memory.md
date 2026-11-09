@@ -13,9 +13,8 @@ Working Memory 是 PoA 程序侧的结构化状态容器。作者先用一个 cl
 | [BGraph](10-working-memory/02-bgraph.md) | 图的节点与边读写、一跳邻接和查询 |
 | [BTree](10-working-memory/03-btree.md) | 树的读写、约束模型和层级查询 |
 | [BList 与 BMap](10-working-memory/04-blist-bmap.md) | 有序项追加与键值读写 |
-| [元素与返回类型](10-working-memory/05-elements.md) | BNode、BEdge、CommitResult、BPage 和三个项类型 |
+| [元素与返回类型](10-working-memory/05-elements.md) | BNode、BEdge、BPage 和三个项类型 |
 | [异常](10-working-memory/06-errors.md) | WmError、WmUsageError、WmRequestError、WmTransportError 和错误码 |
-| [memory.snapshot](10-working-memory/07-snapshot.md) | 快照创建、列举、只读查询和 SnapshotPage |
 
 四类集合的句柄都是[声明](10-working-memory/01-memory.md)里的字段，字段名就是集合名。
 失败分成三类：不带错误码的本地使用错误、带错误码的拒绝，以及请求发出之后的传输与帧失败，分流方式见 [异常](10-working-memory/06-errors.md)。
