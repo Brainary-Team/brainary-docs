@@ -6,6 +6,8 @@ API Key 是模型服务给你的访问凭证。把它和模型信息配置好，
 
 > API Key 不要发给他人、放进截图或提交到 Git 仓库。下面的 Key 和地址都是占位示例，需要替换。
 
+> 版本提示：Chat Completions 支持需使用包含 [Chat Completions 协议适配器（#154）](https://github.com/Brainary-Team/brainary-codex/pull/154) 的 Brainary 版本。使用前请确认所安装版本已包含此功能。
+
 ## 第 1 步：准备 4 项信息
 
 向管理员或模型服务商获取：
@@ -14,10 +16,10 @@ API Key 是模型服务给你的访问凭证。把它和模型信息配置好，
 | --- | --- |
 | 模型 ID | 服务商提供的准确名称，不是模型的宣传名称 |
 | 服务地址 | 用于程序连接的 API 根地址，不是服务商的网站首页 |
-| 接口类型 | 确认是 `responses` 还是 `anthropic` |
+| 接口类型 | 确认是 Responses、Chat Completions 还是 Anthropic Messages |
 | API Key | 你自己的访问凭证 |
 
-不知道接口类型时，可以直接问管理员或服务商：“这个服务支持 Responses 接口，还是 Anthropic Messages 接口？API 根地址和模型 ID 是什么？”只支持 Chat Completions 的服务，当前不能直接接入。
+不知道接口类型时，可以直接问管理员或服务商：“这个服务支持 Responses、Chat Completions，还是 Anthropic Messages 接口？API 根地址和模型 ID 是什么？”服务商只写“OpenAI 兼容”时，也要确认具体支持哪一种接口。
 
 ## 第 2 步：填写配置文件
 
@@ -57,9 +59,11 @@ requires_openai_auth = false
 | --- | --- |
 | `model` | 第 1 步拿到的模型 ID |
 | `base_url` | 第 1 步拿到的 API 根地址 |
-| `wire_api` | Responses 接口填 `"responses"`；Anthropic Messages 接口填 `"anthropic"` |
+| `wire_api` | Responses 接口填 `"responses"`；Chat Completions 接口填 `"chat"`；Anthropic Messages 接口填 `"anthropic"` |
 
-服务地址不要包含最后的 `/responses` 或 `/messages`，程序会自动追加。例如，服务商给的是 `https://api.example.com/v1/messages`，这里就填 `https://api.example.com/v1`。
+如果服务商只支持 Chat Completions，将模板中的一行改为 `wire_api = "chat"`，其他设置仍按上表填写。
+
+服务地址不要包含最后的 `/responses`、`/chat/completions` 或 `/messages`，程序会按 `wire_api` 自动追加。例如，服务商给的是 `https://api.example.com/v1/chat/completions`，这里就填 `https://api.example.com/v1`，保留 `/v1`。
 
 保存文件：使用 `nano` 时，按 `Ctrl+O`、`Enter` 保存，再按 `Ctrl+X` 退出；使用记事本时，按 `Ctrl+S` 保存后关闭。
 
@@ -108,7 +112,7 @@ brainary exec --skip-git-repo-check "请只回复：配置成功"
 | 找不到 `brainary` 命令 | 先确认已安装程序，并且终端能找到它；这一步与 Key 无关 |
 | 提示环境变量不存在 | 是否执行过第 3 步？是否换了终端？变量名是否为 `VENDOR_API_KEY`？ |
 | 返回 `401` 或“未授权” | Key 是否填错、过期，是否有当前模型的使用权限？特殊认证方式见下文 |
-| 返回 `404` 或“接口不存在” | 地址和接口类型是否对应？地址末尾是否多写了 `/responses` 或 `/messages`？ |
+| 返回 `404` 或“接口不存在” | 地址和接口类型是否对应？地址末尾是否多写了 `/responses`、`/chat/completions` 或 `/messages`？ |
 | 提示“模型不存在” | `model` 是否使用了服务商提供的准确模型 ID？ |
 | 实际模型与配置不一致 | 按[模型与配置不一致](#模型与配置不一致)检查配置目录、覆盖项和旧会话 |
 | 提示 `Brainary credentials are not configured` | 配置是否保存到了正确目录？`model_provider = "vendor"` 是否写在顶层，且厂商配置中有 `requires_openai_auth = false`？ |
