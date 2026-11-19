@@ -3,67 +3,11 @@
 以下示例从 `/global` 入口导入，也可以从根入口 `@brainary/poa-sdk` 导入：
 
 ~~~js
-import { Logger, clear_timeout, exit, set_timeout, timed } from "@brainary/poa-sdk/global";
+import { Logger, exit } from "@brainary/poa-sdk/global";
 import { POA_INPUT, text } from "@brainary/poa-sdk/io";
 ~~~
 
-### set_timeout(callback, delay_ms?)
-
-**作用**：在 delay_ms 毫秒后执行一次 callback。
-
-**输入类型**：callback: () => void，必填；delay_ms?: number，单位毫秒，默认 0。
-
-程序运行到末尾时，尚未触发的回调不再执行。需要等待回调时，await 一个在回调中 resolve 的 Promise。
-
-**返回值类型**：TimeoutId，即 number，用于 clear_timeout。
-
-**异常**：callback 不是函数时抛出 TypeError。
-
-**示例**：
-
-~~~js
-await new Promise((resolve) => set_timeout(resolve, 1000));  // 等待 1 秒
-
-const timeout_id = set_timeout(() => text("超时"), 60_000);
-~~~
-
-### clear_timeout(timeout_id?)
-
-**作用**：取消尚未触发的回调。timeout_id 省略、为 null 或对应的回调已触发时不做任何操作。
-
-**输入类型**：timeout_id?: TimeoutId | null。
-
-**返回值类型**：void。
-
-**示例**：
-
-~~~js
-clear_timeout(timeout_id);
-~~~
-
-### timed(fn)
-
-**作用**：执行 fn 并测量耗时。fn 可以是同步或异步函数。
-
-**输入类型**：fn: () => T | PromiseLike<T>，必填。
-
-**返回值类型**：Promise<TimedResult<T>>。fn 抛出的异常原样抛出。
-
-~~~ts
-interface TimedResult<T> {
-  value: T;   // fn 的返回值
-  ms: number; // 耗时，单位毫秒
-}
-~~~
-
-**示例**：
-
-~~~js
-import { TerminalExecutor } from "@brainary/poa-sdk/executor";
-
-const { value, ms } = await timed(() => new TerminalExecutor().exec_command("pwd"));
-text({ output: value.output, ms });
-~~~
+定时器、计时和随机数等标准 Web API 由运行时直接提供，无需导入，见 [运行环境](../07-runtime.md)。
 
 ### exit()
 
