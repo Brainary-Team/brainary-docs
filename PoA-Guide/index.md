@@ -33,3 +33,4 @@ text(rows);
 | [示例](04-examples.md) | 完整程序：代码审查（业务输入 + `create_agent`）、随包携带 MCP 工具 |
 | [API 参考](05-api-reference.md) | 全部对象、方法和类型 |
 | [使用模板开发 PoA](06-template-workflow.md) | 克隆独立模板，检查、打包和运行 PoA，以及模板目录和内部流程 |
+| [运行环境](07-runtime.md) | 运行时直接提供的定时器、计时、随机数、编码、URL 和流等 Web API，console 输出和未捕获错误的处理 |
