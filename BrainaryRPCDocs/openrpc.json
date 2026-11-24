@@ -1974,6 +1974,232 @@
       ]
     },
     {
+      "name": "thread/settings/update",
+      "summary": "切换模型与线程设置",
+      "description": "修改指定 thread 后续轮次使用的模型及其它运行设置。切换模型只需传 `model`，其取值必须来自 `model/list` 返回的 `data[].model`；同一请求里还可同时覆盖 cwd、审批策略、sandbox、推理强度等。设置生效后会收到 `thread/settings/updated` 通知。实验能力需显式开启 experimentalApi；本接口不影响已创建的其它 thread。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "threadId",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "cwd",
+          "schema": {
+            "description": "Override the working directory for subsequent turns.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "approvalPolicy",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__AskForApproval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the approval policy for subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "approvalsReviewer",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ApprovalsReviewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override where approval requests are routed for review on subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "sandboxPolicy",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__SandboxPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the sandbox policy for subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "permissions",
+          "schema": {
+            "description": "Select a named permissions profile id for subsequent turns. Cannot be combined with `sandboxPolicy`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "model",
+          "schema": {
+            "description": "Override the model for subsequent turns.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "serviceTier",
+          "schema": {
+            "description": "Override the service tier for subsequent turns. `null` clears the current service tier; omission leaves it unchanged.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "effort",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the reasoning effort for subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "summary",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ReasoningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the reasoning summary for subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "collaborationMode",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__CollaborationMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "EXPERIMENTAL - Set a pre-set collaboration mode for subsequent turns."
+          },
+          "required": false
+        },
+        {
+          "name": "multiAgentMode",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__MultiAgentMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "@deprecated Ignored. Use `effort: \"ultra\"` for proactive multi-agent behavior."
+          },
+          "required": false
+        },
+        {
+          "name": "personality",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__Personality"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the personality for subsequent turns."
+          },
+          "required": false
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "experimental",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb"
+      },
+      "x-wireExample": {
+        "method": "thread/settings/update",
+        "id": 1,
+        "params": {
+          "threadId": "thread_demo",
+          "model": "model_from_model_list"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ThreadSettingsUpdateResponse__2df7eed"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {}
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "threadId",
+              "value": "thread_demo"
+            },
+            {
+              "name": "model",
+              "value": "model_from_model_list"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {}
+          }
+        }
+      ]
+    },
+    {
       "name": "thread/compact/start",
       "summary": "压缩历史上下文",
       "description": "启动上下文压缩；通过执行事件观察完成情况。",
@@ -2491,6 +2717,891 @@
               "imageGeneration": false,
               "namespaceTools": false,
               "webSearch": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "modelProvider/list",
+      "summary": "列出模型供应商",
+      "description": "分页列出显式配置的 provider。`readOnly=true` 表示配置来自其它层级，只能查看，不能通过这些接口修改；内置默认 provider 不会自动出现在此列表。返回的 `version` 用于后续写操作的乐观并发控制。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "cursor",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "limit",
+          "schema": {
+            "format": "uint32",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "required": false
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelProviderListParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "modelProvider/list",
+        "id": 1,
+        "params": {
+          "limit": 100
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelProviderListResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "data": [
+            {
+              "modelProvider": "company-gateway",
+              "configuration": {
+                "name": "Company gateway",
+                "base_url": "https://gateway.example.com/v1",
+                "wire_api": "responses",
+                "env_key": "COMPANY_GATEWAY_API_KEY"
+              },
+              "readOnly": false
+            }
+          ],
+          "nextCursor": null,
+          "version": "config_version_1"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "limit",
+              "value": 100
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "data": [
+                {
+                  "modelProvider": "company-gateway",
+                  "configuration": {
+                    "name": "Company gateway",
+                    "base_url": "https://gateway.example.com/v1",
+                    "wire_api": "responses",
+                    "env_key": "COMPANY_GATEWAY_API_KEY"
+                  },
+                  "readOnly": false
+                }
+              ],
+              "nextCursor": null,
+              "version": "config_version_1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "modelProvider/create",
+      "summary": "创建模型供应商",
+      "description": "在用户配置中新增一个 provider。`configuration` 使用现有 config.toml 的 provider 字段，`expectedVersion` 可用于避免覆盖较新的配置；provider 标识不能重复或使用保留的内置标识。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "configuration",
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderConfigPatchParams__crud170"
+              }
+            ],
+            "description": "A provider table using the existing config.toml schema."
+          },
+          "required": true
+        },
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelProviderCreateParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "modelProvider/create",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "configuration": {
+            "name": "Company gateway",
+            "base_url": "https://gateway.example.com/v1",
+            "wire_api": "responses",
+            "env_key": "COMPANY_GATEWAY_API_KEY"
+          }
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelProviderWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "version": "config_version_2"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "configuration",
+              "value": {
+                "name": "Company gateway",
+                "base_url": "https://gateway.example.com/v1",
+                "wire_api": "responses",
+                "env_key": "COMPANY_GATEWAY_API_KEY"
+              }
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "version": "config_version_2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "modelProvider/update",
+      "summary": "修改模型供应商",
+      "description": "对指定 provider 的配置执行浅层更新。省略字段保持原值，显式传 `null` 清除设置；嵌套的 `http_headers` 等对象整体替换。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "configuration",
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderConfigPatchParams__crud170"
+              }
+            ],
+            "description": "Shallow patch of provider settings; null removes a setting."
+          },
+          "required": true
+        },
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelProviderUpdateParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "modelProvider/update",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "configuration": {
+            "base_url": "https://gateway.example.com/v2"
+          },
+          "expectedVersion": "config_version_2"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelProviderWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "version": "config_version_3"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "configuration",
+              "value": {
+                "base_url": "https://gateway.example.com/v2"
+              }
+            },
+            {
+              "name": "expectedVersion",
+              "value": "config_version_2"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "version": "config_version_3"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "modelProvider/delete",
+      "summary": "删除模型供应商",
+      "description": "删除指定 provider 的用户配置。已有本地模型目录和会话历史会保留；如果该 provider 是当前默认值，删除时会同时清理用户配置中的默认 provider/model。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelProviderDeleteParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "modelProvider/delete",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "expectedVersion": "config_version_3"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelProviderWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "version": "config_version_4"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "expectedVersion",
+              "value": "config_version_3"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "version": "config_version_4"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "model/read",
+      "summary": "读取自定义模型",
+      "description": "读取 provider 下本地权威模型目录中的完整模型元数据和目录版本。模型 ID 只在所属 provider 内有意义；该接口读取的是本地目录，不会读取或修改远程网关记录。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "model",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelReadParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "model/read",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelReadResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "metadata": {
+            "slug": "claude-company",
+            "display_name": "Company Claude",
+            "description": "公司网关中的 Claude 模型",
+            "supported_reasoning_levels": [
+              {
+                "effort": "medium",
+                "description": "默认推理强度"
+              }
+            ],
+            "shell_type": "disabled",
+            "visibility": "list",
+            "supported_in_api": true,
+            "priority": 0,
+            "support_verbosity": false,
+            "truncation_policy": {
+              "limit": 200000,
+              "mode": "tokens"
+            },
+            "supports_parallel_tool_calls": false,
+            "experimental_supported_tools": [],
+            "default_reasoning_level": "medium",
+            "default_service_tier": null,
+            "model_messages": null,
+            "default_verbosity": null,
+            "apply_patch_tool_type": null,
+            "context_window": 200000,
+            "max_context_window": null,
+            "auto_compact_token_limit": null,
+            "comp_hash": null,
+            "auto_review_model_override": null,
+            "tool_mode": "direct",
+            "multi_agent_version": "disabled",
+            "additional_speed_tiers": [],
+            "service_tiers": [],
+            "use_default_instructions": true,
+            "include_skills_usage_instructions": true,
+            "include_plugin_usage_instructions": true,
+            "supports_reasoning_summary_parameter": false,
+            "default_reasoning_summary": "none",
+            "web_search_tool_type": "text",
+            "supports_image_detail_original": false,
+            "effective_context_window_percent": 90,
+            "input_modalities": [
+              "text"
+            ],
+            "supports_search_tool": false,
+            "use_responses_lite": false
+          },
+          "version": "catalog_version_1"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "model",
+              "value": "claude-company"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "model": "claude-company",
+              "metadata": {
+                "slug": "claude-company",
+                "display_name": "Company Claude",
+                "description": "公司网关中的 Claude 模型",
+                "supported_reasoning_levels": [
+                  {
+                    "effort": "medium",
+                    "description": "默认推理强度"
+                  }
+                ],
+                "shell_type": "disabled",
+                "visibility": "list",
+                "supported_in_api": true,
+                "priority": 0,
+                "support_verbosity": false,
+                "truncation_policy": {
+                  "limit": 200000,
+                  "mode": "tokens"
+                },
+                "supports_parallel_tool_calls": false,
+                "experimental_supported_tools": [],
+                "default_reasoning_level": "medium",
+                "default_service_tier": null,
+                "model_messages": null,
+                "default_verbosity": null,
+                "apply_patch_tool_type": null,
+                "context_window": 200000,
+                "max_context_window": null,
+                "auto_compact_token_limit": null,
+                "comp_hash": null,
+                "auto_review_model_override": null,
+                "tool_mode": "direct",
+                "multi_agent_version": "disabled",
+                "additional_speed_tiers": [],
+                "service_tiers": [],
+                "use_default_instructions": true,
+                "include_skills_usage_instructions": true,
+                "include_plugin_usage_instructions": true,
+                "supports_reasoning_summary_parameter": false,
+                "default_reasoning_summary": "none",
+                "web_search_tool_type": "text",
+                "supports_image_detail_original": false,
+                "effective_context_window_percent": 90,
+                "input_modalities": [
+                  "text"
+                ],
+                "supports_search_tool": false,
+                "use_responses_lite": false
+              },
+              "version": "catalog_version_1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "model/create",
+      "summary": "创建自定义模型",
+      "description": "在 provider 的本地权威模型目录中新增模型。`metadata` 可覆盖默认元数据；对于仍使用网关自动发现的 provider，必须显式传 `createCatalog=true` 才会创建本地目录，创建后目录只包含该模型。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "createCatalog",
+          "schema": {
+            "description": "Explicitly start an authoritative local catalog when the provider uses discovery. This new catalog initially contains only the model being created.",
+            "type": "boolean"
+          },
+          "required": false
+        },
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "metadata",
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadataPatchParams__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional catalog metadata over conservative defaults; slug must match model."
+          },
+          "required": false
+        },
+        {
+          "name": "model",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelCreateParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "model/create",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "createCatalog": true,
+          "metadata": {
+            "display_name": "Company Claude",
+            "context_window": 200000
+          }
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "version": "catalog_version_1"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "model",
+              "value": "claude-company"
+            },
+            {
+              "name": "createCatalog",
+              "value": true
+            },
+            {
+              "name": "metadata",
+              "value": {
+                "display_name": "Company Claude",
+                "context_window": 200000
+              }
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "model": "claude-company",
+              "version": "catalog_version_1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "model/update",
+      "summary": "修改自定义模型",
+      "description": "对已有本地模型的元数据执行浅层更新。模型 ID 不能通过此接口重命名；`expectedVersion` 应使用 `model/read` 或上一次模型写操作返回的目录版本。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "metadata",
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadataPatchParams__crud170"
+              }
+            ],
+            "description": "Shallow catalog metadata patch. Model IDs cannot be changed."
+          },
+          "required": true
+        },
+        {
+          "name": "model",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelUpdateParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "model/update",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "metadata": {
+            "display_name": "Company Claude 5.5"
+          },
+          "expectedVersion": "catalog_version_1"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "version": "catalog_version_2"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "model",
+              "value": "claude-company"
+            },
+            {
+              "name": "metadata",
+              "value": {
+                "display_name": "Company Claude 5.5"
+              }
+            },
+            {
+              "name": "expectedVersion",
+              "value": "catalog_version_1"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "model": "claude-company",
+              "version": "catalog_version_2"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "model/delete",
+      "summary": "删除自定义模型",
+      "description": "从 provider 的本地权威模型目录中删除已有模型。该操作不会删除远程网关模型；如果模型是当前默认模型，应先选择其它默认模型。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "expectedVersion",
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "model",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "modelProvider",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "模型与配置"
+        }
+      ],
+      "x-direction": "request",
+      "x-availability": "current",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ModelDeleteParams__crud170"
+      },
+      "x-wireExample": {
+        "method": "model/delete",
+        "id": 1,
+        "params": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "expectedVersion": "catalog_version_2"
+        }
+      },
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ModelWriteResponse__crud170"
+        }
+      },
+      "x-replyExample": {
+        "id": 1,
+        "result": {
+          "modelProvider": "company-gateway",
+          "model": "claude-company",
+          "version": "catalog_version_3"
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "modelProvider",
+              "value": "company-gateway"
+            },
+            {
+              "name": "model",
+              "value": "claude-company"
+            },
+            {
+              "name": "expectedVersion",
+              "value": "catalog_version_2"
+            }
+          ],
+          "result": {
+            "name": "result",
+            "value": {
+              "modelProvider": "company-gateway",
+              "model": "claude-company",
+              "version": "catalog_version_3"
             }
           }
         }
@@ -3638,6 +4749,108 @@
             {
               "name": "threadId",
               "value": "thread_demo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "thread/settings/updated",
+      "summary": "线程设置已更新",
+      "description": "在 `thread/settings/update` 生效后发送，携带该 thread 当前的完整设置快照；切换模型时应据此更新界面显示。",
+      "paramStructure": "by-name",
+      "params": [
+        {
+          "name": "threadId",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        },
+        {
+          "name": "threadSettings",
+          "schema": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7"
+          },
+          "required": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "任务事件"
+        }
+      ],
+      "x-direction": "notification",
+      "x-availability": "experimental",
+      "x-paramsSchema": {
+        "$ref": "#/components/schemas/ThreadSettingsUpdatedNotification__814055a"
+      },
+      "x-wireExample": {
+        "method": "thread/settings/updated",
+        "params": {
+          "threadId": "thread_demo",
+          "threadSettings": {
+            "cwd": "/Users/demo/workspace",
+            "approvalPolicy": "on-request",
+            "approvalsReviewer": "user",
+            "sandboxPolicy": {
+              "type": "readOnly",
+              "networkAccess": false
+            },
+            "activePermissionProfile": null,
+            "model": "model_from_model_list",
+            "modelProvider": "demo-provider",
+            "serviceTier": null,
+            "effort": "medium",
+            "summary": "auto",
+            "collaborationMode": {
+              "mode": "default",
+              "settings": {
+                "model": "model_from_model_list",
+                "reasoning_effort": "medium",
+                "developer_instructions": null
+              }
+            },
+            "multiAgentMode": "explicitRequestOnly",
+            "personality": null
+          }
+        }
+      },
+      "examples": [
+        {
+          "name": "schema-validated-example",
+          "params": [
+            {
+              "name": "threadId",
+              "value": "thread_demo"
+            },
+            {
+              "name": "threadSettings",
+              "value": {
+                "cwd": "/Users/demo/workspace",
+                "approvalPolicy": "on-request",
+                "approvalsReviewer": "user",
+                "sandboxPolicy": {
+                  "type": "readOnly",
+                  "networkAccess": false
+                },
+                "activePermissionProfile": null,
+                "model": "model_from_model_list",
+                "modelProvider": "demo-provider",
+                "serviceTier": null,
+                "effort": "medium",
+                "summary": "auto",
+                "collaborationMode": {
+                  "mode": "default",
+                  "settings": {
+                    "model": "model_from_model_list",
+                    "reasoning_effort": "medium",
+                    "developer_instructions": null
+                  }
+                },
+                "multiAgentMode": "explicitRequestOnly",
+                "personality": null
+              }
             }
           ]
         }
@@ -42680,6 +43893,2741 @@
           "message",
           "data"
         ]
+      },
+      "ThreadSettingsUpdateParams__db306bb__AskForApproval": {
+        "oneOf": [
+          {
+            "enum": [
+              "untrusted",
+              "on-request",
+              "never"
+            ],
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "granular": {
+                "properties": {
+                  "mcp_elicitations": {
+                    "type": "boolean"
+                  },
+                  "request_permissions": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "type": "boolean"
+                  },
+                  "sandbox_approval": {
+                    "type": "boolean"
+                  },
+                  "skill_approval": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "mcp_elicitations",
+                  "rules",
+                  "sandbox_approval"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "granular"
+            ],
+            "title": "GranularAskForApproval",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettingsUpdateParams__db306bb__ReasoningEffort": {
+        "description": "A non-empty reasoning effort value advertised by the model.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__Personality": {
+        "enum": [
+          "none",
+          "friendly",
+          "pragmatic"
+        ],
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__MultiAgentMode": {
+        "description": "Controls the effective multi-agent delegation instructions for a turn. `custom` means the configured mode hint defines the policy instead of a built-in policy.",
+        "oneOf": [
+          {
+            "enum": [
+              "explicitRequestOnly",
+              "proactive"
+            ],
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "title": "CustomMultiAgentMode",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettingsUpdateParams__db306bb__ApprovalsReviewer": {
+        "description": "Configures who approval requests are routed to for review. Examples include sandbox escapes, blocked network access, MCP approval prompts, and ARC escalations. Defaults to `user`. `auto_review` uses a carefully prompted subagent to gather relevant context and apply a risk-based decision framework before approving or denying the request. The legacy value `guardian_subagent` is accepted for compatibility.",
+        "enum": [
+          "user",
+          "auto_review",
+          "guardian_subagent"
+        ],
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__ReasoningSummary": {
+        "description": "A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process. See https://platform.openai.com/docs/guides/reasoning?api-mode=responses#reasoning-summaries",
+        "oneOf": [
+          {
+            "enum": [
+              "auto",
+              "concise",
+              "detailed"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "Option to disable reasoning summaries.",
+            "enum": [
+              "none"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "ThreadSettingsUpdateParams__db306bb__NetworkAccess": {
+        "enum": [
+          "restricted",
+          "enabled"
+        ],
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__ModeKind": {
+        "description": "Initial collaboration mode to use when the TUI starts.",
+        "enum": [
+          "plan",
+          "default"
+        ],
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__AbsolutePathBuf": {
+        "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
+        "type": "string"
+      },
+      "ThreadSettingsUpdateParams__db306bb__Settings": {
+        "description": "Settings for a collaboration mode.",
+        "properties": {
+          "developer_instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
+      "ThreadSettingsUpdateParams__db306bb__SandboxPolicy": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "dangerFullAccess"
+                ],
+                "title": "DangerFullAccessSandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "DangerFullAccessSandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "networkAccess": {
+                "default": false,
+                "type": "boolean"
+              },
+              "type": {
+                "enum": [
+                  "readOnly"
+                ],
+                "title": "ReadOnlySandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ReadOnlySandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "networkAccess": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__NetworkAccess"
+                  }
+                ],
+                "default": "restricted"
+              },
+              "type": {
+                "enum": [
+                  "externalSandbox"
+                ],
+                "title": "ExternalSandboxSandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ExternalSandboxSandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "excludeSlashTmp": {
+                "default": false,
+                "type": "boolean"
+              },
+              "excludeTmpdirEnvVar": {
+                "default": false,
+                "type": "boolean"
+              },
+              "networkAccess": {
+                "default": false,
+                "type": "boolean"
+              },
+              "type": {
+                "enum": [
+                  "workspaceWrite"
+                ],
+                "title": "WorkspaceWriteSandboxPolicyType",
+                "type": "string"
+              },
+              "writableRoots": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__AbsolutePathBuf"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "WorkspaceWriteSandboxPolicy",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettingsUpdateParams__db306bb__CollaborationMode": {
+        "description": "Collaboration mode for a Codex session.",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ModeKind"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__Settings"
+          }
+        },
+        "required": [
+          "mode",
+          "settings"
+        ],
+        "type": "object"
+      },
+      "ThreadSettings__0e60ec7__AskForApproval": {
+        "oneOf": [
+          {
+            "enum": [
+              "untrusted",
+              "on-request",
+              "never"
+            ],
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "granular": {
+                "properties": {
+                  "mcp_elicitations": {
+                    "type": "boolean"
+                  },
+                  "request_permissions": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "rules": {
+                    "type": "boolean"
+                  },
+                  "sandbox_approval": {
+                    "type": "boolean"
+                  },
+                  "skill_approval": {
+                    "default": false,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "mcp_elicitations",
+                  "rules",
+                  "sandbox_approval"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "granular"
+            ],
+            "title": "GranularAskForApproval",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettings__0e60ec7__ReasoningEffort": {
+        "description": "A non-empty reasoning effort value advertised by the model.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__Personality": {
+        "enum": [
+          "none",
+          "friendly",
+          "pragmatic"
+        ],
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__MultiAgentMode": {
+        "description": "Controls the effective multi-agent delegation instructions for a turn. `custom` means the configured mode hint defines the policy instead of a built-in policy.",
+        "oneOf": [
+          {
+            "enum": [
+              "explicitRequestOnly",
+              "proactive"
+            ],
+            "type": "string"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "custom": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "custom"
+            ],
+            "title": "CustomMultiAgentMode",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettings__0e60ec7__ApprovalsReviewer": {
+        "description": "Configures who approval requests are routed to for review. Examples include sandbox escapes, blocked network access, MCP approval prompts, and ARC escalations. Defaults to `user`. `auto_review` uses a carefully prompted subagent to gather relevant context and apply a risk-based decision framework before approving or denying the request. The legacy value `guardian_subagent` is accepted for compatibility.",
+        "enum": [
+          "user",
+          "auto_review",
+          "guardian_subagent"
+        ],
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__ReasoningSummary": {
+        "description": "A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process. See https://platform.openai.com/docs/guides/reasoning?api-mode=responses#reasoning-summaries",
+        "oneOf": [
+          {
+            "enum": [
+              "auto",
+              "concise",
+              "detailed"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "Option to disable reasoning summaries.",
+            "enum": [
+              "none"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "ThreadSettings__0e60ec7__NetworkAccess": {
+        "enum": [
+          "restricted",
+          "enabled"
+        ],
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__ModeKind": {
+        "description": "Initial collaboration mode to use when the TUI starts.",
+        "enum": [
+          "plan",
+          "default"
+        ],
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__AbsolutePathBuf": {
+        "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
+        "type": "string"
+      },
+      "ThreadSettings__0e60ec7__Settings": {
+        "description": "Settings for a collaboration mode.",
+        "properties": {
+          "developer_instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
+      "ThreadSettings__0e60ec7__SandboxPolicy": {
+        "oneOf": [
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "dangerFullAccess"
+                ],
+                "title": "DangerFullAccessSandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "DangerFullAccessSandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "networkAccess": {
+                "default": false,
+                "type": "boolean"
+              },
+              "type": {
+                "enum": [
+                  "readOnly"
+                ],
+                "title": "ReadOnlySandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ReadOnlySandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "networkAccess": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/ThreadSettings__0e60ec7__NetworkAccess"
+                  }
+                ],
+                "default": "restricted"
+              },
+              "type": {
+                "enum": [
+                  "externalSandbox"
+                ],
+                "title": "ExternalSandboxSandboxPolicyType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "ExternalSandboxSandboxPolicy",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "excludeSlashTmp": {
+                "default": false,
+                "type": "boolean"
+              },
+              "excludeTmpdirEnvVar": {
+                "default": false,
+                "type": "boolean"
+              },
+              "networkAccess": {
+                "default": false,
+                "type": "boolean"
+              },
+              "type": {
+                "enum": [
+                  "workspaceWrite"
+                ],
+                "title": "WorkspaceWriteSandboxPolicyType",
+                "type": "string"
+              },
+              "writableRoots": {
+                "default": [],
+                "items": {
+                  "$ref": "#/components/schemas/ThreadSettings__0e60ec7__AbsolutePathBuf"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "WorkspaceWriteSandboxPolicy",
+            "type": "object"
+          }
+        ]
+      },
+      "ThreadSettings__0e60ec7__CollaborationMode": {
+        "description": "Collaboration mode for a Codex session.",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ModeKind"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__Settings"
+          }
+        },
+        "required": [
+          "mode",
+          "settings"
+        ],
+        "type": "object"
+      },
+      "ThreadSettings__0e60ec7__ActivePermissionProfile": {
+        "properties": {
+          "extends": {
+            "default": null,
+            "description": "Parent profile identifier from the selected permissions profile's `extends` setting, when present.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Identifier from `default_permissions` or the implicit built-in default, such as `:workspace` or a user-defined `[permissions.<id>]` profile.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "ThreadSettingsUpdateParams__db306bb": {
+        "title": "ThreadSettingsUpdateParams",
+        "type": "object",
+        "properties": {
+          "threadId": {
+            "type": "string"
+          },
+          "cwd": {
+            "description": "Override the working directory for subsequent turns.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approvalPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__AskForApproval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the approval policy for subsequent turns."
+          },
+          "approvalsReviewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ApprovalsReviewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override where approval requests are routed for review on subsequent turns."
+          },
+          "sandboxPolicy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__SandboxPolicy"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the sandbox policy for subsequent turns."
+          },
+          "permissions": {
+            "description": "Select a named permissions profile id for subsequent turns. Cannot be combined with `sandboxPolicy`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "Override the model for subsequent turns.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serviceTier": {
+            "description": "Override the service tier for subsequent turns. `null` clears the current service tier; omission leaves it unchanged.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the reasoning effort for subsequent turns."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__ReasoningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the reasoning summary for subsequent turns."
+          },
+          "collaborationMode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__CollaborationMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "EXPERIMENTAL - Set a pre-set collaboration mode for subsequent turns. For `collaborationMode.settings.developerInstructions`, `null` means \"use the built-in instructions for the selected mode\"."
+          },
+          "multiAgentMode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__MultiAgentMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "@deprecated Ignored. Use `effort: \"ultra\"` for proactive multi-agent behavior."
+          },
+          "personality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettingsUpdateParams__db306bb__Personality"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override the personality for subsequent turns."
+          }
+        },
+        "required": [
+          "threadId"
+        ]
+      },
+      "ThreadSettingsUpdateResponse__2df7eed": {
+        "title": "ThreadSettingsUpdateResponse",
+        "type": "object"
+      },
+      "ThreadSettings__0e60ec7": {
+        "title": "ThreadSettings",
+        "type": "object",
+        "properties": {
+          "cwd": {
+            "description": "Working directory in effect for subsequent turns.",
+            "type": "string"
+          },
+          "approvalPolicy": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__AskForApproval"
+          },
+          "approvalsReviewer": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ApprovalsReviewer"
+          },
+          "sandboxPolicy": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__SandboxPolicy"
+          },
+          "activePermissionProfile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ActivePermissionProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          },
+          "serviceTier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettings__0e60ec7__ReasoningSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "collaborationMode": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__CollaborationMode"
+          },
+          "multiAgentMode": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7__MultiAgentMode"
+          },
+          "personality": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ThreadSettings__0e60ec7__Personality"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "approvalPolicy",
+          "approvalsReviewer",
+          "collaborationMode",
+          "cwd",
+          "model",
+          "modelProvider",
+          "multiAgentMode",
+          "sandboxPolicy"
+        ]
+      },
+      "ThreadSettingsUpdatedNotification__814055a": {
+        "title": "ThreadSettingsUpdatedNotification",
+        "type": "object",
+        "properties": {
+          "threadId": {
+            "type": "string"
+          },
+          "threadSettings": {
+            "$ref": "#/components/schemas/ThreadSettings__0e60ec7"
+          }
+        },
+        "required": [
+          "threadId",
+          "threadSettings"
+        ]
+      },
+      "AbsolutePathBuf__crud170": {
+        "description": "A path that is guaranteed to be absolute and normalized (though it is not guaranteed to be canonicalized or exist on the filesystem).\n\nIMPORTANT: When deserializing an `AbsolutePathBuf`, a base path must be set using [AbsolutePathBufGuard::new]. If no base path is set, the deserialization will fail unless the path being deserialized is already absolute.",
+        "type": "string"
+      },
+      "ApplyPatchToolType__crud170": {
+        "enum": [
+          "freeform"
+        ],
+        "type": "string"
+      },
+      "ApprovalMessages__crud170": {
+        "properties": {
+          "never": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "on_request": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "on_request_auto_review": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unless_trusted": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "AutoReviewMessages__crud170": {
+        "properties": {
+          "policy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policy_template": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "CollaborationModeMessages__crud170": {
+        "properties": {
+          "default": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "plan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ConfigShellToolType__crud170": {
+        "description": "Shell execution capability for a model.",
+        "enum": [
+          "default",
+          "local",
+          "unified_exec",
+          "disabled",
+          "shell_command"
+        ],
+        "type": "string"
+      },
+      "InputModality__crud170": {
+        "description": "Canonical user-input modality tags advertised by a model.",
+        "oneOf": [
+          {
+            "description": "Plain text turns and tool payloads.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "Image attachments included in user turns.",
+            "enum": [
+              "image"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "Audio attachments included in user turns.",
+            "enum": [
+              "audio"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "ModelAvailabilityNux__crud170": {
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "ModelConfigMessages__crud170": {
+        "properties": {
+          "approvals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoReviewMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "collaboration_modes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollaborationModeMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instructions_template": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instructions_variables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelInstructionsVariables__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PermissionMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "token_budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTokenBudgetConfig__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelConfigMessagesParams__crud170": {
+        "additionalProperties": false,
+        "properties": {
+          "approvals": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutoReviewMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "collaboration_modes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollaborationModeMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "instructions_template": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "instructions_variables": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelInstructionsVariables__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PermissionMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "token_budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTokenBudgetConfig__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelCreateParams__crud170": {
+        "properties": {
+          "createCatalog": {
+            "description": "Explicitly start an authoritative local catalog when the provider uses discovery. This new catalog initially contains only the model being created.",
+            "type": "boolean"
+          },
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadataPatchParams__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional catalog metadata over conservative defaults; slug must match model."
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "modelProvider"
+        ],
+        "title": "ModelCreateParams",
+        "type": "object"
+      },
+      "ModelDeleteParams__crud170": {
+        "properties": {
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "modelProvider"
+        ],
+        "title": "ModelDeleteParams",
+        "type": "object"
+      },
+      "ModelInfoUpgrade__crud170": {
+        "properties": {
+          "migration_markdown": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "migration_markdown",
+          "model"
+        ],
+        "type": "object"
+      },
+      "ModelInstructionsVariables__crud170": {
+        "properties": {
+          "personality_default": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personality_friendly": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "personality_pragmatic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelMetadata__crud170": {
+        "properties": {
+          "additional_speed_tiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "apply_patch_tool_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApplyPatchToolType__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_compact_token_limit": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "auto_review_model_override": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "availability_nux": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelAvailabilityNux__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comp_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "context_window": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "default_reasoning_level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffort__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_reasoning_summary": {
+            "$ref": "#/components/schemas/ReasoningSummary__crud170"
+          },
+          "default_service_tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "default_verbosity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Verbosity__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "effective_context_window_percent": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "experimental_supported_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "include_plugin_usage_instructions": {
+            "type": "boolean"
+          },
+          "include_skills_usage_instructions": {
+            "type": "boolean"
+          },
+          "input_modalities": {
+            "items": {
+              "$ref": "#/components/schemas/InputModality__crud170"
+            },
+            "type": "array"
+          },
+          "max_context_window": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "model_messages": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelConfigMessages__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multi_agent_version": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MultiAgentVersion__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "service_tiers": {
+            "items": {
+              "$ref": "#/components/schemas/ModelServiceTier__crud170"
+            },
+            "type": "array"
+          },
+          "shell_type": {
+            "$ref": "#/components/schemas/ConfigShellToolType__crud170"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "support_verbosity": {
+            "type": "boolean"
+          },
+          "supported_in_api": {
+            "type": "boolean"
+          },
+          "supported_reasoning_levels": {
+            "items": {
+              "$ref": "#/components/schemas/ReasoningEffortPreset__crud170"
+            },
+            "type": "array"
+          },
+          "supports_image_detail_original": {
+            "type": "boolean"
+          },
+          "supports_parallel_tool_calls": {
+            "type": "boolean"
+          },
+          "supports_reasoning_summary_parameter": {
+            "type": "boolean"
+          },
+          "supports_search_tool": {
+            "type": "boolean"
+          },
+          "tool_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolMode__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncation_policy": {
+            "$ref": "#/components/schemas/TruncationPolicyConfig__crud170"
+          },
+          "upgrade": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelInfoUpgrade__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_default_instructions": {
+            "type": "boolean"
+          },
+          "use_responses_lite": {
+            "type": "boolean"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ModelVisibility__crud170"
+          },
+          "web_search_tool_type": {
+            "$ref": "#/components/schemas/WebSearchToolType__crud170"
+          }
+        },
+        "required": [
+          "additional_speed_tiers",
+          "default_reasoning_summary",
+          "display_name",
+          "effective_context_window_percent",
+          "experimental_supported_tools",
+          "include_plugin_usage_instructions",
+          "include_skills_usage_instructions",
+          "input_modalities",
+          "priority",
+          "service_tiers",
+          "shell_type",
+          "slug",
+          "support_verbosity",
+          "supported_in_api",
+          "supported_reasoning_levels",
+          "supports_image_detail_original",
+          "supports_parallel_tool_calls",
+          "supports_reasoning_summary_parameter",
+          "supports_search_tool",
+          "truncation_policy",
+          "use_default_instructions",
+          "use_responses_lite",
+          "visibility",
+          "web_search_tool_type"
+        ],
+        "type": "object"
+      },
+      "ModelMetadataPatchParams__crud170": {
+        "additionalProperties": false,
+        "description": "Model catalog metadata. Null clears optional fields or restores declared defaults; required fields and the instruction template cannot be removed.",
+        "properties": {
+          "additional_speed_tiers": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "apply_patch_tool_type": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ApplyPatchToolType__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "auto_compact_token_limit": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "auto_review_model_override": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "availability_nux": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelAvailabilityNux__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "comp_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "context_window": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "default_reasoning_level": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReasoningEffort__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_reasoning_summary": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReasoningSummary__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "default_service_tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "default_verbosity": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Verbosity__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "display_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "effective_context_window_percent": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "experimental_supported_tools": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "include_plugin_usage_instructions": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "include_skills_usage_instructions": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "input_modalities": {
+            "items": {
+              "$ref": "#/components/schemas/InputModality__crud170"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "max_context_window": {
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "model_messages": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelConfigMessagesParams__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "multi_agent_version": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MultiAgentVersion__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "priority": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "service_tiers": {
+            "items": {
+              "$ref": "#/components/schemas/ModelServiceTier__crud170"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "shell_type": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ConfigShellToolType__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slug": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "support_verbosity": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supported_in_api": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supported_reasoning_levels": {
+            "items": {
+              "$ref": "#/components/schemas/ReasoningEffortPreset__crud170"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "supports_image_detail_original": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supports_parallel_tool_calls": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supports_reasoning_summary_parameter": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supports_search_tool": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "tool_mode": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ToolMode__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncation_policy": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TruncationPolicyConfig__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upgrade": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelInfoUpgrade__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "use_default_instructions": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "use_responses_lite": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelVisibility__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "web_search_tool_type": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WebSearchToolType__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelProviderAuthConfigParams__crud170": {
+        "additionalProperties": false,
+        "description": "Command authentication settings. Omitted settings retain config.toml defaults.",
+        "properties": {
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cwd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "refresh_interval_ms": {
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "timeout_ms": {
+            "format": "uint64",
+            "minimum": 1.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelProviderAuthInfo__crud170": {
+        "additionalProperties": false,
+        "description": "Configuration for obtaining a provider bearer token from a command.",
+        "properties": {
+          "args": {
+            "default": [],
+            "description": "Command arguments.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "command": {
+            "description": "Command to execute. Bare names are resolved via `PATH`; paths are resolved against `cwd`.",
+            "type": "string"
+          },
+          "cwd": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbsolutePathBuf__crud170"
+              }
+            ],
+            "description": "Working directory used when running the token command."
+          },
+          "refresh_interval_ms": {
+            "default": 300000,
+            "description": "Maximum age for the cached token before rerunning the command. Set to `0` to disable proactive refresh and only rerun after a 401 retry path.",
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": "integer"
+          },
+          "timeout_ms": {
+            "default": 5000,
+            "description": "Maximum time to wait for the token command to exit successfully.",
+            "format": "uint64",
+            "minimum": 1.0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "command"
+        ],
+        "type": "object"
+      },
+      "ModelProviderAwsAuthInfo__crud170": {
+        "additionalProperties": false,
+        "description": "AWS SigV4 auth configuration for a model provider.",
+        "properties": {
+          "profile": {
+            "description": "AWS profile name to use. When unset, the AWS SDK default chain decides.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "region": {
+            "description": "AWS region to use for provider-specific endpoints.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelProviderConfigPatchParams__crud170": {
+        "additionalProperties": false,
+        "description": "Provider settings in config.toml format. Null clears a setting.",
+        "properties": {
+          "auth": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelProviderAuthConfigParams__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aws": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelProviderAwsAuthInfo__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env_http_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "env_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env_key_instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "experimental_bearer_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "http_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "model_catalog_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "query_params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "request_max_retries": {
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "requires_openai_auth": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "stream_idle_timeout_ms": {
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "stream_max_retries": {
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "supports_standalone_web_search": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "supports_websockets": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "websocket_connect_timeout_ms": {
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "wire_api": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/WireApi__crud170"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ModelProviderConfiguration__crud170": {
+        "properties": {
+          "configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderInfo__crud170"
+              }
+            ],
+            "description": "Uses the existing config.toml provider schema (snake_case keys). Inline credentials are returned, just as with config/read."
+          },
+          "modelProvider": {
+            "type": "string"
+          },
+          "readOnly": {
+            "description": "Settings from other configuration layers cannot be edited through these APIs.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "configuration",
+          "modelProvider",
+          "readOnly"
+        ],
+        "type": "object"
+      },
+      "ModelProviderCreateParams__crud170": {
+        "properties": {
+          "configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderConfigPatchParams__crud170"
+              }
+            ],
+            "description": "A provider table using the existing config.toml schema."
+          },
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "configuration",
+          "modelProvider"
+        ],
+        "title": "ModelProviderCreateParams",
+        "type": "object"
+      },
+      "ModelProviderDeleteParams__crud170": {
+        "properties": {
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelProvider"
+        ],
+        "title": "ModelProviderDeleteParams",
+        "type": "object"
+      },
+      "ModelProviderInfo__crud170": {
+        "additionalProperties": false,
+        "description": "Serializable representation of a provider definition.",
+        "properties": {
+          "auth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderAuthInfo__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Command-backed bearer-token configuration for this provider."
+          },
+          "aws": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderAwsAuthInfo__crud170"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "AWS SigV4 auth configuration for this provider."
+          },
+          "base_url": {
+            "description": "Base URL for the provider's OpenAI-compatible API.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env_http_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Optional HTTP headers to include in requests to this provider where the (key, value) pairs are the header name and _environment variable_ whose value should be used. If the environment variable is not set, or the value is empty, the header will not be included in the request.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "env_key": {
+            "description": "Environment variable that stores the user's API key for this provider.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "env_key_instructions": {
+            "description": "Optional instructions to help the user get a valid value for the variable and set it.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "experimental_bearer_token": {
+            "description": "Value to use with `Authorization: Bearer <token>` header. Use of this config is discouraged in favor of `env_key` for security reasons, but this may be necessary when using this programmatically.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "http_headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Additional HTTP headers to include in requests to this provider where the (key, value) pairs are the header name and value.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "model_catalog_json": {
+            "description": "Authoritative model catalog. Relative paths resolve under Brainary's configuration home.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "default": "",
+            "description": "Friendly display name.",
+            "type": "string"
+          },
+          "query_params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Optional query parameters to append to the base URL.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "request_max_retries": {
+            "description": "Maximum number of times to retry a failed HTTP request to this provider.",
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "requires_openai_auth": {
+            "default": false,
+            "description": "Does this provider require an OpenAI API Key or ChatGPT login token? If true, user is presented with login screen on first run, and login preference and token/key are stored in auth.json. If false (which is the default), login screen is skipped, and API key (if needed) comes from the \"env_key\" environment variable.",
+            "type": "boolean"
+          },
+          "stream_idle_timeout_ms": {
+            "description": "Idle timeout (in milliseconds) to wait for activity on a streaming response before treating the connection as lost.",
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "stream_max_retries": {
+            "description": "Number of times to retry reconnecting a dropped streaming response before failing.",
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "supports_standalone_web_search": {
+            "default": false,
+            "description": "Whether this provider supports the standalone web-search endpoint.",
+            "type": "boolean"
+          },
+          "supports_websockets": {
+            "default": false,
+            "description": "Whether this provider supports the Responses API WebSocket transport.",
+            "type": "boolean"
+          },
+          "websocket_connect_timeout_ms": {
+            "description": "Maximum time (in milliseconds) to wait for a websocket connection attempt before treating it as failed.",
+            "format": "uint64",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "wire_api": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WireApi__crud170"
+              }
+            ],
+            "default": "responses",
+            "description": "Which wire protocol this provider expects."
+          }
+        },
+        "type": "object"
+      },
+      "ModelProviderListParams__crud170": {
+        "properties": {
+          "cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "format": "uint32",
+            "minimum": 0.0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "title": "ModelProviderListParams",
+        "type": "object"
+      },
+      "ModelProviderListResponse__crud170": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ModelProviderConfiguration__crud170"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "description": "Version of the writable user config, for optimistic concurrency.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "ModelProviderListResponse",
+        "type": "object"
+      },
+      "ModelProviderUpdateParams__crud170": {
+        "properties": {
+          "configuration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelProviderConfigPatchParams__crud170"
+              }
+            ],
+            "description": "Shallow patch of provider settings; null removes a setting."
+          },
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "configuration",
+          "modelProvider"
+        ],
+        "title": "ModelProviderUpdateParams",
+        "type": "object"
+      },
+      "ModelProviderWriteResponse__crud170": {
+        "title": "ModelProviderWriteResponse",
+        "type": "object",
+        "properties": {
+          "modelProvider": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelProvider",
+          "version"
+        ]
+      },
+      "ModelReadParams__crud170": {
+        "properties": {
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "modelProvider"
+        ],
+        "title": "ModelReadParams",
+        "type": "object"
+      },
+      "ModelReadResponse__crud170": {
+        "properties": {
+          "metadata": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadata__crud170"
+              }
+            ],
+            "description": "Complete catalog metadata, using the models.json schema (snake_case keys)."
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          },
+          "version": {
+            "description": "Includes catalog content and provider configuration, unlike the provider config version.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metadata",
+          "model",
+          "modelProvider",
+          "version"
+        ],
+        "title": "ModelReadResponse",
+        "type": "object"
+      },
+      "ModelServiceTier__crud170": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "ModelTokenBudgetConfig__crud170": {
+        "description": "Model-owned defaults for the context-window token-budget feature.",
+        "properties": {
+          "auto_compact_fallback_buffer_tokens": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "auto_compact_fallback_prompt": {
+            "type": "string"
+          },
+          "guidance_message": {
+            "type": "string"
+          },
+          "reminder_message_template": {
+            "type": "string"
+          },
+          "reminder_threshold_tokens": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto_compact_fallback_buffer_tokens",
+          "auto_compact_fallback_prompt",
+          "guidance_message",
+          "reminder_message_template",
+          "reminder_threshold_tokens"
+        ],
+        "type": "object"
+      },
+      "ModelUpdateParams__crud170": {
+        "properties": {
+          "expectedVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ModelMetadataPatchParams__crud170"
+              }
+            ],
+            "description": "Shallow catalog metadata patch. Model IDs cannot be changed."
+          },
+          "model": {
+            "type": "string"
+          },
+          "modelProvider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "metadata",
+          "model",
+          "modelProvider"
+        ],
+        "title": "ModelUpdateParams",
+        "type": "object"
+      },
+      "ModelVisibility__crud170": {
+        "description": "Visibility of a model in the picker or APIs.",
+        "enum": [
+          "list",
+          "hide",
+          "none"
+        ],
+        "type": "string"
+      },
+      "ModelWriteResponse__crud170": {
+        "title": "ModelWriteResponse",
+        "type": "object",
+        "properties": {
+          "modelProvider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "modelProvider",
+          "model",
+          "version"
+        ]
+      },
+      "MultiAgentVersion__crud170": {
+        "enum": [
+          "disabled",
+          "v1",
+          "v2",
+          "v3"
+        ],
+        "type": "string"
+      },
+      "PermissionMessages__crud170": {
+        "properties": {
+          "danger_full_access": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "read_only": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workspace_write": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ReasoningEffort__crud170": {
+        "description": "A non-empty reasoning effort value advertised by the model.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "ReasoningEffortPreset__crud170": {
+        "description": "A reasoning effort option that can be surfaced for a model.",
+        "properties": {
+          "description": {
+            "description": "Short human description shown next to the effort in UIs.",
+            "type": "string"
+          },
+          "effort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffort__crud170"
+              }
+            ],
+            "description": "Effort level that the model supports."
+          }
+        },
+        "required": [
+          "description",
+          "effort"
+        ],
+        "type": "object"
+      },
+      "ReasoningSummary__crud170": {
+        "description": "A summary of the reasoning performed by the model. This can be useful for debugging and understanding the model's reasoning process.",
+        "oneOf": [
+          {
+            "enum": [
+              "auto",
+              "concise",
+              "detailed"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "Option to disable reasoning summaries.",
+            "enum": [
+              "none"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "ToolMode__crud170": {
+        "enum": [
+          "direct",
+          "code_mode",
+          "code_mode_only"
+        ],
+        "type": "string"
+      },
+      "TruncationMode__crud170": {
+        "description": "Server-provided truncation policy metadata for a model.",
+        "enum": [
+          "bytes",
+          "tokens"
+        ],
+        "type": "string"
+      },
+      "TruncationPolicyConfig__crud170": {
+        "properties": {
+          "limit": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/TruncationMode__crud170"
+          }
+        },
+        "required": [
+          "limit",
+          "mode"
+        ],
+        "type": "object"
+      },
+      "Verbosity__crud170": {
+        "description": "Controls output length/detail on GPT-5 models via the Responses API. Serialized with lowercase values to match the OpenAI API.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "WebSearchToolType__crud170": {
+        "enum": [
+          "text",
+          "text_and_image"
+        ],
+        "type": "string"
+      },
+      "WireApi__crud170": {
+        "description": "Wire protocol that the provider speaks.",
+        "oneOf": [
+          {
+            "description": "The Responses API exposed by OpenAI at `/v1/responses`.",
+            "enum": [
+              "responses"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "The Anthropic Messages API at `/v1/messages`.\n\nMost vendors do not serve `/v1/responses`, but many serve an Anthropic-compatible `/v1/messages`, so this is the second protocol that buys the widest model coverage. It is a peer of `Responses`, not a fallback: the two are translated to and from the same `Prompt` and `ResponseItem` types rather than one being expressed in terms of the other.",
+            "enum": [
+              "anthropic"
+            ],
+            "type": "string"
+          },
+          {
+            "description": "The Chat Completions API at `/v1/chat/completions`.",
+            "enum": [
+              "chat"
+            ],
+            "type": "string"
+          }
+        ]
       }
     }
   },
@@ -42695,15 +46643,15 @@
     "jsonrpcField": "omitted"
   },
   "x-source": {
-    "date": "2026-11-13",
-    "head": "00b519840589325d788a39edbf6302227209e9e7",
-    "source": "本机工作区快照，包含未提交改动；不代表已发布版本。",
+    "date": "2026-11-23",
+    "head": "2adaf6ff32f56138e28f5f5ee2cf3a1566514c69",
+    "source": "基于 brainary-codex/provider-model-crud 远端分支快照，接口说明经过人工补充；未合并到 main 前不代表已发布版本。",
     "schemaHashes": {
-      "codex-rs/app-server-protocol/src/protocol/common.rs": "0eb550dbc20cfd6ab4c31cbb91948a7a7967359753252fa9b0b5307cd151a23d",
-      "codex-rs/app-server-protocol/schema/json/ClientRequest.json": "f3e6c8136b3cd6cc1db8a58e3d733944b7b9ef4c4ec9064a8b71002a09a2da1a",
-      "codex-rs/app-server-protocol/schema/json/ServerNotification.json": "cbbe5e0c1d50e63943a61f90e9093b23ef5a0766a640ba70929cfbc70e37c2d2",
-      "codex-rs/app-server-protocol/schema/json/ServerRequest.json": "e5ae9078cddac333262ae392fe25558d6054b77e4beb00784b77cf606849d063",
-      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst": "fe397607674756f3b47c58d5eb17a40af17322f5515acf12d5d3f86cf37bba55"
+      "codex-rs/app-server-protocol/src/protocol/common.rs": "140981a1585da41c0995b951b6620ed695c458b7",
+      "codex-rs/app-server-protocol/schema/json/ClientRequest.json": "20cc1285d30cee4d6036a4aaf87d94971a3c2570",
+      "codex-rs/app-server-protocol/schema/json/ServerNotification.json": "ba555b49098ff82d22c9d8d2f6a029579ab3736e",
+      "codex-rs/app-server-protocol/schema/json/ServerRequest.json": "5451a4fd4638bdc849bb33b6bdfc1cf585672728",
+      "codex-rs/app-server-protocol/schema/precomputed/app-server-exports-experimental.json.zst": "4f02948c9ce8387e87fac5a7dba1d8f4e93d7824"
     },
     "poaLogPr": {
       "url": "https://github.com/Brainary-Team/brainary-codex/pull/126",
