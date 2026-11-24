@@ -49,7 +49,7 @@ export interface InputParams {
 
 这里表示 `message` 是可选的字符串，不接受其他字段。`{}` 和 `{"message":"你好"}` 都是合法输入。
 
-打包时，这个文件会自动转换成 JSON Schema。它只用来写类型定义，目前不支持 `import`、函数、自定义泛型和接口继承。需要限制字符串长度、数值范围等时，可以添加 `@minLength`、`@minimum` 等注解。
+打包时，这个文件会自动转换成 JSON Schema。它只用来写类型定义，目前不支持 `import`、函数、自定义泛型和接口继承。需要限制字符串长度、数值范围等时，可以添加 `@minLength`、`@minimum` 等注解，支持的类型和标签见 [输入 schema 写法](03-input-output.md#输入-schema-写法)。
 
 **也支持直接写 JSON。** 删除模板里的 `input_schema.ts`，改用根目录的 `input_schema.json`：
 
