@@ -34,7 +34,7 @@ export interface InputParams {
 }
 ```
 
-`pnpm package` 会把它编译成 JSON Schema 写入包中。`input_schema.ts` 只能包含类型声明：interface、type、可选属性、数组、字面量、联合类型、交叉类型、对其他声明的引用和 JSDoc 约束标签；不支持 import、泛型声明和 interface extends。对象不接受未声明的字段。
+`pnpm package` 会把它编译成 JSON Schema 写入包中。`input_schema.ts` 只能包含类型声明：interface、type、可选属性、数组、字面量、联合类型、交叉类型、对其他声明的引用和 JSDoc 约束标签；不支持 import、泛型声明和 interface extends。对象不接受未声明的字段。支持的类型和标签见 [输入 schema 写法](#输入-schema-写法)。
 
 程序从 `POA_INPUT` 读取输入：
 
@@ -67,6 +67,54 @@ with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as braina
 - 调用方不传输入时，`POA_INPUT` 为 `{}`。没有 `input_schema.ts` 的包只接受空输入。
 
 Python SDK 的安装和完整用法见 [使用 Python SDK 运行 PoA](../App-SDK/Python-SDK/run-poa.md)。
+
+## 输入 schema 写法
+
+`InputParams` 是输入的根，必须是对象类型。JSDoc 写在 interface、type 或成员的上方：正文成为 `description`，标签成为约束。
+
+### 类型对应关系
+
+| JSON Schema | TypeScript 写法 |
+| --- | --- |
+| `$schema` | `InputParams` 上的 `@schema`；不写时为 `https://json-schema.org/draft/2020-12/schema` |
+| `type` | `string`、`number`、`boolean`、`null`、对象类型、数组类型；`integer` 用 `number` 加 `@asType integer` |
+| `properties` | interface 或对象类型 `{ ... }` 的成员，成员名可以是标识符或带引号的字符串 |
+| `required` | 不带 `?` 的成员 |
+| `additionalProperties: false` | 默认值：对象不接受未声明的字段；也可以显式写 `@additionalProperties false` |
+| `additionalProperties: true` | `@additionalProperties true` |
+| `additionalProperties: <schema>` | `@additionalProperties {"type":"string","minLength":1}`、`@additionalProperties NonEmptyString`，或索引签名 `[key: string]: T` |
+| `const` | 单个字面量类型，如 `"image"`、`3`、`true`，同时生成对应的 `type` |
+| `enum` | 字面量联合，如 `"fast" \| "accurate"`；重复的值只保留一个，各值类型相同时同时生成 `type` |
+| `items` | `T[]` 或 `Array<T>` |
+| `anyOf` | 含非字面量分支的联合类型，如 `string \| ImageInput` |
+| `oneOf` | 带 `@oneOf` 的联合类型 |
+| `allOf` | 交叉类型 `A & B`。非对象类型生成 `allOf`；对象类型合并为一个对象：成员和必填字段取并集，同名成员的约束同时生效，任一侧不接受额外字段时结果也不接受。各部分类型必须相同，如 `string & number` 打包时报错 |
+| `$defs` | 从 `InputParams` 可达的命名 interface 和 type |
+| `$ref` | 对命名 interface 或 type 的引用，生成 `#/$defs/<类型名>` |
+| `title` | `@title` |
+| `description` | JSDoc 正文，即第一个标签之前的文字 |
+| `format`、`pattern`、`minLength` 等约束 | 同名 JSDoc 标签，见下表 |
+
+### JSDoc 标签
+
+只支持下表中的标签。其他标签（如 `@default`、`@example`）以及在同一段注释中重复出现的标签会导致打包失败。
+
+| 标签 | 作用 |
+| --- | --- |
+| `@schema <URI>` | 指定根 schema 的 `$schema`，只在 `InputParams` 上生效 |
+| `@title <文本>` | 生成 `title` |
+| `@format <格式>` | 字符串须符合指定格式，如 `uri`、`email`、`date-time`；校验输入时会检查格式 |
+| `@contentEncoding <编码>` | 标注字符串内容的编码，如 `base64`，生成 `contentEncoding`；只作标注，不校验或解码内容 |
+| `@pattern <正则>` | 字符串须匹配该正则，表达式原样写入 `pattern` |
+| `@minLength` / `@maxLength <n>` | 字符串的最小 / 最大长度，`n` 为非负整数 |
+| `@minItems` / `@maxItems <n>` | 数组的最少 / 最多元素个数，`n` 为非负整数 |
+| `@minimum` / `@maximum <x>` | 数值下限 / 上限，可以等于边界，`x` 为 JSON 数字 |
+| `@exclusiveMinimum` / `@exclusiveMaximum <x>` | 数值严格下限 / 上限，不能等于边界，`x` 为 JSON 数字 |
+| `@multipleOf <x>` | 数值须为 `x` 的整数倍，`x` 为大于 0 的 JSON 数字 |
+| `@uniqueItems [true \| false]` | 数组元素不能重复，不写值等同于 `true`；有重复元素时校验失败，不会自动去重 |
+| `@asType integer` | 把 `number` 生成的 `type` 改为 `integer`，要求输入为整数；只能标注 `number` 类型的成员或 type |
+| `@oneOf` | 要求恰好匹配联合类型的一个分支；不带值，只能标注联合类型的成员或 type。非字面量联合的 `anyOf` 改为 `oneOf`，字面量联合的 `enum` 改为多个 `const` 分支 |
+| `@additionalProperties <值>` | 控制对象是否接受未声明的字段，只能标注对象类型。值为 `true`、`false`、以 `{` 开头的内联 JSON Schema 或已声明的类型名，后两种要求额外字段的值符合该 schema |
 
 ## 输出结果
 
