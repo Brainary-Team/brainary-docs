@@ -94,6 +94,16 @@ PoA（Program of Agent）把程序逻辑、`manifest.toml`、资源及可选的 
 | `/poa bg <PATH>` | 新建后台 PoA 会话运行，当前界面不自动切过去 |
 | `/poa close` | 关闭当前查看的后台 PoA 会话；如果其中的 PoA 仍在运行，会先尝试停止它 |
 
+前台或后台运行时，可以在包路径后追加业务输入：
+
+```text
+/poa ./workflow.poa --input {"root":"src","concurrency":5}
+/poa ./workflow.poa --input-file ./input.json
+/poa bg ./workflow.poa --input-file ./input.json
+```
+
+`--input <JSON>` 直接传入 JSON，`--input-file <FILE>` 从文件读取 JSON，两者只能二选一。输入文件的相对路径按当前会话工作目录解析；输入会在 PoA 启动前按包内的 schema 校验。输入无效时不会启动 PoA，不传输入时程序收到 `{}`。
+
 ### 前台运行
 
 1. 确认当前会话空闲。

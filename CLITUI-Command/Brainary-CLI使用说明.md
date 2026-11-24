@@ -173,9 +173,24 @@ brainary poa ./workflow.poa
 # 以 JSONL 输出事件，供脚本处理
 brainary poa --json ./workflow.poa
 
+# 直接传入 PoA 业务输入
+brainary poa --input '{"root":"src","concurrency":5}' ./workflow.poa
+
+# 从文件读取 PoA 业务输入
+brainary poa --input-file ./input.json ./workflow.poa
+
 # 旧写法仍可用，使用同一套执行逻辑
 brainary exec --poa ./workflow.poa
 ```
+
+PoA 包声明 `input_schema` 后，可以通过 `--input` 或 `--input-file` 传入业务输入：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--input <JSON>` | 直接传入一段 JSON；只能与 `--input-file` 二选一 |
+| `--input-file <FILE>` | 从文件读取 JSON；只能与 `--input` 二选一 |
+
+这两个参数只能用于 PoA 入口，输入会在程序启动前按包内的 schema 校验。校验失败时程序不会执行；不传输入时，程序收到 `{}`。`brainary exec --poa` 也支持同样的参数。
 
 `poa` 支持 `--json`、`--ephemeral`、`--skip-git-repo-check`、`--strict-config`，以及帮助中列出的模型、配置和沙箱参数。完整列表用 `brainary poa --help` 查看，不要直接套用全部 `exec` 参数。
 

@@ -8,11 +8,25 @@
 
 | 方式 | 用法 | 业务输入 | `ask()` |
 | --- | --- | --- | --- |
-| CLI | `brainary poa <.poa 文件>` | 不传入 | 返回 `unavailable` |
-| TUI | 在 `brainary` 界面中输入 `/poa <.poa 文件>` | 不传入 | 显示问题，等待用户回答 |
+| CLI | `brainary poa [--input JSON\|--input-file FILE] <.poa 文件>` | 通过命令行参数传入 | 返回 `unavailable` |
+| TUI | 在 `brainary` 界面中输入 `/poa <.poa 文件> [--input JSON\|--input-file FILE]` | 通过斜杠命令传入 | 显示问题，等待用户回答 |
 | Python SDK | `Poa(thread, package).run(input=...)` | 传入 | 不提供，用业务输入代替提问 |
 
 TUI 中用 `/poa bg <.poa 文件>` 在后台会话中运行，此时 `ask()` 同样返回 `unavailable`，详见 [Brainary TUI 使用说明](../CLITUI-Command/Brainary-TUI使用说明.md#运行-poa-包)。
+
+CLI 和 TUI 都支持两种传入方式：直接给出 JSON，或从文件读取 JSON。`--input` 与 `--input-file` 只能二选一；输入会在程序启动前按包内的 `input_schema` 校验，校验失败时程序不会运行。不传输入时，`POA_INPUT` 为 `{}`。
+
+```bash
+brainary poa --input '{"root":"src","concurrency":5}' ./workflow.poa
+brainary poa --input-file ./input.json ./workflow.poa
+```
+
+在 TUI 中使用：
+
+```text
+/poa ./workflow.poa --input {"root":"src","concurrency":5}
+/poa ./workflow.poa --input-file ./input.json
+```
 
 ## 接收输入
 
