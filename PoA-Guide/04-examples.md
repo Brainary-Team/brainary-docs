@@ -53,7 +53,7 @@ const { files, focus = "错误处理" } = POA_INPUT as unknown as InputParams;
 // 2. 创建审查 agent：指定模型和开发者指令
 const agents = new AgentExecutor();
 const reviewer = await agents.create_agent({
-  role: "reviewer",
+  name: "reviewer",
   description: "审查代码",
   agent_config: {
     model: { model_id: "gpt-5.6-luna" },

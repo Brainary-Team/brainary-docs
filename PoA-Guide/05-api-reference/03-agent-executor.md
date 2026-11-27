@@ -2,7 +2,7 @@
 
 AgentExecutor 创建、派发、等待、查询、追加消息、打断和关闭 agent，kind 为 "agent"。
 
-- [create_agent](#create_agentrole-nickname-description-agent_config)：按 [AgentConfig](02-agent-config.md) 创建 agent，返回可以多次运行的 [Agent](01-agent.md)。
+- [create_agent](#create_agentname-description-agent_config)：按 [AgentConfig](02-agent-config.md) 创建 agent，返回可以多次运行的 [Agent](01-agent.md)。
 - [spawn_agent](#spawn_agentspawn_spec)：沿用当前程序的配置派出 agent 并立即开始任务，再用 [acquire_agent_result](#acquire_agent_resultagent_id-timeout_ms) 获取结果。
 
 按 ID 操作的方法（acquire_agent_result、get_status、append_message、interrupt、close）可以用于任何 agent，不限于本 AgentExecutor 创建的。使用 AgentExecutor 需要在 config.toml 中开启多 agent，见 [开启多 agent](../02-configuration.md#开启多-agent)。
@@ -73,7 +73,7 @@ interface Handle {
 | 字段 | 说明 |
 | --- | --- |
 | agent_id | agent 的 ID，传给 acquire_agent_result、get_status、append_message、interrupt 和 close |
-| agent_name | spawn_agent：agent 的 nickname，即传入的 nickname 或 Brainary 分配的昵称；AgentExecutor.append_message：agent_id；[Agent.append_message](01-agent.md#append_messagemessage-message_items-immediately)：agent 的 nickname，没有时为 role |
+| agent_name | spawn_agent：agent 的 nickname，即传入的 nickname 或 Brainary 分配的昵称；AgentExecutor.append_message：agent_id；[Agent.append_message](01-agent.md#append_messagemessage-message_items-immediately)：Agent 的 name |
 | agent_status | 调用时 agent 的状态；之后的状态用 [get_status](#get_statusagent_id) 获取 |
 
 **示例**：
@@ -126,8 +126,7 @@ const spec = {
 
 ~~~ts
 interface CreateAgentSpec {
-  role: string;
-  nickname?: string;
+  name: string;
   description?: string;
   agent_config: AgentConfig;
 }
@@ -135,8 +134,7 @@ interface CreateAgentSpec {
 
 | 字段 | 说明 |
 | --- | --- |
-| role | 必填，agent 的角色，只能使用小写字母、数字和 `_`，不能为 "root"，最长 64 字节。多个 agent 可以使用同一个 role |
-| nickname | agent 的昵称，规则与 [SpawnSpec](#spawnspec).nickname 相同 |
+| name | 必填，agent 的名称，对应 Brainary 的 role，决定 agent 的路径 `/root/<name>_<n>`。只能使用小写字母、数字和 `_`，不能为 "root"，最长 64 字节。多个 agent 可以使用同一个 name |
 | description | agent 的说明，只保存在返回的 Agent 对象上 |
 | agent_config | 必填，见 [AgentConfig](02-agent-config.md) |
 
@@ -180,9 +178,9 @@ interface CloseResult {
 
 ## 方法
 
-### create_agent({role, nickname?, description?, agent_config})
+### create_agent({name, description?, agent_config})
 
-**作用**：按配置创建一个 agent。创建后状态为 pending_init，用 [Agent.run](01-agent.md#runmessage-message_items-timeout_ms) 开始任务。agent 的路径为 `/root/<role>_<n>`，n 从 1 开始依次编号；agent 可以使用的工具见 [agent 的工具](02-agent-config.md#agent-的工具)。
+**作用**：按配置创建一个 agent。创建后状态为 pending_init，用 [Agent.run](01-agent.md#runmessage-message_items-timeout_ms) 开始任务。agent 的路径为 `/root/<name>_<n>`，n 从 1 开始依次编号；agent 的昵称由 Brainary 分配；agent 可以使用的工具见 [agent 的工具](02-agent-config.md#agent-的工具)。
 
 **输入类型**：spec: [CreateAgentSpec](#createagentspec)。
 
@@ -190,10 +188,10 @@ interface CloseResult {
 
 **异常**：
 
-- role 为空白：抛出 TypeError。
+- name 为空白：抛出 TypeError。
 - Brainary 拒绝时抛出 [MultiAgentError](01-agent.md#multiagenterror)，agent 不会创建。例如：
-  - role 不合法、nickname 为空白或过长：INVALID_ARGUMENT；
-  - nickname 与打开的 agent 重名：AGENT_NICKNAME_CONFLICT；
+  - name 不合法或过长：INVALID_ARGUMENT，details.field 为 role；
+  - 可分配的昵称已用完：AGENT_NICKNAMES_EXHAUSTED；
   - 模型或推理强度不可用：UNKNOWN_MODEL、UNSUPPORTED_REASONING_EFFORT；
   - 新 agent 的层级超过 [max_depth](../02-configuration.md#agent-层级和数量)：AGENT_DEPTH_LIMIT；
   - 打开的 agent 数已达到 max_concurrent_threads_per_session：AGENT_LIMIT_REACHED。
@@ -202,7 +200,7 @@ interface CloseResult {
 
 ~~~js
 const reviewer = await agentExecutor.create_agent({
-  role: "reviewer",
+  name: "reviewer",
   description: "审查代码",
   agent_config: {
     model: { model_id: "gpt-5.6-luna", reasoning_effort: "high" },

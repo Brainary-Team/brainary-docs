@@ -1,6 +1,6 @@
 # Agent
 
-Agent 是 [create_agent](03-agent-executor.md#create_agentrole-nickname-description-agent_config) 返回的对象，代表一个可以多次运行的 agent。
+Agent 是 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 返回的对象，代表一个可以多次运行的 agent。
 
 以下示例中的 agent 均按如下方式创建：
 
@@ -9,7 +9,7 @@ import { AgentExecutor, text } from "@brainary/poa-sdk";
 
 const agentExecutor = new AgentExecutor();
 const agent = await agentExecutor.create_agent({
-  role: "reviewer",
+  name: "reviewer",
   description: "代码审查",
   agent_config: {
     model: { model_id: "gpt-5.6-luna", reasoning_effort: "high" },
@@ -26,8 +26,7 @@ const agent = await agentExecutor.create_agent({
 ~~~ts
 class Agent {
   readonly agent_id: string;
-  readonly role: string;
-  readonly nickname: string | undefined;
+  readonly name: string;
   readonly description: string | undefined;
   readonly agent_config: AgentConfig;
 }
@@ -36,13 +35,12 @@ class Agent {
 | 属性 | 说明 |
 | --- | --- |
 | agent_id | agent 的 ID，可以传给 [AgentExecutor](03-agent-executor.md) 中按 ID 操作的方法 |
-| role、description、agent_config | 调用 create_agent 时传入的值 |
-| nickname | agent 的昵称：create_agent 传入的 nickname，未传入时为 Brainary 分配的昵称 |
+| name、description、agent_config | 调用 create_agent 时传入的值 |
 
 **示例**：
 
 ~~~js
-text({ id: agent.agent_id, role: agent.role, nickname: agent.nickname });
+text({ id: agent.agent_id, name: agent.name });
 ~~~
 
 ### run(message?, message_items?, timeout_ms?)
@@ -91,7 +89,7 @@ text(next.result);
 
 message 和 message_items 至少传入一项。
 
-**返回值类型**：Promise<[Handle](03-agent-executor.md#handle)>，agent_name 为 agent 的 nickname，没有 nickname 时为 role。
+**返回值类型**：Promise<[Handle](03-agent-executor.md#handle)>，agent_name 为 agent 的 name。
 
 **异常**：
 
@@ -276,7 +274,7 @@ class MultiAgentError extends Error {
 import { MultiAgentError } from "@brainary/poa-sdk";
 
 try {
-  await agentExecutor.create_agent({ role: "reviewer", nickname: "Ada", agent_config: { model: { model_id: "gpt-5.6-luna" } } });
+  await agentExecutor.spawn_agent({ message: "检查 README", nickname: "Ada" });
 } catch (error) {
   if (error instanceof MultiAgentError && error.code === "AGENT_NICKNAME_CONFLICT") text(`${error.details.nickname} 已被使用`);
   else throw error;
@@ -304,10 +302,10 @@ type InvalidArgumentDetails = { field: string } & (
 | malformed | 类型或格式不对 |
 | missing | 缺少必填参数 |
 | empty | 为空或只有空白 |
-| invalid_name | 不是合法的名称，例如 role 含 `[a-z0-9_]` 以外的字符或为 "root" |
+| invalid_name | 不是合法的名称，例如 create_agent 的 name 含 `[a-z0-9_]` 以外的字符或为 "root"，此时 field 为 role |
 | invalid_path | 不是合法的 agent 路径 |
 | not_supported | 不支持的取值，例如 Brainary 不接受的消息项类型 |
-| too_long | 超过 max_bytes 字节，例如 role、nickname 超过 64 字节 |
+| too_long | 超过 max_bytes 字节，例如 create_agent 的 name、spawn_agent 的 nickname 超过 64 字节 |
 | too_many_attachments | 一条消息中的图片和音频超过 max_attachments 个 |
 | out_of_range | 数值超出 [min, max] |
 | unsupported_module、unknown_module、too_many_modules | 内联 PoA 包的模块不合法，PoA SDK 当前不会用到 |

@@ -1,6 +1,6 @@
 # AgentConfig 与 ModelSpec
 
-本页是 [create_agent](03-agent-executor.md#create_agentrole-nickname-description-agent_config) 的 agent_config 参数用到的类型。Brainary 拒绝配置时，create_agent 抛出 [MultiAgentError](01-agent.md#multiagenterror)，agent 不会创建。
+本页是 [create_agent](03-agent-executor.md#create_agentname-description-agent_config) 的 agent_config 参数用到的类型。Brainary 拒绝配置时，create_agent 抛出 [MultiAgentError](01-agent.md#multiagenterror)，agent 不会创建。
 
 agent_config 只设置模型和开发者指令。agent 的 provider、沙箱、审批策略和工作目录与当前程序相同，见 [配置文件](../02-configuration.md)；agent 可以使用的工具见 [agent 的工具](#agent-的工具)。
 

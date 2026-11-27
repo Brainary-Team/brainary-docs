@@ -79,11 +79,11 @@ import { AgentExecutor, text } from "@brainary/poa-sdk";
 
 const agents = new AgentExecutor();
 const writer = await agents.create_agent({
-  role: "writer",
+  name: "writer",
   agent_config: { model: { model_id: "gpt-5.6-terra" } },
 });
 const editor = await agents.create_agent({
-  role: "editor",
+  name: "editor",
   agent_config: { model: { model_id: "gpt-5.6-luna", reasoning_effort: "high" } },
 });
 
