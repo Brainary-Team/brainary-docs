@@ -66,7 +66,6 @@ if ((await agentExecutor.get_status(handle.agent_id)) === "completed") {
 interface Handle {
   agent_id: string;
   agent_name: string;
-  meta?: Record<string, unknown>;
   agent_status: AgentStatus;
 }
 ~~~
@@ -75,13 +74,12 @@ interface Handle {
 | --- | --- |
 | agent_id | agent 的 ID，传给 acquire_agent_result、get_status、append_message、interrupt 和 close |
 | agent_name | spawn_agent：agent 的 nickname，即传入的 nickname 或 Brainary 分配的昵称；AgentExecutor.append_message：agent_id；[Agent.append_message](01-agent.md#append_messagemessage-message_items-immediately)：agent 的 nickname，没有时为 role |
-| meta | Brainary 返回的信息，包含 thread_id（即 agent_id）、path（agent 的路径，如 `/root/default_agent_1`）和 status；spawn_agent 还包含 nickname 和 role |
 | agent_status | 调用时 agent 的状态；之后的状态用 [get_status](#get_statusagent_id) 获取 |
 
 **示例**：
 
 ~~~js
-text({ id: handle.agent_id, name: handle.agent_name, path: handle.meta?.path, status: handle.agent_status });
+text({ id: handle.agent_id, name: handle.agent_name, status: handle.agent_status });
 ~~~
 
 ### SpawnSpec
@@ -161,6 +159,24 @@ interface InterruptResult {
 | agent_id | agent 的 ID |
 | interrupted | 是否打断了正在运行的一轮；agent 本来没有在运行时为 false |
 | agent_status | 打断后的状态：打断了一轮时为 interrupted，否则为原来的状态 |
+
+### CloseResult
+
+**作用**：close 的结果。
+
+**类型定义**：
+
+~~~ts
+interface CloseResult {
+  agent_id: string;
+  status: AgentStatus;
+}
+~~~
+
+| 字段 | 说明 |
+| --- | --- |
+| agent_id | agent 的 ID |
+| status | Brainary 报告的关闭结果，为 shutdown；之后用 get_status 查询时为 not_found |
 
 ## 方法
 
@@ -318,7 +334,7 @@ text({ interrupted: stopped.interrupted, status: stopped.agent_status });
 
 **输入类型**：agent_id: string，必填。
 
-**返回值类型**：Promise<[AgentStatus](#agentstatus)>，关闭前的状态。
+**返回值类型**：Promise<[CloseResult](#closeresult)>。
 
 **异常**：agent 不存在或已关闭时抛出 [MultiAgentError](01-agent.md#multiagenterror)，code 为 THREAD_NOT_FOUND。
 
@@ -327,5 +343,6 @@ text({ interrupted: stopped.interrupted, status: stopped.agent_status });
 ~~~js
 const result = await agentExecutor.acquire_agent_result(handle.agent_id, 300_000);
 text(result.result);
-text(await agentExecutor.close(handle.agent_id)); // "completed"
+const closed = await agentExecutor.close(handle.agent_id);
+text(closed.status); // "shutdown"
 ~~~

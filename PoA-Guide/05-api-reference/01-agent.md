@@ -129,14 +129,15 @@ text({ interrupted: stopped.interrupted, status: stopped.agent_status });
 
 **输入类型**：无。
 
-**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>，关闭前的状态。
+**返回值类型**：Promise<[CloseResult](03-agent-executor.md#closeresult)>。
 
 **异常**：agent 已关闭时抛出 [MultiAgentError](#multiagenterror)，code 为 THREAD_NOT_FOUND。
 
 **示例**：
 
 ~~~js
-text(await agent.close());
+const closed = await agent.close();
+text(closed.status); // "shutdown"
 ~~~
 
 ### status()

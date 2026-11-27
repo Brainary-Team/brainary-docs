@@ -60,6 +60,7 @@ const model = { model_id: "gpt-5.6-luna", reasoning_effort: "high" };
 interface AgentConfig {
   model: ModelSpec;
   developer_instructions?: string;
+  ephemeral?: boolean;
 }
 ~~~
 
@@ -67,6 +68,7 @@ interface AgentConfig {
 | --- | --- |
 | model | 必填，见 [ModelSpec](#modelspec) |
 | developer_instructions | agent 的开发者指令，代替当前程序的开发者指令；省略时与当前程序相同 |
+| ephemeral | 为 true 时不保存这个 agent 的会话记录；默认为 false，即使本次运行不保存会话记录，创建的 agent 也会保存，见 [会话记录](../02-configuration.md#会话记录) |
 
 **示例**：
 

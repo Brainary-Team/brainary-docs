@@ -10,7 +10,7 @@
 | `@brainary/poa-sdk/helper` | parse_json_reply、map_limit、shape_of |
 | `@brainary/poa-sdk/executor` | AgentExecutor、FileExecutor、TerminalExecutor、McpExecutor、BrainaryTool、ShellCommandError 及其类型 |
 
-Agent、AgentResult、AgentStatus、InterruptResult、MessageItem、TextElement、AgentConfig、ModelSpec、AgentNotIdleError、AgentResultTimeoutError、MultiAgentError 及其类型只从根入口导出。定时器、计时和随机数等标准 Web API 由运行时直接提供，见 [运行环境](07-runtime.md)。
+Agent、AgentResult、AgentStatus、InterruptResult、CloseResult、MessageItem、TextElement、AgentConfig、ModelSpec、AgentNotIdleError、AgentResultTimeoutError、MultiAgentError 及其类型只从根入口导出。定时器、计时和随机数等标准 Web API 由运行时直接提供，见 [运行环境](07-runtime.md)。
 
 调用约定：
 
@@ -23,7 +23,7 @@ Agent、AgentResult、AgentStatus、InterruptResult、MessageItem、TextElement�
 | --- | --- |
 | [Agent](05-api-reference/01-agent.md) | run、append_message、interrupt、close、status，AgentResult 和错误类型（含 MultiAgentError） |
 | [AgentConfig](05-api-reference/02-agent-config.md) | agent 的工具、ModelSpec 和 AgentConfig |
-| [AgentExecutor](05-api-reference/03-agent-executor.md) | create_agent、spawn_agent、acquire_agent_result、get_status、append_message、interrupt 和 close，以及 AgentStatus、Handle、SpawnSpec、CreateAgentSpec 和 InterruptResult |
+| [AgentExecutor](05-api-reference/03-agent-executor.md) | create_agent、spawn_agent、acquire_agent_result、get_status、append_message、interrupt 和 close，以及 AgentStatus、Handle、SpawnSpec、CreateAgentSpec、InterruptResult 和 CloseResult |
 | [MessageItem](05-api-reference/04-message-item.md) | ImageDetail、TextElement，以及文本、图片、音频、skill 和 mention 消息项 |
 | [Executor](05-api-reference/05-executors.md) | FileExecutor、TerminalExecutor、McpExecutor、ShellCommandError、McpToolResult 和 tools |
 | [BrainaryTool](05-api-reference/06-brainary-tool.md) | 宿主工具枚举 |
@@ -57,7 +57,7 @@ Agent、AgentResult、AgentStatus、InterruptResult、MessageItem、TextElement�
 | AgentResult | [AgentResult](05-api-reference/01-agent.md#agentresult) |
 | AgentNotIdleError、AgentResultTimeoutError、MultiAgentError、MultiAgentErrorCode、MultiAgentErrorDetailsMap、InvalidArgumentDetails | [Agent 错误类型](05-api-reference/01-agent.md#错误) |
 | ModelSpec、AgentConfig | [AgentConfig](05-api-reference/02-agent-config.md) |
-| AgentExecutor、CreateAgentSpec、InterruptResult | [AgentExecutor](05-api-reference/03-agent-executor.md) |
+| AgentExecutor、CreateAgentSpec、InterruptResult、CloseResult | [AgentExecutor](05-api-reference/03-agent-executor.md) |
 | AgentStatus | [AgentStatus](05-api-reference/03-agent-executor.md#agentstatus) |
 | Handle、SpawnSpec | [Handle](05-api-reference/03-agent-executor.md#handle)、[SpawnSpec](05-api-reference/03-agent-executor.md#spawnspec) |
 | ImageDetail、TextElement、MessageItem | [MessageItem](05-api-reference/04-message-item.md) |
