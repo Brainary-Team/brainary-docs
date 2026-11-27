@@ -11,10 +11,9 @@
 | 随机数 | crypto.getRandomValues、crypto.randomUUID |
 | 编码 | TextEncoder、TextDecoder、TextEncoderStream、TextDecoderStream、atob、btoa |
 | URL | URL、URLSearchParams、URLPattern |
-| 数据 | structuredClone、Blob、File |
+| 数据 | Blob、File |
 | 流 | ReadableStream、WritableStream、TransformStream 及其 Reader、Writer 和 Controller，ByteLengthQueuingStrategy、CountQueuingStrategy、CompressionStream、DecompressionStream |
 | 事件与取消 | EventTarget、Event、CustomEvent、ErrorEvent、PromiseRejectionEvent、AbortController、AbortSignal、DOMException |
-| 消息 | MessageChannel、MessagePort、MessageEvent |
 | 控制台与错误 | console、reportError |
 
 读写文件、执行命令和调用外部服务，分别使用 SDK 的 [FileExecutor](05-api-reference/05-executors.md#fileexecutor)、[TerminalExecutor](05-api-reference/05-executors.md#terminalexecutor) 和 [McpExecutor](05-api-reference/05-executors.md#mcpexecutor)。
