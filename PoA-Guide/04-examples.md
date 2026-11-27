@@ -1,6 +1,6 @@
 # 示例
 
-两个完整程序：代码审查展示业务输入和 `create_agent` 的用法，随包携带 MCP 工具展示如何把 MCP server 和程序打进同一个包。两个项目都从 [PoA 模板](01-quickstart.md#2-创建项目) 创建，用 `pnpm package` 打包。
+两个完整程序：代码审查展示业务输入和 `create_agent` 的用法，随包携带 MCP 工具展示如何把 MCP server 和程序打进同一个包。两个项目都从 [PoA 模板](01-quickstart.md#2-创建项目) 创建，用 `pnpm package` 打包。运行前在 `config.toml` 中 [开启多 agent](02-configuration.md#开启多-agent)。
 
 ## 代码审查
 
@@ -44,41 +44,39 @@ entry = "main.js"
 `src/main.ts`：
 
 ```ts
-import { AgentExecutor, BrainaryTool, POA_INPUT, Sandbox, text } from "@brainary/poa-sdk";
+import { AgentExecutor, POA_INPUT, text } from "@brainary/poa-sdk";
 import type { InputParams } from "../input_schema";
 
 // 1. 读取输入，没传 focus 时使用默认值
 const { files, focus = "错误处理" } = POA_INPUT as unknown as InputParams;
 
-// 2. 创建审查 agent：指定模型和系统提示，只能执行命令，在只读沙箱中运行
+// 2. 创建审查 agent：指定模型和开发者指令
 const agents = new AgentExecutor();
 const reviewer = await agents.create_agent({
-  name: "reviewer",
+  role: "reviewer",
   description: "审查代码",
   agent_config: {
-    model: { model_id: "gpt-5.6-luna", provider: "vendor" },
-    system_prompt: "你是代码审查员，只报告能在代码中找到依据的问题。",
-    capabilities: { brainary_tool: [BrainaryTool.exec_command, BrainaryTool.write_stdin] },
-    runtime: { sandbox: Sandbox.read_only },
+    model: { model_id: "gpt-5.6-luna" },
+    developer_instructions: "你是代码审查员，只报告能在代码中找到依据的问题。",
   },
 });
 
 // 3. 逐个文件审查，每次审查都在同一段对话中进行
 for (const file of files) {
-  const review = await reviewer.run(`审查 ${file}，重点关注${focus}。用不超过三条要点列出问题。`, undefined, undefined, 600_000);
+  const review = await reviewer.run(`审查 ${file}，重点关注${focus}。用不超过三条要点列出问题。`, undefined, 600_000);
   text(`## ${file}\n${review.result}`);
 }
 
 // 4. 让它综合前面的审查结果
-const top = await reviewer.run("综合前面所有文件的审查结果，只指出最需要先修的一个问题，并说明原因。", undefined, undefined, 600_000);
+const top = await reviewer.run("综合前面所有文件的审查结果，只指出最需要先修的一个问题，并说明原因。", undefined, 600_000);
 text(`## 优先修复\n${top.result}`);
 
 await reviewer.close();
 ```
 
 - `create_agent` 创建的 agent 保留对话历史，第 4 步不必重复各文件的审查内容。
-- `capabilities` 只授予执行命令的工具，`runtime.sandbox` 设为只读，审查过程不会修改文件。
-- `model.provider` 是 `config.toml` 中 provider 的 id，见 [配置 provider](02-configuration.md#配置-provider)。
+- agent 使用与程序相同的沙箱。按默认的 `read-only` 沙箱运行时，审查过程不会修改文件，见 [沙箱](02-configuration.md#沙箱)。
+- `model.model_id` 须是 `config.toml` 中 `model_provider` 提供的模型，见 [配置 provider](02-configuration.md#配置-provider)。
 
 打包后，通过 Python SDK 传入输入运行：
 
@@ -90,7 +88,7 @@ package = PoaPackage.load("dist/my-poa.poa")
 with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as brainary:
     thread = brainary.thread_start(
         cwd="/path/to/repo",
-        config={"features": {"code_mode": {"enabled": True}}},
+        config={"features": {"code_mode": {"enabled": True}, "multi_agent_v3": True}},
     )
     result = Poa(thread, package).run(input={"files": ["src/auth.ts", "src/db.ts"], "focus": "错误处理"})
     print(result)
@@ -98,7 +96,7 @@ with Brainary(config=BrainaryConfig(brainary_bin="/path/to/brainary")) as braina
 
 ## 随包携带 MCP 工具
 
-把一个 MCP server 和程序打进同一个包：程序直接调用它的工具，也授权给 agent 使用。
+把一个 MCP server 和程序打进同一个包：程序调用它的工具，再把结果交给 agent 处理。
 
 ```text
 echo-poa/
@@ -169,29 +167,24 @@ process.stdin.on("data", (chunk) => {
 });
 ```
 
-`src/main.ts` 先直接调用工具，再创建一个只能使用该 server 工具的 agent：
+`src/main.ts` 先调用工具，再让 agent 处理工具的返回：
 
 ```ts
 import { AgentExecutor, McpExecutor, text } from "@brainary/poa-sdk";
 
-// 1. 程序直接调用：server 名、工具名、参数
-const result = await new McpExecutor().call_mcp_tool("echo", "echo", { text: "hello" });
+// 1. 调用随包携带的 server：server 名、工具名、参数
+const result = await new McpExecutor().call_mcp_tool("echo", "echo", { text: "你好" });
 if (result.isError) throw new Error("echo 调用失败");
 text(result.content);
 
-// 2. 授权 agent 使用 echo server 的全部工具
-const agent = await new AgentExecutor().create_agent({
-  name: "echoer",
-  agent_config: {
-    model: { model_id: "gpt-5.6-luna", provider: "vendor" },
-    capabilities: { mcp: ["echo/*"] },
-  },
-});
-const reply = await agent.run("用 echo 工具回显“你好”，再告诉我工具返回了什么。", undefined, undefined, 300_000);
+// 2. 把工具的返回交给 agent
+const agents = new AgentExecutor();
+const handle = await agents.spawn_agent({ message: `把这段工具返回的文本翻译成英文，只回复译文：${JSON.stringify(result.content)}` });
+const reply = await agents.acquire_agent_result(handle.agent_id, 300_000);
 text(reply.result);
-await agent.close();
+await agents.close(handle.agent_id);
 ```
 
 - 打包时 `mcp/` 目录随包写入，运行时按 `shell` 启动 server；`shell` 中的命令要在运行环境里可用，上例需要 Node.js。
 - 只读工具在 `annotations` 中标注 `readOnlyHint: true`、`destructiveHint: false`，调用前不需要审批。
-- `capabilities.mcp` 中的 `<server>/*` 授予该 server 的全部工具，`<server>/<tool>` 授予单个工具，见 [Capabilities](05-api-reference/02-agent-config.md#capabilities)。
+- 随包携带的 server 由程序通过 [McpExecutor](05-api-reference/05-executors.md#mcpexecutor) 调用，工具的返回结构见 [McpToolResult](05-api-reference/05-executors.md#mcptoolresult)。

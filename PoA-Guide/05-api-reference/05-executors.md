@@ -9,7 +9,7 @@
 | McpExecutor | "mcp" | [McpExecutor](#mcpexecutor) |
 | AgentExecutor | "agent" | [AgentExecutor](03-agent-executor.md) |
 
-Executor 是它们共同的基类，不从 SDK 导出。每个执行器都有只读属性 kind 和静态属性 [tools](#tools)。kind 为 "remote_agent" 的执行器尚未实现。
+Executor 是它们共同的基类，不从 SDK 导出。每个执行器都有只读属性 kind；FileExecutor、TerminalExecutor 和 McpExecutor 还有静态属性 [tools](#tools)。kind 为 "remote_agent" 的执行器尚未实现。
 
 以下示例假定已导入并创建各执行器：
 
@@ -415,7 +415,7 @@ for (const block of result.content) {
 
 ## tools
 
-**作用**：每个执行器类的静态只读属性，列出该执行器使用的 [BrainaryTool](06-brainary-tool.md) 成员，可以直接放入 [Capabilities](02-agent-config.md#capabilities).brainary_tool。
+**作用**：FileExecutor、TerminalExecutor 和 McpExecutor 的静态只读属性，列出该执行器使用的 [BrainaryTool](06-brainary-tool.md) 成员。
 
 **类型定义**：静态只读对象，键为成员名，值为同名的 BrainaryTool 成员。
 
@@ -424,14 +424,13 @@ for (const block of result.content) {
 | FileExecutor | apply_patch、view_image |
 | TerminalExecutor | exec_command、write_stdin、wait_for_environment |
 | McpExecutor | list_mcp_resources、list_mcp_resource_templates、read_mcp_resource |
-| AgentExecutor | spawn_agent、create_agent、send_input、wait_agent、resume_agent、close_agent、get_agent_status |
 
-MCP 工具不在 tools 中，用 Capabilities.mcp 授予。wait_for_environment 只在 Brainary 启用执行环境功能时存在，未启用时不能授予。
+AgentExecutor 不调用 Brainary 工具，没有 tools。MCP server 的工具不在 tools 中，用 McpExecutor 调用。wait_for_environment 只在 Brainary 启用执行环境功能时存在。
 
 **示例**：
 
 ~~~js
-const brainary_tool = [TerminalExecutor.tools.exec_command, TerminalExecutor.tools.write_stdin, FileExecutor.tools.apply_patch];
+const used = [...Object.values(TerminalExecutor.tools), ...Object.values(FileExecutor.tools)];
 ~~~
 
 ## 上下文与 hook
