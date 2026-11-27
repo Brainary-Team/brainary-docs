@@ -23,7 +23,13 @@ name = "我的模型服务"
 base_url = "https://api.example.com/v1"
 env_key = "VENDOR_API_KEY"
 wire_api = "responses"
+
+[features]
+code_mode = true
+multi_agent_v3 = true
 ```
+
+`[features]` 中的 `code_mode = true` 开启代码模式，PoA 程序在代码模式中运行；`multi_agent_v3 = true` 开启多 agent，程序派出 agent 时需要它。
 
 在运行 Brainary 的终端设置 API Key：
 
@@ -31,7 +37,7 @@ wire_api = "responses"
 export VENDOR_API_KEY="替换为你的 API Key"
 ```
 
-各字段的含义，以及配置多个 provider、默认沙箱等，见 [配置文件](02-configuration.md)。
+各字段的含义，以及配置多个 provider、默认沙箱、等待时间等，见 [配置文件](02-configuration.md)。
 
 ## 2. 创建项目
 
@@ -67,7 +73,7 @@ const reply = await agents.acquire_agent_result(handle.agent_id, 300_000);
 text(reply.result);
 ```
 
-- `spawn_agent` 派出一个 agent，立即返回它的句柄，它的配置来源于配置文件中，默认模型的配置。
+- `spawn_agent` 派出一个 agent，立即返回它的句柄。agent 使用配置文件中的默认模型。
 - `acquire_agent_result` 等待 agent 完成，返回它的最终回复。
 - `text` 把内容输出给运行方。
 
@@ -129,7 +135,7 @@ Output:
 
 ## 下一步
 
-- [配置文件](02-configuration.md)：配置多个 provider、默认沙箱和 agent 层级。
+- [配置文件](02-configuration.md)：配置 provider、多 agent、默认沙箱和 agent 层级。
 - [输入与输出](03-input-output.md)：接收业务输入，在 TUI 或 Python SDK 中运行。
 - [示例](04-examples.md)：完整的多 agent 程序。
 - [使用模板开发 PoA](06-template-workflow.md)：模板的目录结构、检查和测试命令，以及打包流程。

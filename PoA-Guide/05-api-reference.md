@@ -10,11 +10,11 @@
 | `@brainary/poa-sdk/helper` | parse_json_reply、map_limit、shape_of |
 | `@brainary/poa-sdk/executor` | AgentExecutor、FileExecutor、TerminalExecutor、McpExecutor、BrainaryTool、ShellCommandError 及其类型 |
 
-Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型、Sandbox、ApprovalPolicy、AgentNotIdleError 和 AgentResultTimeoutError 只从根入口导出。定时器、计时和随机数等标准 Web API 由运行时直接提供，见 [运行环境](07-runtime.md)。
+Agent、AgentResult、AgentStatus、InterruptResult、MessageItem、TextElement、AgentConfig、ModelSpec、AgentNotIdleError、AgentResultTimeoutError、MultiAgentError 及其类型只从根入口导出。定时器、计时和随机数等标准 Web API 由运行时直接提供，见 [运行环境](07-runtime.md)。
 
 调用约定：
 
-- 方法按位置传参。跳过中间的可选参数时传 `undefined`，例如 `agent.run("检查 README", undefined, undefined, 120_000)`。
+- 方法按位置传参。跳过中间的可选参数时传 `undefined`，例如 `agent.run("检查 README", undefined, 120_000)`。
 - create_agent 和 spawn_agent 接收一个对象参数。
 - 标注“尚未实现”的类型、字段和方法当前不可用。
 
@@ -22,10 +22,10 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 
 | 文件 | 内容 |
 | --- | --- |
-| [Agent](05-api-reference/01-agent.md) | run、close、resume、status，AgentResult 和错误类型；append_message、context_compact 与用量读取尚未实现 |
-| [AgentConfig](05-api-reference/02-agent-config.md) | ModelSpec、Capabilities、Sandbox、ApprovalPolicy、RuntimeSpec 和 AgentConfig；AgentGroup、ResourceShareSpace 与 SecureConfig 尚未实现 |
-| [AgentExecutor](05-api-reference/03-agent-executor.md) | create_agent、spawn_agent、acquire_agent_result、get_status、close、resume 和 tools，以及 AgentStatus、Handle 和 SpawnSpec；create_remote_agent、send_message、context_compact、append_message 与用量查询尚未实现 |
-| [MessageItem](05-api-reference/04-message-item.md) | ImageDetail，以及文本、图片、本地图片、音频、本地音频、skill 和 mention 消息项 |
+| [Agent](05-api-reference/01-agent.md) | run、append_message、interrupt、close、status，AgentResult 和错误类型（含 MultiAgentError）；resume、context_compact 与用量读取尚未实现 |
+| [AgentConfig](05-api-reference/02-agent-config.md) | ModelSpec 和 AgentConfig；AgentGroup、ResourceShareSpace 与 SecureConfig 尚未实现 |
+| [AgentExecutor](05-api-reference/03-agent-executor.md) | create_agent、spawn_agent、acquire_agent_result、get_status、append_message、interrupt 和 close，以及 AgentStatus、Handle、SpawnSpec、CreateAgentSpec 和 InterruptResult；resume、create_remote_agent、send_message、context_compact 与用量查询尚未实现 |
+| [MessageItem](05-api-reference/04-message-item.md) | ImageDetail、TextElement，以及文本、图片、音频、skill 和 mention 消息项 |
 | [Executor](05-api-reference/05-executors.md) | FileExecutor、TerminalExecutor、McpExecutor、ShellCommandError、McpToolResult 和 tools；执行器上下文与 Hooks 尚未实现 |
 | [BrainaryTool](05-api-reference/06-brainary-tool.md) | 宿主工具枚举 |
 | [IO](05-api-reference/07-io.md) | POA_INPUT、text、image、audio、yield_control、notify、ask |
@@ -56,16 +56,16 @@ Agent、AgentResult、AgentStatus、MessageItem、AgentConfig 及其字段类型
 | --- | --- |
 | Agent | [Agent](05-api-reference/01-agent.md) |
 | AgentResult | [AgentResult](05-api-reference/01-agent.md#agentresult) |
-| AgentNotIdleError、AgentResultTimeoutError | [Agent 错误类型](05-api-reference/01-agent.md#错误) |
-| ModelSpec、Capabilities、McpGrant、Sandbox、ApprovalPolicy、RuntimeSpec、AgentConfig | [AgentConfig](05-api-reference/02-agent-config.md) |
+| AgentNotIdleError、AgentResultTimeoutError、MultiAgentError、MultiAgentErrorCode、MultiAgentErrorDetailsMap、InvalidArgumentDetails | [Agent 错误类型](05-api-reference/01-agent.md#错误) |
+| ModelSpec、AgentConfig | [AgentConfig](05-api-reference/02-agent-config.md) |
 | AgentGroup | [AgentGroup](05-api-reference/02-agent-config.md#agentgroup) |
 | ResourceShareSpace | [ResourceShareSpace](05-api-reference/02-agent-config.md#resourcesharespace) |
 | SecureConfig | [SecureConfig](05-api-reference/02-agent-config.md#secureconfig) |
 | Handof | [AgentConfig](05-api-reference/02-agent-config.md#agentconfig) |
-| AgentExecutor、CreateAgentSpec、TokenUsage、ContextUsage | [AgentExecutor](05-api-reference/03-agent-executor.md) |
+| AgentExecutor、CreateAgentSpec、InterruptResult、TokenUsage、ContextUsage | [AgentExecutor](05-api-reference/03-agent-executor.md) |
 | AgentStatus | [AgentStatus](05-api-reference/03-agent-executor.md#agentstatus) |
 | Handle、SpawnSpec、RemoteAgent | [Handle](05-api-reference/03-agent-executor.md#handle)、[SpawnSpec](05-api-reference/03-agent-executor.md#spawnspec)、[RemoteAgent](05-api-reference/03-agent-executor.md#remoteagent) |
-| ImageDetail、MessageItem | [MessageItem](05-api-reference/04-message-item.md) |
+| ImageDetail、TextElement、MessageItem | [MessageItem](05-api-reference/04-message-item.md) |
 | Executor | [Executor](05-api-reference/05-executors.md#executor) |
 | ExecutorContext、PostExecutorContext、Hooks、PreExecutorHooks、PostExecutorHooks | [执行器上下文与 hook](05-api-reference/05-executors.md#上下文与-hook) |
 | FileExecutor、ViewImageResult | [FileExecutor](05-api-reference/05-executors.md#fileexecutor) |
