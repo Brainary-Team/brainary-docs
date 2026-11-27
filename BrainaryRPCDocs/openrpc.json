@@ -6912,7 +6912,7 @@
               "null"
             ]
           },
-          "required": false
+          "required": true
         },
         {
           "name": "parentPoaExecutionId",
@@ -6922,73 +6922,7 @@
               "null"
             ]
           },
-          "required": false
-        },
-        {
-          "name": "agentName",
-          "schema": {
-            "description": "发出日志的 PoA 子 agent 名称。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
-        },
-        {
-          "name": "eventType",
-          "schema": {
-            "description": "事件类型，例如 state_change。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
-        },
-        {
-          "name": "phase",
-          "schema": {
-            "description": "事件发生时所处的生命周期阶段，由调用方定义。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
-        },
-        {
-          "name": "from",
-          "schema": {
-            "description": "状态变化前的状态。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
-        },
-        {
-          "name": "to",
-          "schema": {
-            "description": "状态变化后的状态。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
-        },
-        {
-          "name": "result",
-          "schema": {
-            "description": "本次操作的结果，例如 ok 或 error。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "required": false
+          "required": true
         },
         {
           "name": "level",
@@ -7013,7 +6947,7 @@
         {
           "name": "data",
           "schema": {},
-          "required": false
+          "required": true
         }
       ],
       "tags": [
@@ -7038,13 +6972,7 @@
           "message": "开始读取数据",
           "data": {
             "count": 3
-          },
-          "agentName": "reviewer",
-          "eventType": "state_change",
-          "phase": "running",
-          "from": "queued",
-          "to": "completed",
-          "result": "ok"
+          }
         }
       },
       "examples": [
@@ -7070,30 +6998,6 @@
             {
               "name": "parentPoaExecutionId",
               "value": null
-            },
-            {
-              "name": "agentName",
-              "value": "reviewer"
-            },
-            {
-              "name": "eventType",
-              "value": "state_change"
-            },
-            {
-              "name": "phase",
-              "value": "running"
-            },
-            {
-              "name": "from",
-              "value": "queued"
-            },
-            {
-              "name": "to",
-              "value": "completed"
-            },
-            {
-              "name": "result",
-              "value": "ok"
             },
             {
               "name": "level",
@@ -43965,48 +43869,6 @@
               "null"
             ]
           },
-          "agentName": {
-            "description": "发出日志的 PoA 子 agent 名称。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "eventType": {
-            "description": "事件类型，例如 state_change。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "phase": {
-            "description": "事件发生时所处的生命周期阶段，由调用方定义。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "from": {
-            "description": "状态变化前的状态。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "to": {
-            "description": "状态变化后的状态。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "result": {
-            "description": "本次操作的结果，例如 ok 或 error。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "level": {
             "type": "string",
             "enum": [
@@ -44025,8 +43887,11 @@
           "threadId",
           "turnId",
           "runtimeCellId",
+          "poaExecutionId",
+          "parentPoaExecutionId",
           "level",
-          "message"
+          "message",
+          "data"
         ]
       },
       "ThreadSettingsUpdateParams__db306bb__AskForApproval": {
