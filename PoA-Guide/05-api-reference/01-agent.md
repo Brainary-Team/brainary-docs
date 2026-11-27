@@ -123,22 +123,6 @@ const stopped = await agent.interrupt();
 text({ interrupted: stopped.interrupted, status: stopped.agent_status });
 ~~~
 
-### context_compact(compact_template?)
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：压缩 agent 的上下文，减少后续运行的上下文占用。
-
-**输入类型**：compact_template?: string。
-
-**返回值类型**：Promise<void>。
-
-**示例**：
-
-~~~js
-await agent.context_compact("只保留结论和待办");
-~~~
-
 ### close()
 
 **作用**：关闭 agent，以及它派出的、仍处于打开状态的各层子 agent。关闭后 status() 返回 "not_found"，并释放 [max_concurrent_threads_per_session](../02-configuration.md#agent-层级和数量) 的名额。
@@ -155,24 +139,6 @@ await agent.context_compact("只保留结论和待办");
 text(await agent.close());
 ~~~
 
-### resume()
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：恢复已关闭的 agent。恢复后的 agent 保留关闭前的对话记录，使用创建时的配置。
-
-**输入类型**：无。
-
-**返回值类型**：Promise<[AgentStatus](03-agent-executor.md#agentstatus)>，恢复后的状态。
-
-**示例**：
-
-~~~js
-await agent.close();
-await agent.resume();
-text((await agent.run("继续上一轮的检查")).result);
-~~~
-
 ### status()
 
 **作用**：返回 agent 的当前状态，不等待。
@@ -187,25 +153,6 @@ text((await agent.run("继续上一轮的检查")).result);
 if ((await agent.status()) === "completed") {
   text("上一轮已完成");
 }
-~~~
-
-### token_usage()、context_usage()
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：读取 agent 的 token 用量和上下文用量。
-
-**输入类型**：无。
-
-**返回值类型**：分别为 Promise<[TokenUsage](03-agent-executor.md#tokenusage)>、Promise<[ContextUsage](03-agent-executor.md#contextusage)>。
-
-**示例**：
-
-~~~js
-text({
-  tokens: (await agent.token_usage()).total_tokens,
-  remaining: (await agent.context_usage()).remaining_tokens,
-});
 ~~~
 
 ## AgentResult
