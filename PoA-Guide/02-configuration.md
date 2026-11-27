@@ -184,7 +184,7 @@ brainary poa dist/my-poa.poa -s workspace-write -c agents.max_depth=2
 程序本身，以及它用 `spawn_agent`、`create_agent` 得到的每个 agent（包括各层子 agent），各自的完整对话默认保存在 `~/.brainary/sessions/`：
 
 - 程序本身：`brainary poa` 加 `--ephemeral`，或用 Python SDK 时在 `thread_start` 中传 `ephemeral=True`，不保存程序本身的会话记录。
-- 派出的 agent：调用 [spawn_agent](05-api-reference/03-agent-executor.md#spawnspec) 时传 `ephemeral: true`，不保存这个 agent 的会话记录。不传时照常保存，即使程序本身不保存。
+- 派出和创建的 agent：调用 [spawn_agent](05-api-reference/03-agent-executor.md#spawnspec) 时传 `ephemeral: true`，或调用 create_agent 时在 [AgentConfig](05-api-reference/02-agent-config.md#agentconfig) 中设 `ephemeral: true`，不保存这个 agent 的会话记录。不传时照常保存，即使程序本身不保存。
 
 ## manifest.toml
 

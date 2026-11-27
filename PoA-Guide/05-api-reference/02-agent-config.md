@@ -1,4 +1,4 @@
-# AgentConfig、ModelSpec、AgentGroup、ResourceShareSpace 与 SecureConfig
+# AgentConfig 与 ModelSpec
 
 本页是 [create_agent](03-agent-executor.md#create_agentrole-nickname-description-agent_config) 的 agent_config 参数用到的类型。Brainary 拒绝配置时，create_agent 抛出 [MultiAgentError](01-agent.md#multiagenterror)，agent 不会创建。
 
@@ -50,79 +50,6 @@ interface ModelSpec {
 const model = { model_id: "gpt-5.6-luna", reasoning_effort: "high" };
 ~~~
 
-### AgentGroup
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：把本地 agent 与远程 agent 组合为一组，供 subagents 和 peer_agents 配置使用。
-
-**类型定义**：
-
-~~~ts
-interface AgentGroup {
-  agents: Agent[];
-  remote_agents: RemoteAgent[];
-}
-~~~
-
-Agent 与 RemoteAgent 分别见 [Agent](01-agent.md) 和 [RemoteAgent](03-agent-executor.md#remoteagent)。
-
-**示例**：
-
-~~~js
-const group = {
-  agents: [reviewer],
-  remote_agents: [analyst],
-};
-~~~
-
-### ResourceShareSpace
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：指定 agent 的资源共享空间、上下文分叉设置和资源上限。
-
-**类型定义**：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `wm_share_space?` | `string[]` | 资源共享空间列表 |
-| `fork_context` | `boolean` | 是否分叉上下文 |
-| `token_limit` | `number` | token 上限 |
-| `runing_time_limit` | `number` | 运行时长上限 |
-
-**示例**：
-
-~~~js
-const resourceShareSpace = {
-  wm_share_space: ["shared-space"],
-  fork_context: false,
-  token_limit: 200000,
-  runing_time_limit: 600000,
-};
-~~~
-
-### SecureConfig
-
-**状态**：尚未实现，以下为设计描述。
-
-**作用**：配置不可信工具的使用权限、违规处理和待审批请求的有效期。
-
-**类型定义**：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `allow_unstrusted_tools?` | `Set<string>` | 允许使用的不可信工具集合 |
-| `block_on_violation?` | `boolean` | 是否在违规时阻塞 |
-| `apprroval_on_violation?` | `boolean` | 是否在违规时请求审批 |
-| `pending_approval_ttl?` | `timedelta` | 待审批请求的有效期 |
-
-**示例**：
-
-~~~js
-const secureConfig = { block_on_violation: true };
-~~~
-
 ### AgentConfig
 
 **作用**：agent 的完整配置。
@@ -133,13 +60,7 @@ const secureConfig = { block_on_violation: true };
 interface AgentConfig {
   model: ModelSpec;
   developer_instructions?: string;
-  // 以下字段尚未实现
-  subagents?: AgentGroup;
-  peer_agents?: AgentGroup;
-  handof?: Handof[];
-  resource_share_space?: ResourceShareSpace;
-  secure_config: SecureConfig;
-  max_agent_depth: number;
+  ephemeral?: boolean;
 }
 ~~~
 
@@ -147,7 +68,7 @@ interface AgentConfig {
 | --- | --- |
 | model | 必填，见 [ModelSpec](#modelspec) |
 | developer_instructions | agent 的开发者指令，代替当前程序的开发者指令；省略时与当前程序相同 |
-| subagents、peer_agents、handof、resource_share_space、secure_config、max_agent_depth | 尚未实现，分别用于配置子 agent 组、同级 agent 组、handoff、资源共享空间、安全配置和最大 agent 深度 |
+| ephemeral | 为 true 时不保存这个 agent 的会话记录；默认为 false，即使本次运行不保存会话记录，创建的 agent 也会保存，见 [会话记录](../02-configuration.md#会话记录) |
 
 **示例**：
 
