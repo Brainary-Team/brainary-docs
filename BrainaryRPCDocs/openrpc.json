@@ -7012,7 +7012,7 @@
         },
         {
           "name": "data",
-          "schema": {},
+          "schema": true,
           "required": false
         }
       ],
@@ -44019,7 +44019,7 @@
           "message": {
             "type": "string"
           },
-          "data": {}
+          "data": true
         },
         "required": [
           "threadId",
